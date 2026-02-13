@@ -269,13 +269,13 @@
                         class="h-16 w-16 bg-emerald-500 text-white rounded-2xl flex items-center justify-center mb-10 shadow-lg shadow-emerald-500/30">
                         <span class="material-symbols-outlined text-3xl font-bold">school</span>
                     </div>
-                    <h3 class="text-3xl font-black text-slate-900 dark:text-white mb-6 leading-tight">{{ program.nama }}
-                    </h3>
+                    <h3 class="text-3xl font-black text-slate-900 dark:text-white mb-6 leading-tight">{{
+                        program.nama_program }}</h3>
                     <p class="text-slate-500 dark:text-slate-400 mb-12 flex-1 leading-loose">
-                        {{ program.deskripsi|default:"Mencetak santri berkualitas dengan keseimbangan intelektual dan
+                        {{ program.keterangan|default:"Mencetak santri berkualitas dengan keseimbangan intelektual dan
                         spiritual." }}
                     </p>
-                    <a href="https://wa.me/{{ tenant.phone_number|default:'' }}?text=Assalamu%27alaikum%2C+saya+ingin+tahu+lebih+lanjut+tentang+program+{{ program.nama|urlencode }}"
+                    <a href="https://wa.me/{{ tenant.phone_number|default:'' }}?text=Assalamu%27alaikum%2C+saya+ingin+tahu+lebih+lanjut+tentang+program+{{ program.nama_program|urlencode }}"
                         class="inline-flex items-center gap-4 py-4 px-8 bg-slate-900 dark:bg-white text-white dark:text-slate-900 rounded-2xl font-black group/btn">
                         Daftar Program
                         <span
@@ -353,4 +353,6 @@
             <div>&copy; 2026 {{ tenant.name }}</div>
             <div class="tracking-widest uppercase">Powered by Pondok Indonesia</div>
         </div>
-    </footer
+    </footer>
+</div>
+{% endblock %}
