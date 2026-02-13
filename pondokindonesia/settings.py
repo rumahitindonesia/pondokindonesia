@@ -60,6 +60,7 @@ INSTALLED_APPS = [
 ]
 
 UNFOLD = {
+    "DASHBOARD_CALLBACK": "core.dashboard.dashboard_callback",
     "SITE_TITLE": "core.branding.get_site_title",
     "SITE_HEADER": "core.branding.get_site_header",
     "SITE_SYMBOL": "mosque",

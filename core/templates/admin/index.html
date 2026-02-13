@@ -1,0 +1,99 @@
+{% extends "unfold/layouts/base_simple.html" %}
+
+{% load i18n %}
+
+{% block content %}
+<div class="px-4 py-8 md:px-12">
+    <div class="mb-10">
+        <h1 class="font-semibold mb-1 text-2xl text-font-important-light dark:text-font-important-dark">
+            {{ title }}
+        </h1>
+        <p class="text-font-default-light text-sm dark:text-font-default-dark">
+            Selamat datang kembali di panel administrasi Pondok Indonesia.
+        </p>
+    </div>
+
+    {% if kpi_cards %}
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
+        {% for card in kpi_cards %}
+        <div
+            class="bg-white border border-base-200 p-6 rounded-default shadow-sm dark:bg-base-900 dark:border-base-800">
+            <div class="flex items-center gap-4 mb-3">
+                <div
+                    class="bg-primary-50 p-2.5 rounded-full text-primary-600 dark:bg-primary-950/30 dark:text-primary-400">
+                    <span class="material-symbols-outlined block">
+                        {{ card.icon }}
+                    </span>
+                </div>
+                <h3 class="font-medium text-base-500 text-sm dark:text-base-400">
+                    {{ card.title }}
+                </h3>
+            </div>
+            <div class="flex flex-col">
+                <span class="font-bold text-3xl text-font-important-light dark:text-font-important-dark">
+                    {{ card.metric }}
+                </span>
+                {% if card.footer %}
+                <span class="text-xs text-base-400 mt-1 dark:text-base-500">
+                    {{ card.footer }}
+                </span>
+                {% endif %}
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    {% block dashboard_content %}
+    {% if app_list %}
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        {% for app in app_list %}
+        <div
+            class="bg-white border border-base-200 rounded-default overflow-hidden shadow-sm dark:bg-base-900 dark:border-base-800">
+            <div class="bg-base-50/50 border-b border-base-200 px-6 py-4 dark:bg-base-800/20 dark:border-base-800">
+                <h2 class="font-semibold text-font-important-light text-sm dark:text-font-important-dark">
+                    {{ app.name }}
+                </h2>
+            </div>
+            <div class="p-6">
+                <table class="w-full text-sm">
+                    <tbody>
+                        {% for model in app.models %}
+                        <tr class="group">
+                            <td class="py-2.5">
+                                <a href="{{ model.admin_url }}"
+                                    class="hover:text-primary-600 dark:hover:text-primary-500 transition-colors">
+                                    {{ model.name }}
+                                </a>
+                            </td>
+                            <td class="text-right py-2.5">
+                                <div
+                                    class="flex justify-end gap-3 opacity-0 group-hover:opacity-100 transition-opacity">
+                                    {% if model.add_url %}
+                                    <a href="{{ model.add_url }}"
+                                        class="text-xs font-medium text-primary-600 dark:text-primary-400">
+                                        {% trans 'Add' %}
+                                    </a>
+                                    {% endif %}
+                                    {% if model.admin_url %}
+                                    <a href="{{ model.admin_url }}"
+                                        class="text-xs font-medium text-base-400 dark:text-base-500">
+                                        {% trans 'View' %}
+                                    </a>
+                                    {% endif %}
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <p>{% trans "You don't have permission to view or edit anything." %}</p>
+    {% endif %}
+    {% endblock %}
+</div>
+{% endblock %}
