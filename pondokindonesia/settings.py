@@ -161,9 +161,14 @@ UNFOLD = {
                 ],
             },
             {
-                "title": "Integrasi WhatsApp",
+                "title": "Integrasi WhatsApp & AI",
                 "collapsible": True,
                 "items": [
+                    {
+                        "title": "AI Knowledge Base",
+                        "icon": "psychology",
+                        "link": "/admin/core/aiknowledgebase/",
+                    },
                     {
                         "title": "Log Pesan WA",
                         "icon": "chat",
