@@ -1,0 +1,49 @@
+{% extends "unfold/layouts/base.html" %}
+{% load i18n admin_urls static admin_modify %}
+
+{% block breadcrumbs %}
+<div class="px-4 sm:px-6 lg:px-8">
+    <div
+        class="flex flex-col gap-4 border-b border-gray-200 py-6 dark:border-gray-800 lg:flex-row lg:items-center lg:justify-between">
+        <div class="min-w-0 flex-1">
+            <h2
+                class="text-2xl font-bold leading-7 text-gray-900 dark:text-gray-100 sm:truncate sm:text-3xl sm:tracking-tight">
+                Send WhatsApp Message
+            </h2>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="px-4 sm:px-6 lg:px-8 py-8">
+    <form action="" method="post" class="bg-white dark:bg-gray-800 shadow rounded-lg p-6">
+        {% csrf_token %}
+        <p class="text-gray-600 dark:text-gray-400 mb-6">
+            You are about to send a WhatsApp message to <strong>{{ users|length }}</strong> selected users.
+        </p>
+
+        {% for user in users %}
+        <input type="hidden" name="{{ action_checkbox_name }}" value="{{ user.pk }}" />
+        {% endfor %}
+        <input type="hidden" name="action" value="send_whatsapp_action" />
+        <input type="hidden" name="apply" value="1" />
+
+        <div class="mb-4">
+            <label for="message_body" class="block text-sm font-medium text-gray-700 dark:text-gray-200">Message
+                Body</label>
+            <textarea id="message_body" name="message_body" rows="4"
+                class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white sm:text-sm"
+                required></textarea>
+        </div>
+
+        <div class="flex justify-end gap-3">
+            <a href="#" onclick="window.history.back()"
+                class="rounded-md bg-gray-200 px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm hover:bg-gray-300">Cancel</a>
+            <button type="submit"
+                class="rounded-md bg-indigo-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600">Send
+                Message</button>
+        </div>
+    </form>
+</div>
+{% endblock %}

@@ -1,0 +1,269 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="id">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pondok Indonesia - Transformasi Cerdas Manajemen & Donasi Pesantren</title>
+    <meta name="description"
+        content="Pondok Indonesia adalah SaaS manajemen pesantren berbasis AI. Tingkatkan efisiensi pengelolaan santri dan pertumbuhan donasi hingga 3x lipat dengan teknologi cerdas.">
+    <meta name="keywords"
+        content="pondok indonesia, manajemen pesantren, saas pesantren, ai pesantren, aplikasi pondok, manajemen donasi, digitalisasi pesantren">
+    <link rel="canonical" href="https://pondokindonesia.online/">
+
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://pondokindonesia.online/">
+    <meta property="og:title" content="Pondok Indonesia - Transformasi Cerdas Manajemen & Donasi Pesantren">
+    <meta property="og:description" content="SaaS manajemen pesantren berbasis AI untuk efisiensi santri dan donasi.">
+    <meta property="og:image" content="{% static 'core/images/hero_dashboard.png' %}">
+
+    <!-- Twitter -->
+    <meta property="twitter:card" content="summary_large_image">
+    <meta property="twitter:url" content="https://pondokindonesia.online/">
+    <meta property="twitter:title" content="Pondok Indonesia - Transformasi Cerdas Manajemen & Donasi Pesantren">
+    <meta property="twitter:description"
+        content="SaaS manajemen pesantren berbasis AI untuk efisiensi santri dan donasi.">
+    <meta property="twitter:image" content="{% static 'core/images/hero_dashboard.png' %}">
+
+    <!-- JSON-LD Structured Data -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "SoftwareApplication",
+      "name": "Pondok Indonesia",
+      "operatingSystem": "Web",
+      "applicationCategory": "BusinessApplication",
+      "offers": {
+        "@type": "Offer",
+        "price": "0",
+        "priceCurrency": "IDR"
+      },
+      "description": "Platform manajemen pesantren berbasis AI untuk mengelola donasi dan data santri secara efisien.",
+      "aggregateRating": {
+        "@type": "AggregateRating",
+        "ratingValue": "4.9",
+        "reviewCount": "120"
+      }
+    }
+    </script>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{% static 'core/css/style.css' %}">
+</head>
+
+<body>
+    <nav>
+        <div class="container">
+            <a href="/" class="logo">Pondok<span class="gradient-text">Indonesia</span></a>
+            <div class="nav-links">
+                <a href="#fitur">Fitur AI</a>
+                <a href="#manfaat">Manfaat</a>
+                <a href="#pricing">Harga</a>
+                <a href="/admin" class="btn btn-primary" style="padding: 10px 20px;">Dashboard</a>
+            </div>
+        </div>
+    </nav>
+
+    <main>
+        <!-- Hero Section -->
+        <header class="section-padding" style="padding-top: 150px;">
+            <div class="container" style="display: flex; align-items: center; gap: 50px; flex-wrap: wrap;">
+                <div style="flex: 1; min-width: 300px;">
+                    <h1 style="font-size: 3.5rem; line-height: 1.1; margin-bottom: 20px;">
+                        Sentuhan Cerdas AI untuk <span class="gradient-text">Transformasi Manajemen</span> & Pertumbuhan
+                        Donasi Pesantren.
+                    </h1>
+                    <p style="font-size: 1.25rem; color: var(--text-grey); margin-bottom: 30px;">
+                        Bantu pengurus pesantren mengelola donatur dan santri lebih cerdas. Pesan personal, prediksi
+                        donasi,
+                        dan manajemen otomatis dalam satu genggaman.
+                    </p>
+                    <div style="display: flex; gap: 15px;">
+                        <a href="/admin" class="btn btn-primary">Demo Sekarang</a>
+                        <a href="#fitur" class="btn" style="border: 1px solid #ddd;">Pelajari Fitur</a>
+                    </div>
+                </div>
+                <div style="flex: 1; min-width: 300px; position: relative;">
+                    <div
+                        style="background: linear-gradient(135deg, #f0f4ff, #fff0f9); border-radius: 30px; padding: 20px; box-shadow: var(--shadow);">
+                        <img src="{% static 'core/images/hero_dashboard.png' %}" alt="AI Dashboard Teaser"
+                            style="width: 100%; border-radius: 20px;">
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Social Proof -->
+        <section class="section-padding" style="background-color: #f9fafb;">
+            <div class="container" style="text-align: center;">
+                <p
+                    style="text-transform: uppercase; letter-spacing: 2px; font-weight: 600; color: var(--text-grey); margin-bottom: 40px;">
+                    Dipercaya oleh Pondok & Yayasan Ternama</p>
+                <div style="display: flex; justify-content: center; align-items: center; gap: 50px; flex-wrap: wrap;">
+                    {% for tenant in tenants %}
+                    <div style="text-align: center; opacity: 0.6; transition: all 0.3s ease;"
+                        onmouseover="this.style.opacity='1'; this.style.transform='scale(1.05)'"
+                        onmouseout="this.style.opacity='0.6'; this.style.transform='scale(1)'">
+                        {% if tenant.logo %}
+                        <img src="{{ tenant.logo.url }}" alt="{{ tenant.name }}"
+                            style="height: 60px; width: auto; object-fit: contain; filter: grayscale(100%); transition: filter 0.3s;"
+                            onmouseover="this.style.filter='grayscale(0%)'"
+                            onmouseout="this.style.filter='grayscale(100%)'" title="{{ tenant.name }}">
+                        {% else %}
+                        <h3 style="font-family: serif; font-style: italic; font-size: 1.5rem; margin: 0; color: #555;">
+                            {{ tenant.name }}</h3>
+                        {% endif %}
+                    </div>
+                    {% empty %}
+                    <p style="color: #999; font-style: italic;">Menjadi partner pertama kami.</p>
+                    {% endfor %}
+                </div>
+            </div>
+        </section>
+
+        <!-- Magic Moment AI -->
+        <section class="section-padding" id="fitur">
+            <div class="container">
+                <div style="text-align: center; margin-bottom: 60px;">
+                    <h2 style="font-size: 2.5rem;">Sentuhan <span class="gradient-text">Personal AI</span> yang
+                        Menghangatkan</h2>
+                    <p style="color: var(--text-grey);">Bandingkan pesan kaku vs pesan personal buatan AI kami.</p>
+                </div>
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 30px;">
+                    <div style="padding: 30px; border-radius: 24px; background: #fff; border: 1px solid #eee;">
+                        <span
+                            style="background: #fee2e2; color: #dc2626; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 700;">TANPA
+                            AI</span>
+                        <p style="margin-top: 20px; color: #666; font-style: italic;">"Yth. Donatur, mohon segera kirim
+                            donasi Anda ke Rekening ... Terima kasih."</p>
+                        <p style="margin-top: 10px; font-size: 14px; color: #999;">Result: <span
+                                style="font-weight: 600;">Kurang direspon.</span></p>
+                    </div>
+                    <div
+                        style="padding: 30px; border-radius: 24px; background: #f5f3ff; border: 2px solid var(--accent-indigo);">
+                        <span
+                            style="background: #e0e7ff; color: var(--accent-indigo); padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 700;">DENGAN
+                            AI PONDOKINDONESIA</span>
+                        <p style="margin-top: 20px; color: #4338ca; font-weight: 500;">"Assalamualaikum Pak Ahmad,
+                            semoga
+                            sekeluarga sehat. Alhamdulillah donasi bapak bulan lalu telah membantu pembangunan asrama
+                            baru
+                            kami..."</p>
+                        <p style="margin-top: 10px; font-size: 14px; color: #4338ca;">Result: <span
+                                style="font-weight: 600; color: var(--accent-pink);">Tingkat konversi +300% 🚀</span>
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Product Alur / Benefits -->
+        <section class="section-padding" id="manfaat" style="background: #fafafa;">
+            <div class="container">
+                <div style="text-align: center; margin-bottom: 60px;">
+                    <h2 style="font-size: 2.5rem;">Kenapa <span class="gradient-text">PondokIndonesia</span>?</h2>
+                    <p style="color: var(--text-grey);">Kami mengubah cara pesantren berinteraksi dengan komunitasnya.
+                    </p>
+                </div>
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 40px;">
+                    <div style="text-align: center;">
+                        <div
+                            style="width: 80px; height: 80px; background: #fff1f2; border-radius: 20px; display: flex; align-items: center; justify-content: center; margin: 0 auto 20px;">
+                            <span style="font-size: 32px;">⏰</span>
+                        </div>
+                        <h3>Hemat Waktu 10 Jam+</h3>
+                        <p style="color: var(--text-grey);">Otomatisasi pengiriman laporan dan pesan harian santri ke
+                            wali
+                            murid.</p>
+                    </div>
+                    <div style="text-align: center;">
+                        <div
+                            style="width: 80px; height: 80px; background: #f5f3ff; border-radius: 20px; display: flex; align-items: center; justify-content: center; margin: 0 auto 20px;">
+                            <span style="font-size: 32px;">💰</span>
+                        </div>
+                        <h3>Donasi Terpusat</h3>
+                        <p style="color: var(--text-grey);">Prediksi donatur aktif dan kelola kampanye donasi lebih
+                            transparan.</p>
+                    </div>
+                    <div style="text-align: center;">
+                        <div
+                            style="width: 80px; height: 80px; background: #eff6ff; border-radius: 20px; display: flex; align-items: center; justify-content: center; margin: 0 auto 20px;">
+                            <span style="font-size: 32px;">🛡️</span>
+                        </div>
+                        <h3>Keamanan Data</h3>
+                        <p style="color: var(--text-grey);">Data santri dan donatur aman dengan sistem cloud
+                            multi-tenant
+                            kami.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Pricing -->
+        <section class="section-padding" id="pricing">
+            <div class="container">
+                <div style="text-align: center; margin-bottom: 60px;">
+                    <h2 style="font-size: 2.5rem;">Pilih Paket <span class="gradient-text">Masa Depan</span> Anda</h2>
+                    <p style="color: var(--text-grey);">Mulai gratis, berkembang saat Anda siap.</p>
+                </div>
+                <div
+                    style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 30px; align-items: start;">
+                    {% for plan in pricing_plans %}
+                    <div class="pricing-card {% if plan.is_popular %}popular{% endif %}"
+                        style="position: relative; {% if plan.is_popular %}border: 2px solid var(--accent-indigo);{% endif %}">
+                        {% if plan.is_popular %}
+                        <span
+                            style="background: var(--accent-indigo); color: white; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 700; position: absolute; top: -12px; left: 50%; transform: translateX(-50%);">PALING
+                            POPULER</span>
+                        {% endif %}
+
+                        <h3 style="font-size: 1.5rem; margin-bottom: 10px;">{{ plan.name }}</h3>
+                        <p style="font-size: 2.5rem; font-weight: 800; margin-bottom: 5px;">{{ plan.price }}<span style="font-size: 1rem; font-weight: 400; color: #999;">{{ plan.period|default:"" }}</span></p>
+
+                        {% if plan.description %}
+                        <p style="color: #666; font-size: 0.9rem; margin-bottom: 20px;">{{ plan.description }}</p>
+                        {% endif %}
+
+                        <ul
+                            style="list-style: none; color: var(--text-grey); margin-bottom: 30px; text-align: left; padding: 0;">
+                            {% for feature in plan.get_features_list %}
+                            <li style="margin-bottom: 10px; display: flex; align-items: flex-start; gap: 8px;">
+                                {% if "✅" in feature %}
+                                <span>{{ feature }}</span>
+                                {% else %}
+                                <span>✅ {{ feature }}</span>
+                                {% endif %}
+                            </li>
+                            {% endfor %}
+                        </ul>
+                        <a href="{{ plan.cta_url }}"
+                            class="btn {% if plan.is_popular %}btn-primary{% else %}{% endif %}"
+                            style="width: 100%; {% if not plan.is_popular %}border: 1px solid #ddd;{% endif %}">
+                            {{ plan.cta_text }}
+                        </a>
+                    </div>
+                    {% empty %}
+                    <div class="pricing-card" style="grid-column: 1/-1; text-align: center;">
+                        <p>Belum ada paket harga yang tersedia.</p>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <footer class="section-padding" style="background: var(--text-dark); color: white; padding: 60px 0;">
+        <div class="container" style="text-align: center;">
+            <p>&copy; 2026 Pondok Indonesia. Semua hak cipta dilindungi.</p>
+        </div>
+    </footer>
+
+    <script src="{% static 'core/js/main.js' %}"></script>
+</body>
+
+</html>
