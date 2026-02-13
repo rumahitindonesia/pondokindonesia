@@ -34,6 +34,6 @@ urlpatterns += [
 ]
 
 # Admin Site Customization
-admin.site.site_header = "Pondok Indonesia Central Admin"
+admin.site.site_header = "Pondok Indonesia"
 admin.site.site_title = "Pondok Indonesia Admin"
-admin.site.index_title = "Selamat Datang di Portal Pengelola SaaS"
+admin.site.index_title = "Selamat Datang di Portal Pondok Indonesia"

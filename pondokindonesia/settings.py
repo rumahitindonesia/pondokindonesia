@@ -60,8 +60,8 @@ INSTALLED_APPS = [
 ]
 
 UNFOLD = {
-    "SITE_TITLE": "Pondok Indonesia",
-    "SITE_HEADER": "Pondok Indonesia Admin",
+    "SITE_TITLE": "core.branding.get_site_title",
+    "SITE_HEADER": "core.branding.get_site_header",
     "SITE_SYMBOL": "mosque",
     "COLORS": {
         "primary": {
