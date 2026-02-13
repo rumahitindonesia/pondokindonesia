@@ -14,6 +14,8 @@ class ProgramAdmin(ImportExportMixin, BaseTenantAdmin, ModelAdmin):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.change_list_template = "admin/import_export/change_list_custom.html"
+        self.import_template_name = "admin/import_export/import.html"
+        self.export_template_name = "admin/import_export/export.html"
     resource_classes = [ProgramResource]
     list_display = ('nama_program', 'jenis', 'nominal_standar', 'scope', 'is_active')
     list_filter = ('jenis', 'is_active', 'tenant')
@@ -35,6 +37,8 @@ class SantriAdmin(ImportExportMixin, BaseTenantAdmin, ModelAdmin):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.change_list_template = "admin/import_export/change_list_custom.html"
+        self.import_template_name = "admin/import_export/import.html"
+        self.export_template_name = "admin/import_export/export.html"
     resource_classes = [SantriResource]
     list_display = ('nis', 'nama_lengkap', 'status', 'nama_wali', 'scope')
     list_filter = ('status', 'tenant')
@@ -43,7 +47,6 @@ class SantriAdmin(ImportExportMixin, BaseTenantAdmin, ModelAdmin):
     def get_import_resource_kwargs(self, request, *args, **kwargs):
         kwargs = super().get_import_resource_kwargs(request, *args, **kwargs)
         kwargs['request'] = request
-        kwargs.pop('form', None)
         return kwargs
 
     def scope(self, obj):
@@ -57,6 +60,8 @@ class DonaturAdmin(ImportExportMixin, BaseTenantAdmin, ModelAdmin):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.change_list_template = "admin/import_export/change_list_custom.html"
+        self.import_template_name = "admin/import_export/import.html"
+        self.export_template_name = "admin/import_export/export.html"
     resource_classes = [DonaturResource]
     list_display = ('nama_donatur', 'kategori', 'no_hp', 'scope', 'tgl_bergabung')
     list_filter = ('kategori', 'tenant')
@@ -66,7 +71,6 @@ class DonaturAdmin(ImportExportMixin, BaseTenantAdmin, ModelAdmin):
     def get_import_resource_kwargs(self, request, *args, **kwargs):
         kwargs = super().get_import_resource_kwargs(request, *args, **kwargs)
         kwargs['request'] = request
-        kwargs.pop('form', None)
         return kwargs
 
     @admin.action(description='Send Solicitation (AI Generator)')
@@ -100,6 +104,8 @@ class TagihanAdmin(ImportExportMixin, BaseTenantAdmin, ModelAdmin):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.change_list_template = "admin/import_export/change_list_custom.html"
+        self.import_template_name = "admin/import_export/import.html"
+        self.export_template_name = "admin/import_export/export.html"
     resource_classes = [TagihanResource]
     list_display = ('program', 'santri', 'nominal', 'bulan', 'status', 'tgl_buat')
     list_filter = ('program', 'status', 'tenant')
@@ -109,7 +115,6 @@ class TagihanAdmin(ImportExportMixin, BaseTenantAdmin, ModelAdmin):
     def get_import_resource_kwargs(self, request, *args, **kwargs):
         kwargs = super().get_import_resource_kwargs(request, *args, **kwargs)
         kwargs['request'] = request
-        kwargs.pop('form', None)
         return kwargs
 
     @admin.action(description='Send Invoice via WhatsApp (AI)')
@@ -143,6 +148,8 @@ class TransaksiDonasiAdmin(ImportExportMixin, BaseTenantAdmin, ModelAdmin):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.change_list_template = "admin/import_export/change_list_custom.html"
+        self.import_template_name = "admin/import_export/import.html"
+        self.export_template_name = "admin/import_export/export.html"
     resource_classes = [TransaksiDonasiResource]
     list_display = ('program', 'donatur', 'nominal', 'tgl_donasi')
     list_filter = ('program', 'tenant')
@@ -152,7 +159,6 @@ class TransaksiDonasiAdmin(ImportExportMixin, BaseTenantAdmin, ModelAdmin):
     def get_import_resource_kwargs(self, request, *args, **kwargs):
         kwargs = super().get_import_resource_kwargs(request, *args, **kwargs)
         kwargs['request'] = request
-        kwargs.pop('form', None)
         return kwargs
 
     @admin.action(description='Send Receipt (Bukti Terima) via WhatsApp')
