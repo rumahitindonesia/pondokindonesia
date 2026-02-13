@@ -17,7 +17,7 @@
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
         {% for card in kpi_cards %}
         <div
-            class="border p-6 rounded-default shadow-sm transition-all hover:shadow-md {% if card.color == 'blue' %}bg-blue-50 border-blue-100 dark:bg-blue-900/20 dark:border-blue-800{% elif card.color == 'green' %}bg-green-50 border-green-100 dark:bg-green-900/20 dark:border-green-800{% elif card.color == 'orange' %}bg-orange-50 border-orange-100 dark:bg-orange-900/20 dark:border-orange-800{% elif card.color == 'red' %}bg-red-50 border-red-100 dark:bg-red-900/20 dark:border-red-800{% elif card.color == 'primary' %}bg-primary-50 border-primary-100 dark:bg-primary-900/20 dark:border-primary-800{% else %}bg-white border-base-200 dark:bg-base-900 dark:border-base-800{% endif %}">
+            class="border p-6 rounded-default shadow-sm transition-all hover:shadow-md {% if card.color == 'blue' %}bg-blue-50 border-blue-100 dark:bg-blue-500/10 dark:border-blue-500/20{% elif card.color == 'green' %}bg-green-50 border-green-100 dark:bg-green-500/10 dark:border-green-500/20{% elif card.color == 'orange' %}bg-orange-50 border-orange-100 dark:bg-orange-500/10 dark:border-orange-500/20{% elif card.color == 'red' %}bg-red-50 border-red-100 dark:bg-red-500/10 dark:border-red-500/20{% elif card.color == 'primary' %}bg-primary-50 border-primary-100 dark:bg-primary-500/10 dark:border-primary-500/20{% else %}bg-white border-base-200 dark:bg-base-900 dark:border-base-800{% endif %}">
             <div class="flex items-center gap-4 mb-3">
                 <div
                     class="p-2.5 rounded-full {% if card.color == 'blue' %}bg-blue-600 text-white{% elif card.color == 'green' %}bg-green-600 text-white{% elif card.color == 'orange' %}bg-orange-600 text-white{% elif card.color == 'red' %}bg-red-600 text-white{% elif card.color == 'primary' %}bg-primary-600 text-white{% else %}bg-base-600 text-white{% endif %}">
@@ -25,14 +25,15 @@
                         {{ card.icon }}
                     </span>
                 </div>
-                <h3 class="font-semibold text-base-800 dark:text-base-100 tracking-tight">{{ card.title }}</h3>
+                <h3 class="font-semibold text-base-900 dark:text-font-important-dark tracking-tight">{{ card.title }}
+                </h3>
             </div>
             <div class="flex flex-col">
                 <span class="font-bold text-3xl text-font-important-light dark:text-font-important-dark">
                     {{ card.metric }}
                 </span>
                 {% if card.footer %}
-                <span class="text-xs text-base-400 mt-1 dark:text-base-500">
+                <span class="text-xs text-base-500 mt-1 dark:text-font-default-dark">
                     {{ card.footer }}
                 </span>
                 {% endif %}
