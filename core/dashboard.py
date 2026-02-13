@@ -20,7 +20,7 @@ def dashboard_callback(request, context):
         # --- SUPER ADMIN DASHBOARD ---
         total_tenants = Tenant.objects.count()
         total_leads = Lead.objects.count()
-        active_subscriptions = TenantSubscription.objects.filter(status='ACTIVE').count()
+        active_subscriptions = TenantSubscription.objects.filter(is_active=True).count()
         
         # WhatsApp Stats (Total messages last 24h)
         last_24h = timezone.now() - timedelta(hours=24)
@@ -78,13 +78,15 @@ def dashboard_callback(request, context):
         # Lead Status Distribution
         leads_new = Lead.objects.filter(tenant=tenant, status='NEW').count()
         
+        tenant_name = tenant.name if tenant else "Pondok"
+        
         context.update({
             "kpi_cards": [
                 {
                     "title": "Santri Aktif",
                     "metric": total_santri,
                     "icon": "school",
-                    "footer": f"Total santri di {tenant.name if tenant else ''}",
+                    "footer": f"Total santri di {tenant_name}",
                 },
                 {
                     "title": "Donasi Bulan Ini",
