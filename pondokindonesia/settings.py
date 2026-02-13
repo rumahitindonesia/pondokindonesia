@@ -80,7 +80,119 @@ UNFOLD = {
     },
     "SIDEBAR": {
         "show_search": True,
-        "show_all_applications": True,
+        "show_all_applications": False,
+        "navigation": [
+            {
+                "title": "Dashboard",
+                "items": [
+                    {
+                        "title": "Dashboard Utama",
+                        "icon": "home",
+                        "link": "/admin/",
+                    },
+                ],
+            },
+            {
+                "title": "Manajemen Pengelola",
+                "collapsible": True,
+                "items": [
+                    {
+                        "title": "Data Pondok (Tenant)",
+                        "icon": "business",
+                        "link": "/admin/tenants/tenant/",
+                    },
+                    {
+                        "title": "Pengguna SaaS",
+                        "icon": "person",
+                        "link": "/admin/users/user/",
+                    },
+                    {
+                        "title": "Paket Berlangganan",
+                        "icon": "loyalty",
+                        "link": "/admin/core/pricingplan/",
+                    },
+                    {
+                        "title": "Subscription Aktif",
+                        "icon": "verified_user",
+                        "link": "/admin/core/tenantsubscription/",
+                    },
+                ],
+            },
+            {
+                "title": "CRM & Database",
+                "collapsible": True,
+                "items": [
+                    {
+                        "title": "Leads & Prospek",
+                        "icon": "group_add",
+                        "link": "/admin/core/lead/",
+                    },
+                    {
+                        "title": "Data Santri",
+                        "icon": "school",
+                        "link": "/admin/crm/santri/",
+                    },
+                    {
+                        "title": "Data Donatur",
+                        "icon": "volunteer_activism",
+                        "link": "/admin/crm/donatur/",
+                    },
+                    {
+                        "title": "Program Pondok",
+                        "icon": "list_alt",
+                        "link": "/admin/crm/program/",
+                    },
+                ],
+            },
+            {
+                "title": "Keuangan & Donasi",
+                "collapsible": True,
+                "items": [
+                    {
+                        "title": "Tagihan Santri",
+                        "icon": "payments",
+                        "link": "/admin/crm/tagihan/",
+                    },
+                    {
+                        "title": "Riwayat Donasi",
+                        "icon": "receipt_long",
+                        "link": "/admin/crm/transaksidonasi/",
+                    },
+                ],
+            },
+            {
+                "title": "Integrasi WhatsApp",
+                "collapsible": True,
+                "items": [
+                    {
+                        "title": "Log Pesan WA",
+                        "icon": "chat",
+                        "link": "/admin/core/whatsappmessage/",
+                    },
+                    {
+                        "title": "Auto Reply",
+                        "icon": "reply",
+                        "link": "/admin/core/whatsappautoreply/",
+                    },
+                    {
+                        "title": "Formulir WA",
+                        "icon": "description",
+                        "link": "/admin/core/whatsappform/",
+                    },
+                ],
+            },
+            {
+                "title": "Pengaturan Sistem",
+                "collapsible": True,
+                "items": [
+                    {
+                        "title": "API Integrasi",
+                        "icon": "settings",
+                        "link": "/admin/core/apisetting/",
+                    },
+                ],
+            },
+        ],
     },
 }
 
