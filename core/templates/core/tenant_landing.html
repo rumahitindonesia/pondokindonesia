@@ -1,0 +1,167 @@
+{% extends "unfold/layouts/base_simple.html" %}
+
+{% block title %}{{ seo_title }}{% endblock %}
+
+{% block extrahead %}
+<meta name="description" content="{{ seo_description }}">
+<!-- Open Graph / Social Media -->
+<meta property="og:type" content="website">
+<meta property="og:title" content="{{ seo_title }}">
+<meta property="og:description" content="{{ seo_description }}">
+{% if tenant.logo %}
+<meta property="og:image" content="{{ tenant.logo.url }}">{% endif %}
+<meta property="og:url" content="{{ request.build_absolute_uri }}">
+
+<!-- Meta Keywords -->
+<meta name="keywords" content="pesantren, pondok, {{ tenant.name }}, pendidikan islam, santri">
+
+<style>
+    :root {
+        --tenant-primary: #10b981;
+        /* Default emerald */
+    }
+
+    .hero-gradient {
+        background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+    }
+
+    .dark .hero-gradient {
+        background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="min-h-screen hero-gradient">
+    <!-- Header/Nav -->
+    <nav
+        class="flex items-center justify-between px-6 py-4 bg-white/50 backdrop-blur-md dark:bg-base-900/50 sticky top-0 z-50 border-b border-base-200 dark:border-base-800">
+        <div class="flex items-center gap-3">
+            {% if tenant.logo %}
+            <img src="{{ tenant.logo.url }}" alt="{{ tenant.name }}" class="h-10 w-10 object-contain rounded-full">
+            {% endif %}
+            <span class="font-bold text-xl tracking-tight text-font-important-light dark:text-font-important-dark">
+                {{ tenant.name }}
+            </span>
+        </div>
+        <div class="hidden md:flex items-center gap-6">
+            <a href="#about" class="text-sm font-medium hover:text-primary-600 transition-colors">Tentang Kami</a>
+            <a href="#programs" class="text-sm font-medium hover:text-primary-600 transition-colors">Program</a>
+            <a href="#contact"
+                class="px-5 py-2 bg-primary-600 text-white rounded-full text-sm font-bold shadow-lg shadow-primary-500/30 hover:bg-primary-700 transition-all">Daftar
+                Sekarang</a>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="max-w-7xl mx-auto px-6 pt-20 pb-24 text-center">
+        <h1
+            class="text-5xl md:text-7xl font-extrabold text-font-important-light dark:text-font-important-dark mb-6 tracking-tight">
+            Selamat Datang di <br>
+            <span class="text-primary-600">{{ tenant.name }}</span>
+        </h1>
+        <p class="text-xl text-font-default-light dark:text-font-default-dark max-w-3xl mx-auto mb-10 leading-relaxed">
+            Mencetak Generasi Qur'ani, Berakhlak Mulia, dan Berwawasan Luas di Era Digital.
+        </p>
+        <div class="flex flex-wrap justify-center gap-4">
+            <a href="#programs"
+                class="px-8 py-4 bg-primary-600 text-white rounded-xl font-bold text-lg shadow-xl shadow-primary-500/20 hover:-translate-y-1 transition-all">Lihat
+                Program Unggulan</a>
+            <a href="https://wa.me/{{ tenant.phone_number|default:'' }}" target="_blank"
+                class="px-8 py-4 bg-white text-base-900 border border-base-200 rounded-xl font-bold text-lg shadow-md hover:bg-base-50 transition-all dark:bg-base-800 dark:text-white dark:border-base-700">Hubungi
+                WhatsApp</a>
+        </div>
+    </section>
+
+    <!-- About Section -->
+    <section id="about" class="bg-white dark:bg-base-950 py-24 border-y border-base-200 dark:border-base-900">
+        <div class="max-w-4xl mx-auto px-6">
+            <div class="text-center mb-12">
+                <span class="text-primary-600 font-bold tracking-widest uppercase text-xs">Profil Pondok</span>
+                <h2 class="text-3xl font-bold mt-2">Tentang Kami</h2>
+            </div>
+            <div
+                class="prose prose-lg dark:prose-invert max-w-none text-center leading-loose italic text-base-700 dark:text-base-400">
+                {% if tenant.description %}
+                {{ tenant.description|linebreaks }}
+                {% else %}
+                Kami adalah lembaga pendidikan Islam yang berkomitmen tinggi dalam menjaga tradisi keilmuan pesantren
+                sekaligus beradaptasi dengan kemajuan teknologi modern.
+                {% endif %}
+            </div>
+        </div>
+    </section>
+
+    <!-- Programs Grid -->
+    <section id="programs" class="max-w-7xl mx-auto px-6 py-24">
+        <div class="text-center mb-16">
+            <h2 class="text-4xl font-extrabold tracking-tight mb-4">Program Pendidikan</h2>
+            <p class="text-font-default-light dark:text-font-default-dark">Pilih jalur pendidikan terbaik untuk buah
+                hati Anda.</p>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {% for program in programs %}
+            <div
+                class="bg-white p-8 rounded-2xl border border-base-100 shadow-sm hover:shadow-xl hover:-translate-y-2 transition-all dark:bg-base-900 dark:border-base-800">
+                <div
+                    class="h-12 w-12 bg-primary-50 rounded-xl flex items-center justify-center mb-6 dark:bg-primary-900/20">
+                    <span class="material-symbols-outlined text-primary-600">school</span>
+                </div>
+                <h3 class="text-2xl font-bold mb-3">{{ program.nama }}</h3>
+                <p class="text-sm text-base-500 mb-6 leading-relaxed">{{ program.deskripsi|default:"Program unggulan
+                    dengan kurikulum integratif dan lingkungan yang kondusif." }}</p>
+                <a href="https://wa.me/{{ tenant.phone_number|default:'' }}?text=Assalamu%27alaikum%2C+saya+ingin+tahu+lebih+lanjut+tentang+program+{{ program.nama|urlencode }}"
+                    class="flex items-center gap-2 text-primary-600 hover:text-primary-700 font-bold group">
+                    Daftar Sekarang
+                    <span
+                        class="material-symbols-outlined transition-transform group-hover:translate-x-1">arrow_forward</span>
+                </a>
+            </div>
+            {% empty %}
+            <div class="col-span-full text-center py-12 text-base-400 italic">
+                Belum ada program yang dipublikasikan.
+            </div>
+            {% endfor %}
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer id="contact" class="bg-base-100 py-16 px-6 dark:bg-base-900">
+        <div class="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-12">
+            <div>
+                <h4 class="font-bold text-xl mb-6">{{ tenant.name }}</h4>
+                <p class="text-sm leading-relaxed opacity-70">
+                    Ikuti perjalanan kami dalam membangun generasi masa depan yang religius dan kompeten.
+                </p>
+            </div>
+            <div>
+                <h4 class="font-bold mb-6">Kontak Kami</h4>
+                <ul class="space-y-4 text-sm opacity-80">
+                    <li class="flex items-start gap-3">
+                        <span class="material-symbols-outlined shrink-0">location_on</span>
+                        {{ tenant.address|default:"Alamat belum diatur/Pusat" }}
+                    </li>
+                    <li class="flex items-center gap-3">
+                        <span class="material-symbols-outlined shrink-0">call</span>
+                        {{ tenant.phone_number|default:"+62..." }}
+                    </li>
+                </ul>
+            </div>
+            <div>
+                <h4 class="font-bold mb-6">Link Cepat</h4>
+                <div class="flex flex-col gap-3 text-sm opacity-80">
+                    <a href="#about" class="hover:text-primary-600">About Us</a>
+                    <a href="#programs" class="hover:text-primary-600">Register Online</a>
+                    <a href="https://wa.me/{{ tenant.phone_number|default:'' }}"
+                        class="text-primary-600 font-bold">Admin WhatsApp</a>
+                </div>
+            </div>
+        </div>
+        <div
+            class="max-w-7xl mx-auto mt-16 pt-8 border-t border-base-200 dark:border-base-800 text-center opacity-40 text-xs">
+            &copy; 2026 {{ tenant.name }} - Powered by Pondok Indonesia.
+        </div>
+    </footer>
+</div>
+{% endblock %}

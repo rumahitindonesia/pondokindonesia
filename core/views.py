@@ -9,6 +9,21 @@ from tenants.models import Tenant
 from django.shortcuts import get_object_or_404
 
 def homepage(request):
+    tenant = getattr(request, 'tenant', None)
+    
+    if tenant:
+        # --- TENANT LANDING PAGE ---
+        from crm.models import Program
+        programs = Program.objects.filter(tenant=tenant)
+        
+        return render(request, 'core/tenant_landing.html', {
+            'tenant': tenant,
+            'programs': programs,
+            'seo_title': tenant.seo_title or f"Portal {tenant.name}",
+            'seo_description': tenant.seo_description or tenant.description[:160] if tenant.description else "",
+        })
+    
+    # --- GLOBAL HOMEPAGE ---
     tenants = Tenant.objects.filter(is_active=True)
     pricing_plans = PricingPlan.objects.filter(is_active=True).order_by('order')
     return render(request, 'core/homepage.html', {'tenants': tenants, 'pricing_plans': pricing_plans})

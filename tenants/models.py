@@ -7,6 +7,13 @@ class Tenant(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     is_active = models.BooleanField(default=True)
     logo = models.ImageField(upload_to='tenant_logos/', blank=True, null=True)
+    description = models.TextField(blank=True, help_text="Deskripsi profil pondok (bisa digenerate AI)")
+    address = models.TextField(blank=True, help_text="Alamat lengkap pondok")
+    phone_number = models.CharField(max_length=20, blank=True, help_text="Nomor WhatsApp official")
+    
+    # SEO Fields
+    seo_title = models.CharField(max_length=255, blank=True, help_text="Judul halaman untuk Google")
+    seo_description = models.TextField(blank=True, help_text="Deskripsi ringkas untuk hasil pencarian Google")
 
     def __str__(self):
         return f"{self.name} ({self.subdomain})"
