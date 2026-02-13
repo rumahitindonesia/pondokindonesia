@@ -17,17 +17,15 @@
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
         {% for card in kpi_cards %}
         <div
-            class="bg-white border border-base-200 p-6 rounded-default shadow-sm dark:bg-base-900 dark:border-base-800">
+            class="border p-6 rounded-default shadow-sm transition-all hover:shadow-md {% if card.color == 'blue' %}bg-blue-50 border-blue-100 dark:bg-blue-900/20 dark:border-blue-800{% elif card.color == 'green' %}bg-green-50 border-green-100 dark:bg-green-900/20 dark:border-green-800{% elif card.color == 'orange' %}bg-orange-50 border-orange-100 dark:bg-orange-900/20 dark:border-orange-800{% elif card.color == 'red' %}bg-red-50 border-red-100 dark:bg-red-900/20 dark:border-red-800{% elif card.color == 'primary' %}bg-primary-50 border-primary-100 dark:bg-primary-900/20 dark:border-primary-800{% else %}bg-white border-base-200 dark:bg-base-900 dark:border-base-800{% endif %}">
             <div class="flex items-center gap-4 mb-3">
                 <div
-                    class="p-2.5 rounded-full {% if card.color == 'blue' %}bg-blue-100 text-blue-700 dark:bg-blue-500/20 dark:text-blue-400{% elif card.color == 'green' %}bg-green-100 text-green-700 dark:bg-green-500/20 dark:text-green-400{% elif card.color == 'orange' %}bg-orange-100 text-orange-700 dark:bg-orange-500/20 dark:text-orange-400{% elif card.color == 'red' %}bg-red-100 text-red-700 dark:bg-red-500/20 dark:text-red-400{% elif card.color == 'primary' %}bg-primary-100 text-primary-700 dark:bg-primary-500/20 dark:text-primary-400{% else %}bg-base-100 text-base-700 dark:bg-base-500/20 dark:text-base-400{% endif %}">
+                    class="p-2.5 rounded-full {% if card.color == 'blue' %}bg-blue-600 text-white{% elif card.color == 'green' %}bg-green-600 text-white{% elif card.color == 'orange' %}bg-orange-600 text-white{% elif card.color == 'red' %}bg-red-600 text-white{% elif card.color == 'primary' %}bg-primary-600 text-white{% else %}bg-base-600 text-white{% endif %}">
                     <span class="material-symbols-outlined block">
                         {{ card.icon }}
                     </span>
                 </div>
-                <h3 class="font-medium text-base-500 text-sm dark:text-base-400">
-                    {{ card.title }}
-                </h3>
+                <h3 class="font-semibold text-base-800 dark:text-base-100 tracking-tight">{{ card.title }}</h3>
             </div>
             <div class="flex flex-col">
                 <span class="font-bold text-3xl text-font-important-light dark:text-font-important-dark">
