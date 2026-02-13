@@ -1,7 +1,10 @@
 from django.contrib import admin
 from unfold.admin import ModelAdmin
 from import_export.admin import ImportExportMixin
+from django.utils import timezone
+from django.contrib import messages
 from .models import Program, Santri, Donatur, Tagihan, TransaksiDonasi
+from core.services.ipaymu import IPaymuService
 from core.admin import BaseTenantAdmin
 from .resources import SantriResource, DonaturResource, ProgramResource, TagihanResource, TransaksiDonasiResource
 
@@ -110,7 +113,8 @@ class TagihanAdmin(ImportExportMixin, BaseTenantAdmin, ModelAdmin):
     list_display = ('program', 'santri', 'nominal', 'bulan', 'status', 'tgl_buat')
     list_filter = ('program', 'status', 'tenant')
     search_fields = ('santri__nama_lengkap', 'program__nama_program')
-    actions = ['send_invoice_whatsapp']
+    actions = ['send_invoice_whatsapp', 'generate_ipaymu_link']
+    list_editable = ['status']
 
     def get_import_resource_kwargs(self, request, *args, **kwargs):
         kwargs = super().get_import_resource_kwargs(request, *args, **kwargs)
@@ -138,6 +142,34 @@ class TagihanAdmin(ImportExportMixin, BaseTenantAdmin, ModelAdmin):
         
         self.message_user(request, f"{count} invoices sent via WhatsApp.")
     
+    @admin.action(description="Buat Link Pembayaran iPaymu")
+    def generate_ipaymu_link(self, request, queryset):
+        for obj in queryset:
+            if obj.status == Tagihan.Status.LUNAS:
+                self.message_user(request, f"Tagihan untuk {obj.santri.nama_lengkap} sudah lunas, tidak perlu link pembayaran.", messages.WARNING)
+                continue
+            
+            service = IPaymuService(tenant=obj.tenant)
+            res, error = service.create_payment(
+                amount=obj.nominal,
+                reference_id=f"INV-{obj.id}",
+                name=obj.santri.nama_lengkap,
+                email="ponpes@example.com", # Fallback email
+                phone=obj.santri.no_hp_wali,
+                description=f"Pembayaran {obj.program.nama_program} - {obj.bulan}"
+            )
+            
+            if res:
+                obj.external_id = res['session_id']
+                obj.payment_url = res['url']
+                obj.save()
+                self.message_user(request, f"Link iPaymu berhasil dibuat untuk {obj.santri.nama_lengkap}", messages.SUCCESS)
+            else:
+                self.message_user(request, f"Gagal untuk {obj.santri.nama_lengkap}: {error}", messages.ERROR)
+
+    def save_model(self, request, obj, form, change):
+        super().save_model(request, obj, form, change)
+
     def get_queryset(self, request):
         return super().get_queryset(request).select_related('santri', 'program')
 
@@ -154,7 +186,7 @@ class TransaksiDonasiAdmin(ImportExportMixin, BaseTenantAdmin, ModelAdmin):
     list_display = ('program', 'donatur', 'nominal', 'tgl_donasi')
     list_filter = ('program', 'tenant')
     search_fields = ('donatur__nama_donatur', 'program__nama_program')
-    actions = ['send_receipt_whatsapp']
+    actions = ['send_receipt_whatsapp', 'generate_ipaymu_link']
 
     def get_import_resource_kwargs(self, request, *args, **kwargs):
         kwargs = super().get_import_resource_kwargs(request, *args, **kwargs)

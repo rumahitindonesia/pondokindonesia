@@ -83,6 +83,8 @@ class Tagihan(TenantAwareModel):
     tgl_buat = models.DateTimeField(auto_now_add=True)
     tgl_bayar = models.DateTimeField(blank=True, null=True)
     bukti_bayar = models.ImageField(upload_to='bukti_bayar/', blank=True, null=True)
+    external_id = models.CharField(max_length=100, blank=True, null=True, help_text="ID Transaksi iPaymu")
+    payment_url = models.URLField(blank=True, null=True, help_text="Link Pembayaran iPaymu")
     keterangan = models.TextField(blank=True, null=True)
 
     class Meta:
@@ -100,6 +102,8 @@ class TransaksiDonasi(TenantAwareModel):
     nominal = models.DecimalField(max_digits=12, decimal_places=0)
     tgl_donasi = models.DateTimeField(auto_now_add=True)
     bukti_transfer = models.ImageField(upload_to='bukti_donasi/', blank=True, null=True)
+    external_id = models.CharField(max_length=100, blank=True, null=True, help_text="ID Transaksi iPaymu")
+    payment_url = models.URLField(blank=True, null=True, help_text="Link Pembayaran iPaymu")
     keterangan = models.TextField(blank=True, null=True)
 
     class Meta:

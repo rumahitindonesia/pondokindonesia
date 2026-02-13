@@ -39,6 +39,7 @@ class APISetting(TenantAwareModel):
         WHATSAPP = 'WHATSAPP', 'WhatsApp (StarSender)'
         AI = 'AI', 'Artificial Intelligence (Gemini/Groq)'
         MEDIA = 'MEDIA', 'Media/Assets (Unsplash)'
+        PAYMENT = 'PAYMENT', 'Payment Gateway (iPaymu)'
         OTHER = 'OTHER', 'Other Integrations'
 
     key_name = models.SlugField(max_length=100)
