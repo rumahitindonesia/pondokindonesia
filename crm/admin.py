@@ -22,7 +22,6 @@ class ProgramAdmin(ImportExportMixin, BaseTenantAdmin, ModelAdmin):
     def get_import_resource_kwargs(self, request, *args, **kwargs):
         kwargs = super().get_import_resource_kwargs(request, *args, **kwargs)
         kwargs['request'] = request
-        kwargs.pop('form', None)
         return kwargs
     
     def scope(self, obj):

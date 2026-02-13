@@ -3,7 +3,7 @@ from import_export.widgets import ForeignKeyWidget
 from .models import Santri, Donatur, Program, Tagihan, TransaksiDonasi
 
 class SantriResource(resources.ModelResource):
-    def __init__(self, request=None):
+    def __init__(self, request=None, **kwargs):
         super().__init__()
         self.request = request
 
@@ -17,7 +17,7 @@ class SantriResource(resources.ModelResource):
         import_id_fields = ('nis',)
         
 class DonaturResource(resources.ModelResource):
-    def __init__(self, request=None):
+    def __init__(self, request=None, **kwargs):
         super().__init__()
         self.request = request
 
@@ -31,7 +31,7 @@ class DonaturResource(resources.ModelResource):
         import_id_fields = ('kode_donatur',)
 
 class ProgramResource(resources.ModelResource):
-    def __init__(self, request=None):
+    def __init__(self, request=None, **kwargs):
         super().__init__()
         self.request = request
 
@@ -56,7 +56,7 @@ class TagihanResource(resources.ModelResource):
         widget=ForeignKeyWidget(Program, 'nama_program')
     )
 
-    def __init__(self, request=None):
+    def __init__(self, request=None, **kwargs):
         super().__init__()
         self.request = request
 
@@ -80,7 +80,7 @@ class TransaksiDonasiResource(resources.ModelResource):
         widget=ForeignKeyWidget(Program, 'nama_program')
     )
 
-    def __init__(self, request=None):
+    def __init__(self, request=None, **kwargs):
         super().__init__()
         self.request = request
 
