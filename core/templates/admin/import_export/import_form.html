@@ -1,22 +1,19 @@
-{% load i18n static %}
+{% load static i18n %}
 
-{% block import_form %}
 <div
     class="mb-8 p-4 bg-indigo-50 border border-indigo-200 rounded-default dark:bg-indigo-950/20 dark:border-indigo-800/50">
     <div class="flex items-center gap-3 mb-2">
         <span class="material-symbols-outlined text-indigo-600 dark:text-indigo-400">info</span>
-        <h4 class="text-sm font-semibold text-indigo-900 dark:text-indigo-100">{% translate "Petunjuk Import Data" %}
-        </h4>
+        <h4 class="text-sm font-semibold text-indigo-900 dark:text-indigo-100">Petunjuk Import Data</h4>
     </div>
     <p class="text-xs text-indigo-700 dark:text-indigo-300 mb-4 ml-8">
-        {% translate "Silakan gunakan template di bawah ini untuk memastikan format data sudah benar sebelum diunggah."
-        %}
+        Silakan gunakan template di bawah ini untuk memastikan format data sudah benar sebelum diunggah.
     </p>
     <div class="ml-8">
         <a href="{% static 'templates/template_' %}{{ opts.model_name }}{{ '.csv' }}" download
             class="inline-flex items-center gap-2 bg-white border border-indigo-200 px-3 py-1.5 rounded-md text-xs font-medium text-indigo-600 hover:bg-indigo-50 transition-colors shadow-sm dark:bg-base-900 dark:border-indigo-800 dark:text-indigo-400 dark:hover:bg-indigo-900/50">
             <span class="material-symbols-outlined text-[16px]">download</span>
-            {% translate "Download Template CSV (" %}{{ opts.verbose_name }}{{ ")" }}
+            Download Template CSV ({{ opts.verbose_name }})
         </a>
     </div>
 </div>
@@ -40,12 +37,11 @@
     <div class="flex gap-3">
         <button type="submit"
             class="bg-primary-600 border border-transparent cursor-pointer font-medium px-4 py-2 rounded-default text-sm text-white hover:bg-primary-700 transition-colors">
-            {% translate 'Upload & Preview' %}
+            Upload & Preview
         </button>
         <a href="../"
             class="bg-white border border-base-300 cursor-pointer font-medium px-4 py-2 rounded-default text-sm text-base-700 hover:bg-base-50 transition-colors dark:bg-base-900 dark:border-base-800 dark:text-base-300">
-            {% translate 'Batal' %}
+            Batal
         </a>
     </div>
 </form>
-{% endblock %}
