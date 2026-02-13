@@ -210,3 +210,18 @@ class TenantSubscription(models.Model):
         if self.expiry_date and self.expiry_date < date.today():
             return False
         return True
+
+class TenantGalleryImage(models.Model):
+    tenant = models.ForeignKey('tenants.Tenant', on_delete=models.CASCADE, related_name='gallery_images')
+    image = models.ImageField(upload_to='tenant_gallery/')
+    caption = models.CharField(max_length=200, blank=True, null=True)
+    order = models.PositiveIntegerField(default=1)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['order']
+        verbose_name = "Tenant Gallery Image"
+        verbose_name_plural = "Tenant Gallery Images"
+
+    def __str__(self):
+        return f"{self.tenant.name} - {self.order}"

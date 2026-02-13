@@ -56,3 +56,34 @@ class LandingService:
         except Exception as e:
             logger.error(f"Error generating SEO metadata for {tenant.name}: {e}")
             return None
+    @staticmethod
+    def suggest_gallery_images(tenant):
+        """
+        Suggest relevant stock images for the tenant gallery.
+        Uses Unsplash API if available, otherwise returns relevant placeholders.
+        """
+        from core.models import APISetting
+        api_key_obj = APISetting.global_objects.filter(key_name='UNSPLASH_ACCESS_KEY', is_active=True).first()
+        
+        query = f"pesantren {tenant.name} islamic school"
+        if not api_key_obj:
+            logger.warning(f"Unsplash API Key not found for {tenant.name}. Using default placeholders.")
+            # Fallback to high-quality education/islamic placeholders from Unsplash
+            return [
+                "https://images.unsplash.com/photo-1588072432836-e10032774350?auto=format&fit=crop&q=80&w=800", # Student
+                "https://images.unsplash.com/photo-1541339907198-e08756eaa58f?auto=format&fit=crop&q=80&w=800", # Campus
+                "https://images.unsplash.com/photo-1523050335392-9bef867a0013?auto=format&fit=crop&q=80&w=800", # Library
+            ]
+
+        import requests
+        try:
+            url = f"https://api.unsplash.com/search/photos?query={query}&per_page=3&orientation=landscape"
+            headers = {"Authorization": f"Client-ID {api_key_obj.value}"}
+            response = requests.get(url, headers=headers, timeout=10)
+            if response.status_code == 200:
+                data = response.json()
+                return [img['urls']['regular'] for img in data.get('results', [])]
+        except Exception as e:
+            logger.error(f"Error fetching images from Unsplash: {e}")
+        
+        return []
