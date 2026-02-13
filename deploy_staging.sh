@@ -13,5 +13,8 @@ echo "Updating dependencies..."
 echo "Running migrations..."
 .venv/bin/python manage.py migrate
 
+echo "Collecting static files..."
+.venv/bin/python manage.py collectstatic --noinput
+
 echo "Restarting Staging Server..."
 /home/triyono/start_staging.sh
