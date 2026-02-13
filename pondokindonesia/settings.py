@@ -40,6 +40,10 @@ ALLOWED_HOSTS = env.list('ALLOWED_HOSTS', default=[])
 # Application definition
 
 INSTALLED_APPS = [
+    'tenants',
+    'users',
+    'core',
+    'crm',
     'unfold',
     'unfold.contrib.filters',
     'unfold.contrib.forms',
@@ -52,10 +56,6 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'rest_framework',
-    'tenants',
-    'users',
-    'core',
-    'crm',
     'import_export',
 ]
 
