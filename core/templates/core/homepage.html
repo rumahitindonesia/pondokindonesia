@@ -222,8 +222,7 @@
 
                         <h3 style="font-size: 1.5rem; margin-bottom: 10px;">{{ plan.name }}</h3>
                         <p style="font-size: 2.5rem; font-weight: 800; margin-bottom: 5px;">{{ plan.price }}<span
-                                style="font-size: 1rem; font-weight: 400; color: #999;">{{ plan.period|default:""
-                                }}</span></p>
+                                style="font-size: 1rem; font-weight: 400; color: #999;">{{ plan.period|default:"" }}</span></p>
 
                         {% if plan.description %}
                         <p style="color: #666; font-size: 0.9rem; margin-bottom: 20px;">{{ plan.description }}</p>
