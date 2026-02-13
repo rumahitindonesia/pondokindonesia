@@ -375,7 +375,7 @@ from .models import PricingPlan, TenantSubscription
 
 @admin.register(PricingPlan)
 class PricingPlanAdmin(ModelAdmin):
-    list_display = ('name', 'price', 'max_santri', 'max_donatur', 'can_use_ai', 'is_active', 'order')
+    list_display = ('name', 'price', 'is_popular', 'max_santri', 'max_donatur', 'can_use_ai', 'is_active', 'order')
     list_editable = ('is_popular', 'is_active', 'order', 'can_use_ai')
     search_fields = ('name', 'description')
     fieldsets = (
