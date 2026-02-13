@@ -187,6 +187,13 @@ class LeadAdmin(BaseTenantAdmin, ModelAdmin):
 
     @admin.action(description='1. Analyze Selected Leads (AI Coach)')
     def analyze_leads(self, request, queryset):
+        from core.services.subscription import SubscriptionService
+        if queryset.exists():
+            tenant = queryset.first().tenant
+            if not SubscriptionService.check_feature_access(tenant, 'can_use_ai'):
+                self.message_user(request, "Fitur AI Analysis tidak tersedia di paket Anda. Silakan upgrade.", messages.ERROR)
+                return
+
         from core.services.ai_lead_assistant import AILeadAssistant
         count = 0
         for lead in queryset:
@@ -196,6 +203,13 @@ class LeadAdmin(BaseTenantAdmin, ModelAdmin):
 
     @admin.action(description='2. Draft Follow-up (AI Writer)')
     def draft_followup(self, request, queryset):
+        from core.services.subscription import SubscriptionService
+        if queryset.exists():
+            tenant = queryset.first().tenant
+            if not SubscriptionService.check_feature_access(tenant, 'can_use_ai'):
+                self.message_user(request, "Fitur AI Draft tidak tersedia di paket Anda. Silakan upgrade.", messages.ERROR)
+                return
+
         from core.services.ai_lead_assistant import AILeadAssistant
         from core.models import Lead
         import traceback
@@ -220,6 +234,13 @@ class LeadAdmin(BaseTenantAdmin, ModelAdmin):
 
     @admin.action(description='3. Send Last Draft (StarSender)')
     def send_draft(self, request, queryset):
+        from core.services.subscription import SubscriptionService
+        if queryset.exists():
+            tenant = queryset.first().tenant
+            if not SubscriptionService.check_feature_access(tenant, 'can_use_whatsapp'):
+                self.message_user(request, "Fitur WhatsApp tidak tersedia di paket Anda. Silakan upgrade.", messages.ERROR)
+                return
+
         from core.services.starsender import StarSenderService
         from core.models import Lead
         count = 0
@@ -350,10 +371,29 @@ class WhatsAppFormAdmin(BaseTenantAdmin, ModelAdmin):
         return "Global" if not obj.tenant else f"Tenant: {obj.tenant}"
     scope.short_description = 'Scope'
 
-from .models import PricingPlan
+from .models import PricingPlan, TenantSubscription
 
 @admin.register(PricingPlan)
 class PricingPlanAdmin(ModelAdmin):
-    list_display = ('name', 'price', 'period', 'is_popular', 'is_active', 'order')
-    list_editable = ('is_popular', 'is_active', 'order')
+    list_display = ('name', 'price', 'max_santri', 'max_donatur', 'can_use_ai', 'is_active', 'order')
+    list_editable = ('is_popular', 'is_active', 'order', 'can_use_ai')
     search_fields = ('name', 'description')
+    fieldsets = (
+        (None, {
+            'fields': ('name', 'price', 'period', 'description', 'features', 'cta_text', 'cta_url', 'is_popular', 'is_active', 'order')
+        }),
+        ('Technical Limits', {
+            'fields': ('max_santri', 'max_donatur', 'can_use_ai', 'can_use_ipaymu', 'can_use_whatsapp')
+        }),
+    )
+
+@admin.register(TenantSubscription)
+class TenantSubscriptionAdmin(ModelAdmin):
+    list_display = ('tenant', 'plan', 'expiry_date', 'is_active', 'is_valid_status')
+    list_filter = ('plan', 'is_active')
+    search_fields = ('tenant__name', 'tenant__subdomain')
+    
+    def is_valid_status(self, obj):
+        return obj.is_valid()
+    is_valid_status.boolean = True
+    is_valid_status.short_description = 'Valid & Active?'

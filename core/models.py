@@ -170,6 +170,13 @@ class PricingPlan(models.Model):
     is_active = models.BooleanField(default=True)
     order = models.PositiveIntegerField(default=0)
 
+    # Technical Limits
+    max_santri = models.PositiveIntegerField(default=100, help_text="Maksimal santri (0 = unlimited)")
+    max_donatur = models.PositiveIntegerField(default=100, help_text="Maksimal donatur (0 = unlimited)")
+    can_use_ai = models.BooleanField(default=False, help_text="Akses fitur AI Assistant")
+    can_use_ipaymu = models.BooleanField(default=False, help_text="Akses fitur Payment Gateway")
+    can_use_whatsapp = models.BooleanField(default=False, help_text="Akses fitur Integrasi WhatsApp")
+
     class Meta:
         ordering = ['order']
         verbose_name = "Pricing Plan"
@@ -180,3 +187,26 @@ class PricingPlan(models.Model):
 
     def get_features_list(self):
         return [f.strip() for f in self.features.split('\n') if f.strip()]
+
+class TenantSubscription(models.Model):
+    tenant = models.OneToOneField('tenants.Tenant', on_delete=models.CASCADE, related_name='subscription')
+    plan = models.ForeignKey(PricingPlan, on_delete=models.SET_NULL, null=True, blank=True)
+    
+    start_date = models.DateField(auto_now_add=True)
+    expiry_date = models.DateField(null=True, blank=True, help_text="Kosongkan jika aktif selamanya")
+    is_active = models.BooleanField(default=True)
+    
+    class Meta:
+        verbose_name = "Tenant Subscription"
+        verbose_name_plural = "Tenant Subscriptions"
+
+    def __str__(self):
+        return f"{self.tenant} - {self.plan.name if self.plan else 'No Plan'}"
+
+    def is_valid(self):
+        from datetime import date
+        if not self.is_active:
+            return False
+        if self.expiry_date and self.expiry_date < date.today():
+            return False
+        return True

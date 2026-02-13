@@ -5,6 +5,7 @@ from django.utils import timezone
 from django.contrib import messages
 from .models import Program, Santri, Donatur, Tagihan, TransaksiDonasi
 from core.services.ipaymu import IPaymuService
+from core.services.subscription import SubscriptionService
 from core.admin import BaseTenantAdmin
 from .resources import SantriResource, DonaturResource, ProgramResource, TagihanResource, TransaksiDonasiResource
 
@@ -56,6 +57,19 @@ class SantriAdmin(ImportExportMixin, BaseTenantAdmin, ModelAdmin):
         return "Global" if not obj.tenant else f"Tenant: {obj.tenant}"
     scope.short_description = 'Scope'
 
+    def save_model(self, request, obj, form, change):
+        if not change: # Adding new Santri
+            tenant = getattr(request, 'tenant', None)
+            if not tenant and not request.user.is_superuser:
+                tenant = getattr(request.user, 'tenant', None)
+            
+            if SubscriptionService.check_quota_reached(tenant, Santri):
+                from django.core.exceptions import ValidationError
+                limit = tenant.subscription.plan.max_santri if hasattr(tenant, 'subscription') and tenant.subscription.plan else 0
+                raise ValidationError(f"Batas kuota Santri untuk paket Anda telah tercapai ({limit} santri). Silakan upgrade paket.")
+        
+        super().save_model(request, obj, form, change)
+
 @admin.register(Donatur)
 class DonaturAdmin(ImportExportMixin, BaseTenantAdmin, ModelAdmin):
     resource_classes = [DonaturResource]
@@ -78,6 +92,15 @@ class DonaturAdmin(ImportExportMixin, BaseTenantAdmin, ModelAdmin):
 
     @admin.action(description='Send Solicitation (AI Generator)')
     def send_solicitation_whatsapp(self, request, queryset):
+        if queryset.exists():
+            tenant = queryset.first().tenant
+            if not SubscriptionService.check_feature_access(tenant, 'can_use_ai'):
+                self.message_user(request, "Fitur AI tidak tersedia di paket Anda.", messages.ERROR)
+                return
+            if not SubscriptionService.check_feature_access(tenant, 'can_use_whatsapp'):
+                self.message_user(request, "Fitur WhatsApp tidak tersedia di paket Anda.", messages.ERROR)
+                return
+
         from core.services.ai_crm_assistant import AICRMAssistant
         count = 0
         for donatur in queryset:
@@ -99,6 +122,19 @@ class DonaturAdmin(ImportExportMixin, BaseTenantAdmin, ModelAdmin):
     def scope(self, obj):
         return "Global" if not obj.tenant else f"Tenant: {obj.tenant}"
     scope.short_description = 'Scope'
+
+    def save_model(self, request, obj, form, change):
+        if not change: # Adding new Donatur
+            tenant = getattr(request, 'tenant', None)
+            if not tenant and not request.user.is_superuser:
+                tenant = getattr(request.user, 'tenant', None)
+                
+            if SubscriptionService.check_quota_reached(tenant, Donatur):
+                from django.core.exceptions import ValidationError
+                limit = tenant.subscription.plan.max_donatur if hasattr(tenant, 'subscription') and tenant.subscription.plan else 0
+                raise ValidationError(f"Batas kuota Donatur untuk paket Anda telah tercapai ({limit} donatur). Silakan upgrade paket.")
+        
+        super().save_model(request, obj, form, change)
 
 @admin.register(Tagihan)
 class TagihanAdmin(ImportExportMixin, BaseTenantAdmin, ModelAdmin):
@@ -123,6 +159,15 @@ class TagihanAdmin(ImportExportMixin, BaseTenantAdmin, ModelAdmin):
 
     @admin.action(description='Send Invoice via WhatsApp (AI)')
     def send_invoice_whatsapp(self, request, queryset):
+        if queryset.exists():
+            tenant = queryset.first().tenant
+            if not SubscriptionService.check_feature_access(tenant, 'can_use_ai'):
+                # Handle gracefully or fallback to standard message
+                pass
+            if not SubscriptionService.check_feature_access(tenant, 'can_use_whatsapp'):
+                self.message_user(request, "Fitur WhatsApp tidak tersedia di paket Anda.", messages.ERROR)
+                return
+
         from core.services.ai_crm_assistant import AICRMAssistant
         count = 0
         for invoice in queryset:
@@ -144,6 +189,13 @@ class TagihanAdmin(ImportExportMixin, BaseTenantAdmin, ModelAdmin):
     
     @admin.action(description="Buat Link Pembayaran iPaymu")
     def generate_ipaymu_link(self, request, queryset):
+        # Check permission for first item (assume same for all in queryset tenant-wise)
+        if queryset.exists():
+            tenant = queryset.first().tenant
+            if not SubscriptionService.check_feature_access(tenant, 'can_use_ipaymu'):
+                self.message_user(request, "Fitur iPaymu tidak tersedia di paket Anda. Silakan upgrade.", messages.ERROR)
+                return
+
         for obj in queryset:
             if obj.status == Tagihan.Status.LUNAS:
                 self.message_user(request, f"Tagihan untuk {obj.santri.nama_lengkap} sudah lunas, tidak perlu link pembayaran.", messages.WARNING)
