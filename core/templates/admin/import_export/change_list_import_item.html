@@ -1,0 +1,7 @@
+{% load admin_urls i18n %}
+
+{% if has_import_permission %}
+<a href="{% url opts|admin_urlname:'import' %}" class="btn btn-neutral btn-sm ml-2">
+    {% trans "Import" %}
+</a>
+{% endif %}

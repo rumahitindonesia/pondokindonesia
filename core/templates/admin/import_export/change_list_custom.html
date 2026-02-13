@@ -1,0 +1,29 @@
+{% extends "admin/change_list.html" %}
+{% load i18n admin_urls %}
+
+{% block object-tools-items %}
+{# Explicitly only include the Add button to avoid duplicates from super #}
+{% include "unfold/helpers/add_link.html" %}
+{% endblock %}
+
+{% block filters %}
+<div class="flex items-center gap-2 lg:mr-4">
+    {% if has_import_permission %}
+    <a href="{% url opts|admin_urlname:'import' %}"
+        class="bg-white border-base-200 hover:text-primary-600 dark:bg-base-900 dark:border-base-700 dark:hover:text-primary-500 border cursor-pointer flex font-medium gap-2 group items-center px-3 py-2 rounded-default shadow-xs text-sm">
+        <span class="material-symbols-outlined md-18">upload</span>
+        <span>{% trans "Import" %}</span>
+    </a>
+    {% endif %}
+
+    {% if has_export_permission %}
+    <a href="{% url opts|admin_urlname:'export' %}{{ cl.get_query_string }}"
+        class="bg-white border-base-200 hover:text-primary-600 dark:bg-base-900 dark:border-base-700 dark:hover:text-primary-500 border cursor-pointer flex font-medium gap-2 group items-center px-3 py-2 rounded-default shadow-xs text-sm">
+        <span class="material-symbols-outlined md-18">download</span>
+        <span>{% trans "Export" %}</span>
+    </a>
+    {% endif %}
+</div>
+
+{{ block.super }}
+{% endblock %}

@@ -1,6 +1,6 @@
 from django.contrib import admin
 from unfold.admin import ModelAdmin
-from import_export.admin import ImportExportModelAdmin
+from import_export.admin import ImportExportMixin
 from .models import Program, Santri, Donatur, Tagihan, TransaksiDonasi
 from core.admin import BaseTenantAdmin
 from .resources import SantriResource, DonaturResource, ProgramResource, TagihanResource, TransaksiDonasiResource
@@ -8,7 +8,12 @@ from .resources import SantriResource, DonaturResource, ProgramResource, Tagihan
 from core.services.starsender import StarSenderService
 
 @admin.register(Program)
-class ProgramAdmin(BaseTenantAdmin, ImportExportModelAdmin, ModelAdmin):
+class ProgramAdmin(ImportExportMixin, BaseTenantAdmin, ModelAdmin):
+    resource_classes = [ProgramResource]
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.change_list_template = "admin/import_export/change_list_custom.html"
     resource_classes = [ProgramResource]
     list_display = ('nama_program', 'jenis', 'nominal_standar', 'scope', 'is_active')
     list_filter = ('jenis', 'is_active', 'tenant')
@@ -17,6 +22,7 @@ class ProgramAdmin(BaseTenantAdmin, ImportExportModelAdmin, ModelAdmin):
     def get_import_resource_kwargs(self, request, *args, **kwargs):
         kwargs = super().get_import_resource_kwargs(request, *args, **kwargs)
         kwargs['request'] = request
+        kwargs.pop('form', None)
         return kwargs
     
     def scope(self, obj):
@@ -24,7 +30,12 @@ class ProgramAdmin(BaseTenantAdmin, ImportExportModelAdmin, ModelAdmin):
     scope.short_description = 'Scope'
 
 @admin.register(Santri)
-class SantriAdmin(BaseTenantAdmin, ImportExportModelAdmin, ModelAdmin):
+class SantriAdmin(ImportExportMixin, BaseTenantAdmin, ModelAdmin):
+    resource_classes = [SantriResource]
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.change_list_template = "admin/import_export/change_list_custom.html"
     resource_classes = [SantriResource]
     list_display = ('nis', 'nama_lengkap', 'status', 'nama_wali', 'scope')
     list_filter = ('status', 'tenant')
@@ -33,6 +44,7 @@ class SantriAdmin(BaseTenantAdmin, ImportExportModelAdmin, ModelAdmin):
     def get_import_resource_kwargs(self, request, *args, **kwargs):
         kwargs = super().get_import_resource_kwargs(request, *args, **kwargs)
         kwargs['request'] = request
+        kwargs.pop('form', None)
         return kwargs
 
     def scope(self, obj):
@@ -40,7 +52,12 @@ class SantriAdmin(BaseTenantAdmin, ImportExportModelAdmin, ModelAdmin):
     scope.short_description = 'Scope'
 
 @admin.register(Donatur)
-class DonaturAdmin(BaseTenantAdmin, ImportExportModelAdmin, ModelAdmin):
+class DonaturAdmin(ImportExportMixin, BaseTenantAdmin, ModelAdmin):
+    resource_classes = [DonaturResource]
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.change_list_template = "admin/import_export/change_list_custom.html"
     resource_classes = [DonaturResource]
     list_display = ('nama_donatur', 'kategori', 'no_hp', 'scope', 'tgl_bergabung')
     list_filter = ('kategori', 'tenant')
@@ -50,6 +67,7 @@ class DonaturAdmin(BaseTenantAdmin, ImportExportModelAdmin, ModelAdmin):
     def get_import_resource_kwargs(self, request, *args, **kwargs):
         kwargs = super().get_import_resource_kwargs(request, *args, **kwargs)
         kwargs['request'] = request
+        kwargs.pop('form', None)
         return kwargs
 
     @admin.action(description='Send Solicitation (AI Generator)')
@@ -77,7 +95,12 @@ class DonaturAdmin(BaseTenantAdmin, ImportExportModelAdmin, ModelAdmin):
     scope.short_description = 'Scope'
 
 @admin.register(Tagihan)
-class TagihanAdmin(BaseTenantAdmin, ImportExportModelAdmin, ModelAdmin):
+class TagihanAdmin(ImportExportMixin, BaseTenantAdmin, ModelAdmin):
+    resource_classes = [TagihanResource]
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.change_list_template = "admin/import_export/change_list_custom.html"
     resource_classes = [TagihanResource]
     list_display = ('program', 'santri', 'nominal', 'bulan', 'status', 'tgl_buat')
     list_filter = ('program', 'status', 'tenant')
@@ -87,6 +110,7 @@ class TagihanAdmin(BaseTenantAdmin, ImportExportModelAdmin, ModelAdmin):
     def get_import_resource_kwargs(self, request, *args, **kwargs):
         kwargs = super().get_import_resource_kwargs(request, *args, **kwargs)
         kwargs['request'] = request
+        kwargs.pop('form', None)
         return kwargs
 
     @admin.action(description='Send Invoice via WhatsApp (AI)')
@@ -114,7 +138,12 @@ class TagihanAdmin(BaseTenantAdmin, ImportExportModelAdmin, ModelAdmin):
         return super().get_queryset(request).select_related('santri', 'program')
 
 @admin.register(TransaksiDonasi)
-class TransaksiDonasiAdmin(BaseTenantAdmin, ImportExportModelAdmin, ModelAdmin):
+class TransaksiDonasiAdmin(ImportExportMixin, BaseTenantAdmin, ModelAdmin):
+    resource_classes = [TransaksiDonasiResource]
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.change_list_template = "admin/import_export/change_list_custom.html"
     resource_classes = [TransaksiDonasiResource]
     list_display = ('program', 'donatur', 'nominal', 'tgl_donasi')
     list_filter = ('program', 'tenant')
@@ -124,6 +153,7 @@ class TransaksiDonasiAdmin(BaseTenantAdmin, ImportExportModelAdmin, ModelAdmin):
     def get_import_resource_kwargs(self, request, *args, **kwargs):
         kwargs = super().get_import_resource_kwargs(request, *args, **kwargs)
         kwargs['request'] = request
+        kwargs.pop('form', None)
         return kwargs
 
     @admin.action(description='Send Receipt (Bukti Terima) via WhatsApp')
