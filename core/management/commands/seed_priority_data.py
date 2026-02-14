@@ -20,9 +20,15 @@ class Command(BaseCommand):
         # 2. Seed Programs
         spp_program, _ = Program.objects.get_or_create(
             tenant=tenant,
-            nama_program='SPP Bulanan',
+            nama_program='SPP Reguler',
             jenis='TAGIHAN',
             defaults={'nominal_standar': 250000}
+        )
+        tahfidz_program, _ = Program.objects.get_or_create(
+            tenant=tenant,
+            nama_program='SPP Tahfidz',
+            jenis='TAGIHAN',
+            defaults={'nominal_standar': 500000}
         )
         donasi_program, _ = Program.objects.get_or_create(
             tenant=tenant,
@@ -60,7 +66,7 @@ class Command(BaseCommand):
             ('Usamah bin Zaid', '2024003')
         ]
         
-        for name, nis in santri_list:
+        for i, (name, nis) in enumerate(santri_list):
             santri, _ = Santri.objects.get_or_create(
                 tenant=tenant,
                 nis=nis,
@@ -71,14 +77,15 @@ class Command(BaseCommand):
                     'status': 'AKTIF'
                 }
             )
-            # Create Unpaid Tagihan
+            # Create Unpaid Tagihan with different programs
+            prog = spp_program if i % 2 == 0 else tahfidz_program
             Tagihan.objects.get_or_create(
                 tenant=tenant,
                 santri=santri,
-                program=spp_program,
+                program=prog,
                 bulan='Februari 2024',
                 defaults={
-                    'nominal': 250000,
+                    'nominal': prog.nominal_standar,
                     'status': 'BELUM',
                     'tgl_buat': timezone.now() - timedelta(days=random.randint(5, 20))
                 }
