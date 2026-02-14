@@ -25,6 +25,6 @@ class PengurusAdmin(BaseTenantAdmin, ModelAdmin):
             'fields': ('telepon', 'alamat')
         }),
         ('Sistem & Akses', {
-            'fields': ('user', 'is_active', 'tenant')
+            'fields': ('user', 'is_active')
         }),
     )
