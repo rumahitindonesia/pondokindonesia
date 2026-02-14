@@ -75,12 +75,13 @@ class UserAdmin(BaseTenantAdmin, BaseUserAdmin, ModelAdmin):
         if not obj:
             fieldsets = list(self.add_fieldsets)
             if not request.user.is_superuser:
-                # Filter out 'tenant' from any fieldset
+                # Filter out dangerous fields from any fieldset
                 new_fieldsets = []
                 for name, opts in fieldsets:
                     fields = list(opts.get('fields', []))
-                    if 'tenant' in fields:
-                        fields.remove('tenant')
+                    for dangerous_field in ['tenant', 'is_superuser', 'is_staff']:
+                        if dangerous_field in fields:
+                            fields.remove(dangerous_field)
                     new_opts = opts.copy()
                     new_opts['fields'] = tuple(fields)
                     new_fieldsets.append((name, new_opts))
@@ -90,12 +91,13 @@ class UserAdmin(BaseTenantAdmin, BaseUserAdmin, ModelAdmin):
         # Handle Change View (obj exists)
         fieldsets = list(super().get_fieldsets(request, obj))
         if not request.user.is_superuser:
-            # Filter out 'tenant'
+            # Filter out dangerous fields
             new_fieldsets = []
             for name, opts in fieldsets:
                 fields = list(opts.get('fields', []))
-                if 'tenant' in fields:
-                    fields.remove('tenant')
+                for dangerous_field in ['tenant', 'is_superuser', 'is_staff']:
+                    if dangerous_field in fields:
+                        fields.remove(dangerous_field)
                 new_opts = opts.copy()
                 new_opts['fields'] = tuple(fields)
                 new_fieldsets.append((name, new_opts))
@@ -105,8 +107,20 @@ class UserAdmin(BaseTenantAdmin, BaseUserAdmin, ModelAdmin):
     def get_form(self, request, obj=None, **kwargs):
         return super().get_form(request, obj, **kwargs)
 
-    def add_view(self, request, form_url='', extra_context=None):
-        return super().add_view(request, form_url, extra_context)
+    def save_model(self, request, obj, form, change):
+        # Security: Force is_superuser and is_staff to False for non-superusers 
+        # to prevent manual POST manipulation.
+        if not request.user.is_superuser:
+            obj.is_superuser = False
+            # We keep is_staff=True if it was already True (admins need it), 
+            # but we prevent Tenant Admins from elevating a normal user to staff 
+            # OR demoting themselves if they aren't supposed to.
+            # Actually, most users managed by Tenant Admin SHOULD be is_staff=True 
+            # to access the dashboard. Let's force is_staff=True for simplicity 
+            # as these are all 'Admin' type roles in this SaaS.
+            obj.is_staff = True 
+        
+        super().save_model(request, obj, form, change)
 
     
     def send_whatsapp_action(self, request, queryset):
