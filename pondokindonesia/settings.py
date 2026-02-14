@@ -95,6 +95,7 @@ UNFOLD = {
             },
             {
                 "title": "Manajemen Pengelola",
+                "permission": "core.permissions.is_superuser",
                 "collapsible": True,
                 "items": [
                     {
@@ -121,6 +122,7 @@ UNFOLD = {
             },
             {
                 "title": "CRM & Database",
+                "permission": "core.permissions.is_cs_or_admin",
                 "collapsible": True,
                 "items": [
                     {
@@ -147,6 +149,7 @@ UNFOLD = {
             },
             {
                 "title": "Keuangan & Donasi",
+                "permission": "core.permissions.is_admin_psb",
                 "collapsible": True,
                 "items": [
                     {
@@ -169,26 +172,31 @@ UNFOLD = {
                         "title": "AI Knowledge Base",
                         "icon": "psychology",
                         "link": "/admin/core/aiknowledgebase/",
+                        "permission": "core.permissions.is_admin_psb",
                     },
                     {
                         "title": "Log Pesan WA",
                         "icon": "chat",
                         "link": "/admin/core/whatsappmessage/",
+                        "permission": "core.permissions.is_superuser",
                     },
                     {
                         "title": "Auto Reply",
                         "icon": "reply",
                         "link": "/admin/core/whatsappautoreply/",
+                        "permission": "core.permissions.is_superuser",
                     },
                     {
                         "title": "Formulir WA",
                         "icon": "description",
                         "link": "/admin/core/whatsappform/",
+                        "permission": "core.permissions.is_superuser",
                     },
                 ],
             },
             {
                 "title": "Pengaturan Sistem",
+                "permission": "core.permissions.is_superuser",
                 "collapsible": True,
                 "items": [
                     {
