@@ -56,7 +56,7 @@ class LeadWorkflowService:
         # Parse data from lead.data
         name = lead.name or "Noname"
         kota = lead.data.get('kota', '-')
-        sekolah = lead.data.get('asalsekolah', '-')
+        sekolah = lead.data.get('sekolah', lead.data.get('asalsekolah', '-'))
         phone = lead.phone_number
         
         body = f"{name}#{kota}#{sekolah}#{phone}"
@@ -78,7 +78,7 @@ class LeadWorkflowService:
             data = {
                 'nama': parts[0],
                 'kota': parts[1],
-                'asalsekolah': parts[2]
+                'sekolah': parts[2]
             }
             lead.name = parts[0]
             lead.data.update(data)
