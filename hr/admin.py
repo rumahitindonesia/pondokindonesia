@@ -66,22 +66,27 @@ class AbsensiAdmin(BaseTenantAdmin, ModelAdmin):
         })
 
     def add_view(self, request, form_url='', extra_context=None):
-        # Cek apakah user ini Pengurus dan sudah absen hari ini
+        from django.http import HttpResponse
+        import traceback
         try:
-            if hasattr(request.user, 'pengurus_profile'):
-                pengurus = request.user.pengurus_profile
-                today = timezone.localdate()
-                existing = Absensi.objects.filter(pengurus=pengurus, tanggal=today).first()
-                if existing:
-                    # Redirect ke Change View (Mode Pulang)
-                    url = reverse('admin:hr_absensi_change', args=[existing.pk])
-                    return redirect(url)
-        except Exception:
-            pass # User might not have a Pengurus profile
+            # Cek apakah user ini Pengurus dan sudah absen hari ini
+            try:
+                if hasattr(request.user, 'pengurus_profile'):
+                    pengurus = request.user.pengurus_profile
+                    today = timezone.localdate()
+                    existing = Absensi.objects.filter(pengurus=pengurus, tanggal=today).first()
+                    if existing:
+                        # Redirect ke Change View (Mode Pulang)
+                        url = reverse('admin:hr_absensi_change', args=[existing.pk])
+                        return redirect(url)
+            except Exception:
+                pass # User might not have a Pengurus profile
 
-        extra_context = extra_context or {}
-        extra_context['office_json'] = self.get_office_context(request)
-        return super().add_view(request, form_url, extra_context=extra_context)
+            extra_context = extra_context or {}
+            extra_context['office_json'] = self.get_office_context(request)
+            return super().add_view(request, form_url, extra_context=extra_context)
+        except Exception as e:
+            return HttpResponse(f"CRASH REPORT:\n{e}\n\n{traceback.format_exc()}", status=500, content_type="text/plain")
 
     # def change_view(self, request, object_id, form_url='', extra_context=None):
     #     extra_context = extra_context or {}
