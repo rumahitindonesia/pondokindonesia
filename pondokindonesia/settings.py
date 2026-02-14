@@ -44,6 +44,7 @@ INSTALLED_APPS = [
     'users',
     'core',
     'crm',
+    'hr',
     'unfold',
     'unfold.contrib.filters',
     'unfold.contrib.forms',
@@ -216,6 +217,24 @@ UNFOLD = {
                         "icon": "settings",
                         "link": "/admin/core/apisetting/",
                         "permission": "core.permissions.can_view_apisetting",
+                    },
+                ],
+            },
+            {
+                "title": "Manajemen SDM",
+                "collapsible": True,
+                "items": [
+                    {
+                        "title": "Daftar Pengurus",
+                        "icon": "badge",
+                        "link": "/admin/hr/pengurus/",
+                        "permission": "core.permissions.can_view_pengurus",
+                    },
+                    {
+                        "title": "Daftar Jabatan",
+                        "icon": "account_tree",
+                        "link": "/admin/hr/jabatan/",
+                        "permission": "core.permissions.can_view_jabatan",
                     },
                 ],
             },

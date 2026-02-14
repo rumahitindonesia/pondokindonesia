@@ -34,3 +34,9 @@ def can_view_apisetting(request):
 
 def can_view_role(request):
     return request.user.is_active and (request.user.is_superuser or request.user.has_perm('users.view_role'))
+
+def can_view_pengurus(request):
+    return request.user.is_active and (request.user.is_superuser or request.user.has_perm('hr.view_pengurus'))
+
+def can_view_jabatan(request):
+    return request.user.is_active and (request.user.is_superuser or request.user.has_perm('hr.view_jabatan'))
