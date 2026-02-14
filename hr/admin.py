@@ -1,7 +1,35 @@
 from django.contrib import admin
 from unfold.admin import ModelAdmin
 from core.admin import BaseTenantAdmin
-from .models import Jabatan, Pengurus, Tugas
+from .models import Jabatan, Pengurus, Tugas, LokasiKantor, Absensi
+
+@admin.register(LokasiKantor)
+class LokasiKantorAdmin(BaseTenantAdmin, ModelAdmin):
+    list_display = ['nama', 'radius_meter', 'latitude', 'longitude', 'tenant']
+    search_fields = ['nama']
+    list_filter = ['tenant']
+
+@admin.register(Absensi)
+class AbsensiAdmin(BaseTenantAdmin, ModelAdmin):
+    list_display = ['pengurus', 'tanggal', 'waktu_masuk', 'waktu_keluar', 'status', 'tenant']
+    list_filter = ['status', 'tanggal', 'tenant', 'pengurus__jabatan']
+    search_fields = ['pengurus__nama']
+    autocomplete_fields = ['pengurus']
+    date_hierarchy = 'tanggal'
+    readonly_fields = ['waktu_masuk', 'foto_masuk', 'lokasi_masuk', 'waktu_keluar', 'foto_keluar', 'lokasi_keluar']
+
+    fieldsets = (
+        (None, {
+            'fields': ('pengurus', 'tanggal', 'status', 'catatan')
+        }),
+        ('Absen Masuk', {
+            'fields': ('waktu_masuk', 'foto_masuk', 'lokasi_masuk')
+        }),
+        ('Absen Pulang', {
+            'fields': ('waktu_keluar', 'foto_keluar', 'lokasi_keluar')
+        }),
+    )
+
 
 @admin.register(Jabatan)
 class JabatanAdmin(BaseTenantAdmin, ModelAdmin):

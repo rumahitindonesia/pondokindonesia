@@ -158,3 +158,59 @@ class Tugas(TenantAwareModel):
 
     def __str__(self):
         return f"{self.judul} ({self.get_status_display()})"
+
+class LokasiKantor(TenantAwareModel):
+    nama = models.CharField(_("Nama Kantor"), max_length=100)
+    latitude = models.DecimalField(_("Latitude"), max_digits=9, decimal_places=6)
+    longitude = models.DecimalField(_("Longitude"), max_digits=9, decimal_places=6)
+    radius_meter = models.IntegerField(_("Radius Toleransi (Meter)"), default=50, help_text=_("Jarak maksimal karyawan bisa absen dari titik kantor."))
+
+    class Meta:
+        verbose_name = _("Lokasi Kantor Absensi")
+        verbose_name_plural = _("Lokasi Kantor")
+
+    def __str__(self):
+        return f"{self.nama} (Radius {self.radius_meter}m)"
+
+class Absensi(TenantAwareModel):
+    class Status(models.TextChoices):
+        HADIR = 'HADIR', _('Hadir')
+        TERLAMBAT = 'TERLAMBAT', _('Terlambat')
+        IZIN = 'IZIN', _('Izin')
+        SAKIT = 'SAKIT', _('Sakit')
+        ALPA = 'ALPA', _('Tanpa Keterangan')
+
+    pengurus = models.ForeignKey(
+        'hr.Pengurus', 
+        on_delete=models.CASCADE, 
+        related_name='riwayat_absensi',
+        verbose_name=_("Pengurus")
+    )
+    tanggal = models.DateField(_("Tanggal"), auto_now_add=True)
+    
+    # Masuk
+    waktu_masuk = models.DateTimeField(_("Waktu Masuk"), null=True, blank=True)
+    foto_masuk = models.ImageField(_("Foto Masuk"), upload_to='absensi_masuk/', null=True, blank=True)
+    lokasi_masuk = models.CharField(_("Koordinat Masuk"), max_length=100, null=True, blank=True)
+    
+    # Pulang
+    waktu_keluar = models.DateTimeField(_("Waktu Pulang"), null=True, blank=True)
+    foto_keluar = models.ImageField(_("Foto Pulang"), upload_to='absensi_keluar/', null=True, blank=True)
+    lokasi_keluar = models.CharField(_("Koordinat Pulang"), max_length=100, null=True, blank=True)
+    
+    status = models.CharField(
+        max_length=20, 
+        choices=Status.choices, 
+        default=Status.HADIR,
+        verbose_name=_("Status Kehadiran")
+    )
+    catatan = models.TextField(_("Catatan / Keterangan"), blank=True)
+
+    class Meta:
+        verbose_name = _("Absensi Harian")
+        verbose_name_plural = _("Data Absensi")
+        ordering = ['-tanggal', '-waktu_masuk']
+        unique_together = ['tenant', 'pengurus', 'tanggal']
+
+    def __str__(self):
+        return f"{self.pengurus.nama} - {self.tanggal}"
