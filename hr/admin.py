@@ -47,7 +47,9 @@ class AbsensiAdmin(BaseTenantAdmin, ModelAdmin):
     autocomplete_fields = ['pengurus']
     date_hierarchy = 'tanggal'
     readonly_fields = ['tanggal', 'waktu_masuk', 'foto_masuk', 'lokasi_masuk', 'waktu_keluar', 'foto_keluar', 'lokasi_keluar']
-    # change_form_template = 'admin/hr/absensi/change_form.html'
+    date_hierarchy = 'tanggal'
+    readonly_fields = ['tanggal', 'waktu_masuk', 'foto_masuk', 'lokasi_masuk', 'waktu_keluar', 'foto_keluar', 'lokasi_keluar']
+    change_form_template = 'admin/hr/absensi/change_form.html'
 
     fieldsets = (
         (None, {
@@ -102,13 +104,26 @@ class AbsensiAdmin(BaseTenantAdmin, ModelAdmin):
         except Exception:
             pass # User might not have a Pengurus profile
 
+        from django.conf import settings
         extra_context = extra_context or {}
         extra_context['office_json'] = self.get_office_context(request)
+        extra_context['attendance_mode'] = 'MASUK'
+        extra_context['google_maps_api_key'] = getattr(settings, 'GOOGLE_MAPS_API_KEY', '')
         return super().add_view(request, form_url, extra_context=extra_context)
 
     def change_view(self, request, object_id, form_url='', extra_context=None):
+        from django.conf import settings
         extra_context = extra_context or {}
         extra_context['office_json'] = self.get_office_context(request)
+        
+        # Determine Mode: If waktu_keluar is empty, it's PULANG mode. If full, it's just viewing.
+        obj = self.get_object(request, object_id)
+        if obj and not obj.waktu_keluar:
+            extra_context['attendance_mode'] = 'PULANG'
+        else:
+            extra_context['attendance_mode'] = 'VIEW'
+            
+        extra_context['google_maps_api_key'] = getattr(settings, 'GOOGLE_MAPS_API_KEY', '')
         return super().change_view(request, object_id, form_url, extra_context=extra_context)
 
     def save_model(self, request, obj, form, change):

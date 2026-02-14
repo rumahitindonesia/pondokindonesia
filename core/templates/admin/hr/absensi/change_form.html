@@ -1,0 +1,315 @@
+{% extends "admin/change_form.html" %}
+{% load static %}
+
+{% block extrahead %}
+{{ block.super }}
+<script src="https://cdn.tailwindcss.com"></script>
+<style>
+    #map-container {
+        height: 300px;
+        width: 100%;
+        border-radius: 12px;
+        margin-top: 10px;
+    }
+
+    #video-preview {
+        width: 100%;
+        max-width: 400px;
+        border-radius: 12px;
+        transform: scaleX(-1);
+        /* Mirror effect */
+    }
+
+    #captured-image {
+        width: 100%;
+        max-width: 400px;
+        border-radius: 12px;
+        display: none;
+    }
+
+    .attendance-card {
+        background: white;
+        padding: 20px;
+        border-radius: 16px;
+        box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+        margin-bottom: 2rem;
+    }
+
+    .status-badge {
+        display: inline-block;
+        padding: 6px 16px;
+        border-radius: 9999px;
+        font-weight: 700;
+        font-size: 0.875rem;
+        text-transform: uppercase;
+    }
+
+    .status-masuk {
+        background-color: #dcfce7;
+        color: #166534;
+    }
+
+    .status-pulang {
+        background-color: #ffedd5;
+        color: #9a3412;
+    }
+
+    /* Hide standard submitting row to replace with custom action */
+    .submit-row {
+        display: none;
+    }
+</style>
+{% endblock %}
+
+{% block after_field_sets %}
+<div class="attendance-card">
+    <div class="text-center mb-6">
+        <h2 class="text-2xl font-bold text-gray-800">Presensi Harian</h2>
+        <div class="mt-2">
+            {% if attendance_mode == 'MASUK' %}
+            <span class="status-badge status-masuk px-4 py-2 text-lg">🟢 Absen Masuk</span>
+            {% else %}
+            <span class="status-badge status-pulang px-4 py-2 text-lg">🟠 Absen Pulang</span>
+            {% endif %}
+        </div>
+        <p class="text-gray-500 mt-2" id="office-name">Memuat Lokasi Kantor...</p>
+    </div>
+
+    <!-- Hidden Fields -->
+    <input type="hidden" name="foto_base64" id="id_foto_base64">
+    <input type="hidden" name="detected_lat" id="id_detected_lat">
+    <input type="hidden" name="detected_lon" id="id_detected_lon">
+
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+        <!-- Camera Section -->
+        <div class="flex flex-col items-center">
+            <h3 class="font-semibold text-gray-700 mb-3">1. Ambil Selfie</h3>
+            <div class="relative bg-gray-100 rounded-xl overflow-hidden shadow-inner border border-gray-200"
+                style="min-height: 300px; min-width: 300px; display: flex; align-items: center; justify-content: center;">
+                <video id="video-preview" autoplay playsinline></video>
+                <img id="captured-image" alt="Captured Selfie">
+                <div id="camera-loading"
+                    class="absolute inset-0 flex items-center justify-content-center bg-gray-100 z-10">
+                    <span class="text-gray-400">Memuat Kamera...</span>
+                </div>
+            </div>
+            <div class="mt-4 flex gap-2">
+                <button type="button" id="btn-capture"
+                    class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-6 rounded-lg shadow transition-colors">
+                    📸 Ambil Foto
+                </button>
+                <button type="button" id="btn-retake"
+                    class="hidden bg-gray-500 hover:bg-gray-600 text-white font-bold py-2 px-6 rounded-lg shadow transition-colors">
+                    Ulangi
+                </button>
+            </div>
+        </div>
+
+        <!-- Map Section -->
+        <div class="flex flex-col">
+            <h3 class="font-semibold text-gray-700 mb-3">2. Lokasi Saya</h3>
+            <div id="map-container" class="shadow-inner border border-gray-200"></div>
+            <div class="mt-3 text-sm" id="location-status">
+                <p class="text-gray-500">Mencari lokasi GPS...</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Action Button -->
+    <div class="mt-8 pt-6 border-t border-gray-100 flex justify-center">
+        <button type="submit" name="_save" id="btn-submit-attendance" disabled
+            class="bg-gray-400 text-white font-bold py-3 px-8 rounded-xl shadow-lg text-lg transition-all transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed">
+            {% if attendance_mode == 'MASUK' %}
+            ✅ Konfirmasi Masuk
+            {% else %}
+            👋 Konfirmasi Pulang
+            {% endif %}
+        </button>
+    </div>
+</div>
+
+<script>
+    let map, userMarker, officeCircle;
+    let userLat, userLng;
+    let isLocationValid = false;
+    let isPhotoTaken = false;
+
+    // Parse Office Data passed from View
+    const officeData = {{ office_json| safe |default: "{}" }};
+    const officeLat = parseFloat(officeData.latitude || -6.175392);
+    const officeLng = parseFloat(officeData.longitude || 106.827153);
+    const officeRadius = parseInt(officeData.radius_meter || 100);
+    const officeName = officeData.nama || 'Kantor Pusat';
+
+    document.getElementById('office-name').innerText = `📍 ${officeName} (Radius: ${officeRadius}m)`;
+
+    function initMap() {
+        const officePos = { lat: officeLat, lng: officeLng };
+
+        map = new google.maps.Map(document.getElementById("map-container"), {
+            zoom: 16,
+            center: officePos,
+            mapTypeId: "roadmap",
+            disableDefaultUI: true,
+        });
+
+        // Draw Office Circle (Green)
+        officeCircle = new google.maps.Circle({
+            strokeColor: "#10b981",
+            strokeOpacity: 0.8,
+            strokeWeight: 2,
+            fillColor: "#10b981",
+            fillOpacity: 0.15,
+            map: map,
+            center: officePos,
+            radius: officeRadius,
+        });
+
+        // Add Office Marker
+        new google.maps.Marker({
+            position: officePos,
+            map: map,
+            title: officeName,
+            icon: 'http://maps.google.com/mapfiles/ms/icons/green-dot.png'
+        });
+
+        startGeolocation();
+    }
+
+    function startGeolocation() {
+        if (navigator.geolocation) {
+            navigator.geolocation.watchPosition(
+                (position) => {
+                    userLat = position.coords.latitude;
+                    userLng = position.coords.longitude;
+
+                    document.getElementById('id_detected_lat').value = userLat;
+                    document.getElementById('id_detected_lon').value = userLng;
+
+                    const userPos = { lat: userLat, lng: userLng };
+
+                    if (!userMarker) {
+                        userMarker = new google.maps.Marker({
+                            position: userPos,
+                            map: map,
+                            title: "Lokasi Anda",
+                            animation: google.maps.Animation.DROP
+                        });
+                        map.panTo(userPos);
+                    } else {
+                        userMarker.setPosition(userPos);
+                    }
+
+                    validateDistance(userLat, userLng);
+                },
+                (error) => {
+                    console.error("Error Geolocation:", error);
+                    document.getElementById('location-status').innerHTML = `<p class="text-red-500 font-bold">❌ Gagal mengambil lokasi GPS. Pastikan izin lokasi aktif.</p>`;
+                },
+                { enableHighAccuracy: true }
+            );
+        } else {
+            alert("Browser tidak mendukung Geolocation.");
+        }
+    }
+
+    function validateDistance(lat, lng) {
+        // Calculate Distance using Haversine Formula (simple approximation is enough since Google Maps Geometry lib might not be loaded)
+        // Actually, let's use prompt Engineering logic: Haversine
+        const R = 6371e3; // metres
+        const φ1 = lat * Math.PI / 180;
+        const φ2 = officeLat * Math.PI / 180;
+        const Δφ = (officeLat - lat) * Math.PI / 180;
+        const Δλ = (officeLng - lng) * Math.PI / 180;
+
+        const a = Math.sin(Δφ / 2) * Math.sin(Δφ / 2) +
+            Math.cos(φ1) * Math.cos(φ2) *
+            Math.sin(Δλ / 2) * Math.sin(Δλ / 2);
+        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+        const distance = R * c; // in meters
+
+        const statusEl = document.getElementById('location-status');
+
+        if (distance <= officeRadius) {
+            isLocationValid = true;
+            statusEl.innerHTML = `<p class="text-green-600 font-bold">✅ Dalam Jangkauan (${Math.round(distance)}m)</p>`;
+        } else {
+            isLocationValid = false;
+            statusEl.innerHTML = `<p class="text-red-600 font-bold">❌ Di Luar Jangkauan (${Math.round(distance)}m). Maksimal ${officeRadius}m.</p>`;
+        }
+        checkSubmitButton();
+    }
+
+    // Camera Logic
+    const video = document.getElementById('video-preview');
+    const canvas = document.createElement('canvas');
+    const capturedImg = document.getElementById('captured-image');
+
+    navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" } })
+        .then(stream => {
+            video.srcObject = stream;
+            document.getElementById('camera-loading').style.display = 'none';
+        })
+        .catch(err => {
+            console.error("Camera Error:", err);
+            document.getElementById('camera-loading').innerHTML = '<span class="text-red-500">Kamera tidak diizinkan!</span>';
+        });
+
+    document.getElementById('btn-capture').addEventListener('click', () => {
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        canvas.getContext('2d').drawImage(video, 0, 0);
+
+        const dataUrl = canvas.toDataURL('image/jpeg');
+        document.getElementById('id_foto_base64').value = dataUrl;
+
+        capturedImg.src = dataUrl;
+        capturedImg.style.display = 'block';
+        video.style.display = 'none';
+
+        // Toggle Buttons
+        document.getElementById('btn-capture').classList.add('hidden');
+        document.getElementById('btn-retake').classList.remove('hidden');
+
+        isPhotoTaken = true;
+        checkSubmitButton();
+    });
+
+    document.getElementById('btn-retake').addEventListener('click', () => {
+        capturedImg.style.display = 'none';
+        video.style.display = 'block';
+        document.getElementById('id_foto_base64').value = '';
+
+        document.getElementById('btn-capture').classList.remove('hidden');
+        document.getElementById('btn-retake').classList.add('hidden');
+
+        isPhotoTaken = false;
+        checkSubmitButton();
+    });
+
+    function checkSubmitButton() {
+        const btn = document.getElementById('btn-submit-attendance');
+        // Enable if photo taken AND location valid
+        // For debugging/MVP, maybe make location valid optional if GPS error? 
+        // No, strict enforcement requested.
+
+        if (isPhotoTaken && isLocationValid) {
+            btn.disabled = false;
+            btn.classList.remove('bg-gray-400', 'cursor-not-allowed');
+            btn.classList.add('bg-blue-600', 'hover:bg-blue-700');
+        } else {
+            btn.disabled = true;
+            btn.classList.add('bg-gray-400', 'cursor-not-allowed');
+            btn.classList.remove('bg-blue-600', 'hover:bg-blue-700');
+        }
+    }
+</script>
+<script src="https://maps.googleapis.com/maps/api/js?key={{ google_maps_api_key }}&callback=initMap&loading=async" async
+    defer></script>
+
+<!-- Only show standard fields (like catatan) below -->
+<div class="mt-8 bg-white p-6 rounded-xl shadow">
+    <h3 class="font-bold text-gray-700 mb-4">📝 Catatan Tambahan</h3>
+    {{ block.super }}
+</div>
+{% endblock %}
