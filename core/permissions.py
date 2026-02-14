@@ -9,16 +9,19 @@ def is_cs(request):
 def is_admin_psb(request):
     if request.user.is_superuser:
         return True
-    return hasattr(request.user, 'role') and request.user.role and request.user.role.slug == 'admin-psb'
+    return hasattr(request.user, 'role') and request.user.role and \
+           request.user.role.slug in ['admin-psb', 'tenant_admin', 'administrator-tenant', 'admin-rit']
 
 def is_manager(request):
-    """Admin PSB or Superuser"""
+    """Admin PSB, Tenant Admin or Superuser"""
     if request.user.is_superuser:
         return True
-    return hasattr(request.user, 'role') and request.user.role and request.user.role.slug in ['admin-psb']
+    return hasattr(request.user, 'role') and request.user.role and \
+           request.user.role.slug in ['admin-psb', 'tenant_admin', 'administrator-tenant', 'admin-rit']
 
 def is_cs_or_admin(request):
-    """CS or Admin PSB"""
+    """CS, Admin PSB or Tenant Admin"""
     if request.user.is_superuser:
         return True
-    return hasattr(request.user, 'role') and request.user.role and request.user.role.slug in ['cs', 'admin-psb']
+    return hasattr(request.user, 'role') and request.user.role and \
+           request.user.role.slug in ['cs', 'admin-psb', 'tenant_admin', 'administrator-tenant', 'admin-rit']

@@ -107,7 +107,7 @@ UNFOLD = {
                         "title": "Pengguna SaaS",
                         "icon": "person",
                         "link": "/admin/users/user/",
-                        "permission": "core.permissions.is_superuser",
+                        "permission": "core.permissions.is_manager",
                     },
                     {
                         "title": "Paket Berlangganan",
@@ -209,7 +209,7 @@ UNFOLD = {
                         "title": "API Integrasi",
                         "icon": "settings",
                         "link": "/admin/core/apisetting/",
-                        "permission": "core.permissions.is_superuser",
+                        "permission": "core.permissions.is_manager",
                     },
                 ],
             },
