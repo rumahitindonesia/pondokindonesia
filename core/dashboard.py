@@ -140,6 +140,13 @@ def dashboard_callback(request, context):
                     "footer": f"Total santri di {tenant_name}",
                 },
                 {
+                    "title": "Total Donatur",
+                    "metric": total_donatur,
+                    "icon": "volunteer_activism",
+                    "color": "green",
+                    "footer": f"Donatur terdaftar di {tenant_name}",
+                },
+                {
                     "title": "Tagihan Belum Lunas",
                     "metric": unpaid_bills_count,
                     "icon": "priority_high",
