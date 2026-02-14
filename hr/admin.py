@@ -31,15 +31,16 @@ class PengurusAdmin(BaseTenantAdmin, ModelAdmin):
 
 @admin.register(Tugas)
 class TugasAdmin(BaseTenantAdmin, ModelAdmin):
-    list_display = ['judul', 'penerima', 'status', 'prioritas', 'jenis', 'tenggat_waktu', 'skor', 'tenant']
+    list_display = ['judul', 'pembuat', 'penerima', 'status', 'prioritas', 'jenis', 'tenggat_waktu', 'skor', 'tenant']
     list_filter = ['status', 'prioritas', 'jenis', 'tenant', 'penerima']
-    search_fields = ['judul', 'deskripsi', 'penerima__nama']
+    search_fields = ['judul', 'deskripsi', 'penerima__nama', 'pembuat__username']
     autocomplete_fields = ['penerima', 'lead']
+    readonly_fields = ['pembuat']
     date_hierarchy = 'tenggat_waktu'
     
     fieldsets = (
         (None, {
-            'fields': ('judul', 'deskripsi', 'file')
+            'fields': ('judul', 'deskripsi', 'file', 'pembuat')
         }),
         ('Detail Penugasan', {
             'fields': ('penerima', 'lead', 'jenis', 'prioritas', 'bobot', 'tenggat_waktu')
