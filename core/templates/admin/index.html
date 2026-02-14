@@ -5,7 +5,7 @@
 <div class="px-4 py-8 md:px-12">
     <div class="mb-10">
         <h1 class="font-semibold mb-1 text-2xl text-font-important-light dark:text-font-important-dark">
-            Assalamu'alaikum, {{ user.get_full_name|default:user.username }}
+            Assalamu'alaikum, {{user.get_full_name|default:user.username}}
         </h1>
         <p class="text-font-default-light text-sm dark:text-font-default-dark">
             Selamat datang kembali di panel administrasi Pondok Indonesia.
@@ -14,25 +14,25 @@
 
     {% if master_kpis %}
     <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-        {% for card in master_kpis %}
+        {% for m_kpi in master_kpis %}
         <div
             class="border p-8 rounded-default shadow-sm transition-all hover:shadow-md bg-white border-base-200 dark:bg-base-900 dark:border-base-800">
             <div class="flex items-center gap-4 mb-4">
                 <div
-                    class="p-3 rounded-full shadow-sm {% if card.color == 'blue' %}bg-blue-500 text-white{% elif card.color == 'green' %}bg-green-600 text-white{% elif card.color == 'orange' %}bg-orange-500 text-white{% elif card.color == 'red' %}bg-red-600 text-white{% elif card.color == 'primary' %}bg-primary-600 text-white{% else %}bg-base-600 text-white{% endif %}">
-                    <span class="material-symbols-outlined block text-2xl">{{ card.icon }}</span>
+                    class="p-3 rounded-full shadow-sm {% if m_kpi.color == 'blue' %}bg-blue-500 text-white{% elif m_kpi.color == 'green' %}bg-green-600 text-white{% elif m_kpi.color == 'orange' %}bg-orange-500 text-white{% elif m_kpi.color == 'red' %}bg-red-600 text-white{% elif m_kpi.color == 'primary' %}bg-primary-600 text-white{% else %}bg-base-600 text-white{% endif %}">
+                    <span class="material-symbols-outlined block text-2xl">{{m_kpi.icon}}</span>
                 </div>
                 <div>
-                    <h3 class="font-bold text-lg text-base-900 dark:text-font-important-dark tracking-tight">{{
-                        card.title }}</h3>
-                    {% if card.footer %}
-                    <span class="text-xs text-base-500 dark:text-font-default-dark/70">{{ card.footer }}</span>
+                    <h3 class="font-bold text-lg text-base-900 dark:text-font-important-dark tracking-tight">
+                        {{m_kpi.title}}</h3>
+                    {% if m_kpi.footer %}
+                    <span class="text-xs text-base-500 dark:text-font-default-dark/70">{{m_kpi.footer}}</span>
                     {% endif %}
                 </div>
             </div>
             <div class="flex flex-col">
-                <span class="font-black text-4xl text-font-important-light dark:text-font-important-dark">{{ card.metric
-                    }}</span>
+                <span
+                    class="font-black text-4xl text-font-important-light dark:text-font-important-dark">{{m_kpi.metric}}</span>
             </div>
         </div>
         {% endfor %}
@@ -58,17 +58,17 @@
 
     <!-- Mini KPI Cards -->
     <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-12">
-        {% for card in kpi_cards %}
+        {% for mini_kpi in kpi_cards %}
         <div
             class="border p-4 rounded-default shadow-sm transition-all hover:shadow-md bg-white border-base-200 dark:bg-base-900 dark:border-base-800 flex items-center gap-3">
             <div
-                class="p-2 rounded-full {% if card.color == 'blue' %}bg-blue-500 text-white{% elif card.color == 'green' %}bg-green-600 text-white{% elif card.color == 'orange' %}bg-orange-500 text-white{% elif card.color == 'red' %}bg-red-600 text-white{% elif card.color == 'primary' %}bg-primary-600 text-white{% else %}bg-base-600 text-white{% endif %}">
-                <span class="material-symbols-outlined block text-lg">{{ card.icon }}</span>
+                class="p-2 rounded-full {% if mini_kpi.color == 'blue' %}bg-blue-500 text-white{% elif mini_kpi.color == 'green' %}bg-green-600 text-white{% elif mini_kpi.color == 'orange' %}bg-orange-500 text-white{% elif mini_kpi.color == 'red' %}bg-red-600 text-white{% elif mini_kpi.color == 'primary' %}bg-primary-600 text-white{% else %}bg-base-600 text-white{% endif %}">
+                <span class="material-symbols-outlined block text-lg">{{mini_kpi.icon}}</span>
             </div>
             <div>
-                <p class="text-[10px] text-base-500 dark:text-font-default-dark/70 uppercase font-bold">{{ card.title }}
-                </p>
-                <p class="font-bold text-xl text-font-important-light dark:text-font-important-dark">{{ card.metric }}
+                <p class="text-[10px] text-base-500 dark:text-font-default-dark/70 uppercase font-bold">
+                    {{mini_kpi.title}}</p>
+                <p class="font-bold text-xl text-font-important-light dark:text-font-important-dark">{{mini_kpi.metric}}
                 </p>
             </div>
         </div>
@@ -79,9 +79,9 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script id="chart-data" type="application/json">
         {
-            "labels": {{ chart_labels|safe }},
-            "nonDonasi": {{ chart_non_donasi_data|safe }},
-            "donasi": {{ chart_donasi_data|safe }}
+            "labels": {{chart_labels|safe}},
+            "nonDonasi": {{chart_non_donasi_data|safe}},
+            "donasi": {{chart_donasi_data|safe}}
         }
     </script>
     <script>
@@ -172,7 +172,7 @@
             <div class="p-4">
                 {% if priority_leads %}
                 <div class="flex flex-col gap-3">
-                    {% for lead in priority_leads %}
+                    {% for lead_item in priority_leads %}
                     <div
                         class="flex items-center justify-between p-3 rounded-lg border border-base-100 hover:bg-base-50 transition-colors dark:border-base-800 dark:hover:bg-base-800/50">
                         <div class="flex items-center gap-3">
@@ -183,17 +183,17 @@
                             <div>
                                 <h4
                                     class="font-semibold text-sm text-font-important-light dark:text-font-important-dark">
-                                    {{ lead.name }}</h4>
+                                    {{lead_item.name}}</h4>
                                 <div class="flex items-center gap-2">
                                     <span
-                                        class="text-[10px] px-1.5 py-0.5 rounded-full font-bold uppercase {% if lead.ai_analysis.interest_level == 'Hot' %}bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400 {% elif lead.ai_analysis.interest_level == 'Warm' %}bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400 {% else %}bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400{% endif %}">
-                                        {{ lead.ai_analysis.interest_level|default:"NEW" }}
+                                        class="text-[10px] px-1.5 py-0.5 rounded-full font-bold uppercase {% if lead_item.ai_analysis.interest_level == 'Hot' %}bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400 {% elif lead_item.ai_analysis.interest_level == 'Warm' %}bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400 {% else %}bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400{% endif %}">
+                                        {{lead_item.ai_analysis.interest_level|default:"NEW"}}
                                     </span>
-                                    <span class="text-xs text-base-400">{{ lead.get_type_display }}</span>
+                                    <span class="text-xs text-base-400">{{lead_item.get_type_display}}</span>
                                 </div>
                             </div>
                         </div>
-                        <a href="https://wa.me/{{ lead.phone_number|cut:'+' }}?text=Assalamualaikum {{ lead.name }}, pendaftaran di Pondok Indonesia sudah kami terima."
+                        <a href="https://wa.me/{{lead_item.phone_number|cut:'+'}}?text=Assalamualaikum {{lead_item.name}}, pendaftaran di Pondok Indonesia sudah kami terima."
                             target="_blank"
                             class="p-2 text-primary-600 hover:bg-primary-50 rounded-full transition-colors dark:text-primary-400 dark:hover:bg-primary-900/30">
                             <span class="material-symbols-outlined">send</span>
@@ -221,7 +221,7 @@
             <div class="p-4">
                 {% if overdue_tagihan %}
                 <div class="flex flex-col gap-3">
-                    {% for tgh in overdue_tagihan %}
+                    {% for tgh_item in overdue_tagihan %}
                     <div
                         class="flex items-center justify-between p-3 rounded-lg border border-base-100 hover:bg-base-50 transition-colors dark:border-base-800 dark:hover:bg-base-800/50">
                         <div class="flex items-center gap-3">
@@ -232,12 +232,13 @@
                             <div>
                                 <h4
                                     class="font-semibold text-sm text-font-important-light dark:text-font-important-dark">
-                                    {{ tgh.santri.nama_lengkap }}</h4>
-                                <p class="text-[10px] text-red-600 font-medium dark:text-red-400">{{
-                                    tgh.program.nama_program }} - {{ tgh.bulan|default:tgh.tgl_buat|date:"M Y" }}</p>
+                                    {{tgh_item.santri.nama_lengkap}}</h4>
+                                <p class="text-[10px] text-red-600 font-medium dark:text-red-400">
+                                    {{tgh_item.program.nama_program}} -
+                                    {{tgh_item.bulan|default:tgh_item.tgl_buat|date:"M Y"}}</p>
                             </div>
                         </div>
-                        <a href="https://wa.me/{{ tgh.santri.no_hp_wali|cut:'+' }}?text=Assalamualaikum, mohon maaf mengingatkan untuk pembayaran {{ tgh.program.nama_program }} an {{ tgh.santri.nama_lengkap }}."
+                        <a href="https://wa.me/{{tgh_item.santri.no_hp_wali|cut:'+'}}?text=Assalamualaikum, mohon maaf mengingatkan untuk pembayaran {{tgh_item.program.nama_program}} an {{tgh_item.santri.nama_lengkap}}."
                             target="_blank"
                             class="p-2 text-red-600 hover:bg-red-50 rounded-full transition-colors dark:text-red-400 dark:hover:bg-red-900/30">
                             <span class="material-symbols-outlined">notifications_active</span>
@@ -265,7 +266,7 @@
             <div class="p-4">
                 {% if potential_donatur %}
                 <div class="flex flex-col gap-3">
-                    {% for dntr in potential_donatur %}
+                    {% for donatur_item in potential_donatur %}
                     <div
                         class="flex items-center justify-between p-3 rounded-lg border border-base-100 hover:bg-base-50 transition-colors dark:border-base-800 dark:hover:bg-base-800/50">
                         <div class="flex items-center gap-3">
@@ -276,12 +277,12 @@
                             <div>
                                 <h4
                                     class="font-semibold text-sm text-font-important-light dark:text-font-important-dark">
-                                    {{ dntr.nama_donatur }}</h4>
-                                <p class="text-[10px] text-green-600 font-medium dark:text-red-400">{{
-                                    dntr.get_kategori_display }}</p>
+                                    {{donatur_item.nama_donatur}}</h4>
+                                <p class="text-[10px] text-green-600 font-medium dark:text-red-400">
+                                    {{donatur_item.get_kategori_display}}</p>
                             </div>
                         </div>
-                        <a href="https://wa.me/{{ dntr.no_hp|cut:'+' }}?text=Assalamualaikum {{ dntr.nama_donatur }}, semoga sehat selalu. Kami ingin menyapa Bapak/Ibu kembali."
+                        <a href="https://wa.me/{{donatur_item.no_hp|cut:'+'}}?text=Assalamualaikum {{donatur_item.nama_donatur}}, semoga sehat selalu. Kami ingin menyapa Bapak/Ibu kembali."
                             target="_blank"
                             class="p-2 text-green-600 hover:bg-green-50 rounded-full transition-colors dark:text-green-400 dark:hover:bg-green-900/30">
                             <span class="material-symbols-outlined">chat</span>
@@ -298,30 +299,29 @@
 
     {% if app_list %}
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        {% for app in app_list %}
+        {% for app_item in app_list %}
         <div
             class="bg-white border border-base-200 rounded-default overflow-hidden shadow-sm dark:bg-base-900 dark:border-base-800">
             <div class="bg-base-50/50 border-b border-base-200 px-6 py-4 dark:bg-base-800/20 dark:border-base-800">
-                <h2 class="font-semibold text-font-important-light text-sm dark:text-font-important-dark">{{ app.name }}
-                </h2>
+                <h2 class="font-semibold text-font-important-light text-sm dark:text-font-important-dark">
+                    {{app_item.name}}</h2>
             </div>
             <div class="p-6">
                 <table class="w-full text-sm">
                     <tbody>
-                        {% for model in app.models %}
+                        {% for model_item in app_item.models %}
                         <tr class="group">
                             <td class="py-2.5">
-                                <a href="{{ model.admin_url }}"
-                                    class="hover:text-primary-600 dark:hover:text-primary-500 transition-colors">{{
-                                    model.name }}</a>
+                                <a href="{{model_item.admin_url}}"
+                                    class="hover:text-primary-600 dark:hover:text-primary-500 transition-colors">{{model_item.name}}</a>
                             </td>
                             <td class="text-right py-2.5">
                                 <div
                                     class="flex justify-end gap-3 opacity-0 group-hover:opacity-100 transition-opacity">
-                                    {% if model.add_url %}<a href="{{ model.add_url }}"
+                                    {% if model_item.add_url %}<a href="{{model_item.add_url}}"
                                         class="text-xs font-medium text-primary-600 dark:text-primary-400">{% trans
                                         'Add' %}</a>{% endif %}
-                                    {% if model.admin_url %}<a href="{{ model.admin_url }}"
+                                    {% if model_item.admin_url %}<a href="{{model_item.admin_url}}"
                                         class="text-xs font-medium text-base-400 dark:text-base-500">{% trans 'View'
                                         %}</a>{% endif %}
                                 </div>
