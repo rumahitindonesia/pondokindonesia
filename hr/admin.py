@@ -38,47 +38,50 @@ class AbsensiAdmin(BaseTenantAdmin, ModelAdmin):
         }),
     )
 
-    # def get_office_context(self, request):
-    #     tenant = getattr(request, 'tenant', None)
-    #     # Fallback to User's Tenant
-    #     if not tenant and not request.user.is_superuser and hasattr(request.user, 'tenant'):
-    #         tenant = request.user.tenant
+    def get_office_context(self, request):
+        try:
+            tenant = getattr(request, 'tenant', None)
+            # Fallback to User's Tenant
+            if not tenant and not request.user.is_superuser and hasattr(request.user, 'tenant'):
+                tenant = request.user.tenant
 
-    #     if tenant:
-    #         lokasi = LokasiKantor.objects.filter(tenant=tenant).first()
-    #         if lokasi:
-    #             return json.dumps({
-    #                 'nama': lokasi.nama,
-    #                 'latitude': str(lokasi.latitude),
-    #                 'longitude': str(lokasi.longitude),
-    #                 'radius_meter': lokasi.radius_meter
-    #             })
+            if tenant:
+                lokasi = LokasiKantor.objects.filter(tenant=tenant).first()
+                if lokasi:
+                    return json.dumps({
+                        'nama': lokasi.nama,
+                        'latitude': str(lokasi.latitude),
+                        'longitude': str(lokasi.longitude),
+                        'radius_meter': lokasi.radius_meter
+                    })
+        except Exception:
+            pass
         
-    #     # Default Fallback (Monas)
-    #     return json.dumps({
-    #         'nama': 'Default (Monas)',
-    #         'latitude': '-6.175110', 
-    #         'longitude': '106.827253',
-    #         'radius_meter': 100
-    #     })
+        # Default Fallback (Monas)
+        return json.dumps({
+            'nama': 'Default (Monas)',
+            'latitude': '-6.175110', 
+            'longitude': '106.827253',
+            'radius_meter': 100
+        })
 
-    # def add_view(self, request, form_url='', extra_context=None):
-    #     # Cek apakah user ini Pengurus dan sudah absen hari ini
-    #     try:
-    #         if hasattr(request.user, 'pengurus_profile'):
-    #             pengurus = request.user.pengurus_profile
-    #             today = timezone.localdate()
-    #             existing = Absensi.objects.filter(pengurus=pengurus, tanggal=today).first()
-    #             if existing:
-    #                 # Redirect ke Change View (Mode Pulang)
-    #                 url = reverse('admin:hr_absensi_change', args=[existing.pk])
-    #                 return redirect(url)
-    #     except Exception:
-    #         pass # User might not have a Pengurus profile
+    def add_view(self, request, form_url='', extra_context=None):
+        # Cek apakah user ini Pengurus dan sudah absen hari ini
+        try:
+            if hasattr(request.user, 'pengurus_profile'):
+                pengurus = request.user.pengurus_profile
+                today = timezone.localdate()
+                existing = Absensi.objects.filter(pengurus=pengurus, tanggal=today).first()
+                if existing:
+                    # Redirect ke Change View (Mode Pulang)
+                    url = reverse('admin:hr_absensi_change', args=[existing.pk])
+                    return redirect(url)
+        except Exception:
+            pass # User might not have a Pengurus profile
 
-    #     extra_context = extra_context or {}
-    #     extra_context['office_json'] = self.get_office_context(request)
-    #     return super().add_view(request, form_url, extra_context=extra_context)
+        extra_context = extra_context or {}
+        extra_context['office_json'] = self.get_office_context(request)
+        return super().add_view(request, form_url, extra_context=extra_context)
 
     # def change_view(self, request, object_id, form_url='', extra_context=None):
     #     extra_context = extra_context or {}
