@@ -86,9 +86,17 @@ from .models import Lead, WhatsAppForm
 @admin.register(Lead)
 class LeadAdmin(BaseTenantAdmin, ModelAdmin):
     list_display = ('name', 'type', 'phone_number', 'interest_badge', 'has_draft', 'status', 'scope', 'created_at')
-    list_filter = ('type', 'status', 'tenant')
+    list_filter = ('type', 'status', 'tenant', 'cs')
     search_fields = ('name', 'phone_number', 'notes')
-    readonly_fields = ('created_at', 'chat_history', 'ai_insights')
+    readonly_fields = ('created_at', 'chat_history', 'ai_insights', 'last_afu_at', 'afu_count')
+    
+    def get_queryset(self, request):
+        qs = super().get_queryset(request)
+        if not request.user.is_superuser and hasattr(request.user, 'role') and request.user.role:
+            if request.user.role.slug == 'cs':
+                # CS only see their leads
+                return qs.filter(cs=request.user)
+        return qs
 
 
     def has_draft(self, obj):
@@ -139,7 +147,79 @@ class LeadAdmin(BaseTenantAdmin, ModelAdmin):
         return format_html(html)
     ai_insights.short_description = "AI Sales Coach"
 
-    actions = ['analyze_leads', 'draft_followup', 'send_draft', 'convert_to_santri', 'convert_to_donatur']
+    actions = [
+        'analyze_leads', 'draft_followup', 'send_draft', 
+        'mark_interview', 'mark_accepted',
+        'convert_to_santri', 'convert_to_donatur'
+    ]
+
+    def get_actions(self, request):
+        actions = super().get_actions(request)
+        role_slug = request.user.role.slug if hasattr(request.user, 'role') and request.user.role else ""
+        
+        # Admin-PSB only sees interview/accept conversion
+        if role_slug == 'admin-psb':
+            allowed = ['mark_accepted', 'convert_to_santri', 'convert_to_donatur', 'analyze_leads']
+            return {k: v for k, v in actions.items() if k in allowed}
+            
+        # CS only sees common lead actions + interview trigger
+        if role_slug == 'cs':
+            allowed = ['analyze_leads', 'draft_followup', 'send_draft', 'mark_interview']
+            return {k: v for k, v in actions.items() if k in allowed}
+            
+        return actions
+
+    @admin.action(description='Set : Lanjutkan ke Interview (Input Biaya)')
+    def mark_interview(self, request, queryset):
+        from core.services.starsender import StarSenderService
+        from users.models import User
+        count = 0
+        for lead in queryset:
+            lead.status = Lead.Status.INTERVIEW
+            lead.save()
+            count += 1
+            
+            # 1. Notify Lead
+            StarSenderService.send_message(
+                to=lead.phone_number,
+                body=f"Halo {lead.name}, pembayaran pendaftaran Anda sudah diterima. Kami sedang menjadwalkan interview. Mohon tunggu kabar selanjutnya.",
+                tenant=lead.tenant
+            )
+            
+            # 2. Notify Admin-PSB
+            admin_psb = User.objects.filter(tenant=lead.tenant, role__slug='admin-psb', is_active=True).first()
+            if admin_psb and admin_psb.phone_number:
+                StarSenderService.send_message(
+                    to=admin_psb.phone_number,
+                    body=f"Notifikasi PSB: Lead {lead.name} ({lead.phone_number}) siap untuk di-interview. Silakan update jadwal di sistem.",
+                    tenant=lead.tenant
+                )
+        self.message_user(request, f"{count} leads updated to Interview status and notifications sent.")
+
+    @admin.action(description='Set : Tandai Diterima (Post-Interview)')
+    def mark_accepted(self, request, queryset):
+        from core.services.starsender import StarSenderService
+        count = 0
+        for lead in queryset:
+            lead.status = Lead.Status.ACCEPTED
+            lead.save()
+            count += 1
+            
+            # 1. Notify Lead
+            StarSenderService.send_message(
+                to=lead.phone_number,
+                body=f"Selamat {lead.name}! Anda dinyatakan DITERIMA di Pondok Indonesia. CS kami ({lead.cs.username if lead.cs else 'Pondok'}) akan segera menghubungi Anda untuk proses selanjutnya.",
+                tenant=lead.tenant
+            )
+            
+            # 2. Notify CS
+            if lead.cs and lead.cs.phone_number:
+                StarSenderService.send_message(
+                    to=lead.cs.phone_number,
+                    body=f"Info Pendaftaran: Lead {lead.name} ({lead.phone_number}) sudah DITERIMA. Silakan follow-up kembali untuk proses pembayaran.",
+                    tenant=lead.tenant
+                )
+        self.message_user(request, f"{count} leads marked as Accepted and notifications sent.")
 
     def ai_insights(self, obj):
         try:

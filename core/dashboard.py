@@ -64,6 +64,12 @@ def dashboard_callback(request, context):
         total_santri = Santri.objects.filter(tenant=tenant, status='AKTIF').count()
         total_donatur = Donatur.objects.filter(tenant=tenant).count()
         
+        # Role-based scoping for leads
+        is_cs = user.role.slug == 'cs' if user.role else False
+        lead_base_qs = Lead.objects.filter(tenant=tenant)
+        if is_cs:
+            lead_base_qs = lead_base_qs.filter(cs=user)
+        
         # Financials (This Month)
         now = timezone.now()
         first_day_of_month = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
@@ -87,13 +93,13 @@ def dashboard_callback(request, context):
         ).count()
 
         # Lead Status Distribution
-        leads_new = Lead.objects.filter(tenant=tenant, status='NEW').count()
+        leads_new = lead_base_qs.filter(status='NEW').count()
         
         # --- PRIORITY LISTS (New) ---
         from django.db.models import Case, When, Value, IntegerField
         
         # 1. Hot Leads (Top 5)
-        priority_leads = Lead.objects.filter(tenant=tenant).exclude(status__in=['CLOSED', 'REJECTED']).annotate(
+        priority_leads = lead_base_qs.exclude(status__in=['CLOSED', 'REJECTED']).annotate(
             interest_score=Case(
                 When(ai_analysis__interest_level='Hot', then=Value(3)),
                 When(ai_analysis__interest_level='Warm', then=Value(2)),

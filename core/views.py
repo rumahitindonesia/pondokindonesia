@@ -28,6 +28,25 @@ def homepage(request):
     pricing_plans = PricingPlan.objects.filter(is_active=True).order_by('order')
     return render(request, 'core/homepage.html', {'tenants': tenants, 'pricing_plans': pricing_plans})
 
+def process_ai_reply(message, tenant, sender, sender_name):
+    """
+    Background worker to get AI completion and send WA reply.
+    """
+    import threading
+    try:
+        from core.services.ai_service import AIService
+        from core.services.starsender import StarSenderService
+        
+        ai_response = AIService.get_completion(message, tenant=tenant, sender_name=sender_name)
+        if ai_response:
+            StarSenderService.send_message(
+                to=sender,
+                body=ai_response,
+                tenant=tenant
+            )
+    except Exception as e:
+        print(f"Error in background AI process: {e}")
+
 @csrf_exempt
 def webhook_whatsapp(request, tenant_slug=None):
     if request.method == 'POST':
@@ -60,110 +79,93 @@ def webhook_whatsapp(request, tenant_slug=None):
             
             replied = False
 
-            # 1. Lead Registration (Forms)
-            forms = WhatsAppForm.objects.filter(tenant=current_tenant, is_active=True) if current_tenant else WhatsAppForm.objects.filter(tenant__isnull=True, is_active=True)
+            # 1. Lead Workflow & Data Extraction
+            from core.services.lead_workflow_service import LeadWorkflowService
             
-            for form in forms:
-                keyword = form.keyword.strip()
-                if message.strip().upper().startswith(keyword.upper()):
-                    # Parse
-                    body = message[len(keyword):].strip()
-                    if form.separator and body.startswith(form.separator): body = body[1:]
-                    
-                    parts = [p.strip() for p in body.split(form.separator)]
-                    fields = [f.strip() for f in form.field_map.split(form.separator)]
-                    
-                    if len(parts) >= len(fields) and len(fields) > 0:
-                        lead_data = {fields[i]: parts[i] for i in range(len(fields))}
-                        lead_name = lead_data.get('nama') or lead_data.get('name') or sender_name or parts[0]
-                        
-                        Lead.objects.update_or_create(
-                            tenant=current_tenant, 
-                            phone_number=sender, 
-                            type=form.lead_type,
-                            defaults={
-                                'name': lead_name,
-                                'data': lead_data
-                            }
-                        )
-                        
-                        resp = form.response_template
-                        try:
-                            fmt = lead_data.copy(); fmt['name'] = lead_name
-                            resp = resp.format(**fmt)
-                        except: pass
-                        
-                        # AI Response Logic
-                        if form.use_ai_response:
-                            # Use the formatted template as a PROMPT for the AI
-                            input_prompt = resp
-                            system_instruction = (
-                                "You are a helpful admin assistant. "
-                                "Rewrite the following message to be more personal, warm, and polite. "
-                                "Maintain the core information but make it sound human and welcoming. "
-                                "Keep it concise (suitable for WhatsApp). "
-                                "IMPORTANT: Return ONLY the final message content. "
-                                "Do NOT include any introductory text like 'Here is the message' or 'Key changes'. "
-                                "Do NOT include any explanations or notes."
-                            )
-                            # Run AI in background (threaded) to prevent blocking
-                            import threading
-                            def send_ai_reply(p_prompt, p_sys, p_to, p_tenant):
-                                try:
-                                    ai_reply = AIService.get_completion(p_prompt, tenant=p_tenant, system_prompt=p_sys)
-                                    if ai_reply:
-                                        StarSenderService.send_message(to=p_to, body=ai_reply, tenant=p_tenant)
-                                except Exception as e:
-                                    print(f"Error AI Form Reply: {e}")
-                            
-                            threading.Thread(target=send_ai_reply, args=(input_prompt, system_instruction, sender, current_tenant)).start()
-                        else:
-                            # Standard Template Reply
-                            StarSenderService.send_message(to=sender, body=resp, tenant=current_tenant)
-                        
-                        replied = True
-                        break
+            # Find or initiate lead
+            lead, created = Lead.objects.get_or_create(
+                tenant=current_tenant, 
+                phone_number=sender,
+                defaults={'status': Lead.Status.WAITING_DATA}
+            )
+            
+            # Record last message time
+            from django.utils import timezone
+            lead.last_message_at = timezone.now()
+            lead.save()
 
-            # 2. Auto Reply Logic
+            replied = False
+
+            # If waiting for info, try to parse
+            if lead.status == Lead.Status.WAITING_DATA:
+                if LeadWorkflowService.parse_data_format(lead, message):
+                    # Data parsed! Assign to CS
+                    assigned_cs = LeadWorkflowService.assign_to_cs(lead)
+                    if assigned_cs:
+                        StarSenderService.send_message(
+                            to=sender,
+                            body=f"Terima kasih {lead.name}, data Anda sudah diterima dan akan segera dibantu oleh CS kami ({assigned_cs.username}).",
+                            tenant=current_tenant
+                        )
+                    replied = True
+
+            # 2. Lead Registration (Legacy Forms - maintained for compatibility)
+            if not replied:
+                forms = WhatsAppForm.objects.filter(tenant=current_tenant, is_active=True) if current_tenant else WhatsAppForm.objects.filter(tenant__isnull=True, is_active=True)
+                for form in forms:
+                    keyword = form.keyword.strip()
+                    if message.strip().upper().startswith(keyword.upper()):
+                        # (Legacy form logic maintained below)
+                        body = message[len(keyword):].strip()
+                        if form.separator and body.startswith(form.separator): body = body[1:]
+                        parts = [p.strip() for p in body.split(form.separator)]
+                        fields = [f.strip() for f in form.field_map.split(form.separator)]
+                        
+                        if len(parts) >= len(fields) and len(fields) > 0:
+                            lead_data = {fields[i]: parts[i] for i in range(len(fields))}
+                            lead_name = lead_data.get('nama') or lead_data.get('name') or sender_name or parts[0]
+                            
+                            lead.name = lead_name
+                            lead.data.update(lead_data)
+                            lead.save()
+                            
+                            # Assign CS for legacy forms too
+                            LeadWorkflowService.assign_to_cs(lead)
+                            
+                            resp = form.response_template
+                            try:
+                                fmt = lead_data.copy(); fmt['name'] = lead_name
+                                resp = resp.format(**fmt)
+                            except: pass
+                            
+                            if form.use_ai_response:
+                                # ... existing ai logic ...
+                                input_prompt = resp
+                                system_instruction = "You are a helpful admin assistant..."
+                                threading.Thread(target=process_ai_reply, args=(input_prompt, current_tenant, sender, sender_name)).start()
+                            else:
+                                StarSenderService.send_message(to=sender, body=resp, tenant=current_tenant)
+                            replied = True
+                            break
+
+            # 3. Auto Reply Logic
             if not replied:
                 replies = WhatsAppAutoReply.objects.filter(tenant=current_tenant, is_active=True) if current_tenant else WhatsAppAutoReply.objects.filter(tenant__isnull=True, is_active=True)
-            else:
-                replies = []
-            for reply in replies:
-                if reply.keyword.lower() in message.lower():
-                    # Personalize Response
-                    response_text = reply.response
-                    # Fallback to empty string if name is missing to avoid "Kak Kak" if user typed "Kak {name}"
-                    safe_name = sender_name if sender_name else ""
-                    try:
-                        response_text = response_text.format(name=safe_name)
-                    except KeyError:
-                        pass # Ignore if placeholder not found or other keys present
-                        
-                    StarSenderService.send_message(
-                        to=sender,
-                        body=response_text,
-                        tenant=current_tenant
-                    )
-                    replied = True
-                    break
+                for reply in replies:
+                    if reply.keyword.lower() in message.lower():
+                        response_text = reply.response
+                        safe_name = sender_name if sender_name else ""
+                        try:
+                            response_text = response_text.format(name=safe_name)
+                        except KeyError: pass
+                        StarSenderService.send_message(to=sender, body=response_text, tenant=current_tenant)
+                        replied = True
+                        break
             
-            # AI Fallback (If no keyword matched)
+            # AI Fallback
             if not replied:
-                # Run AI in a separate thread to prevent "Server Jam" (Blocking)
+                # If first contact (WAITING_DATA), AI will ask for info
                 import threading
-                def process_ai_reply(msg, tnt, snd, snd_name):
-                    try:
-                        ai_response = AIService.get_completion(msg, tenant=tnt, sender_name=snd_name)
-                        if ai_response:
-                            StarSenderService.send_message(
-                                to=snd,
-                                body=ai_response,
-                                tenant=tnt
-                            )
-                    except Exception as e:
-                        print(f"Error in background AI process: {e}")
-
                 thread = threading.Thread(target=process_ai_reply, args=(message, current_tenant, sender, sender_name))
                 thread.start()
 

@@ -111,16 +111,29 @@ class Lead(TenantAwareModel):
         DONATUR = 'DONATUR', 'Calon Donatur'
 
     class Status(models.TextChoices):
-        NEW = 'NEW', 'Baru'
+        WAITING_DATA = 'WAITING_DATA', 'Menunggu Data'
+        NEW = 'NEW', 'Baru (Data Lengkap)'
         FOLLOW_UP = 'FOLLOW_UP', 'Sedang Diproses'
-        CLOSED = 'CLOSED', 'Selesai/Diterima'
+        INTERVIEW = 'INTERVIEW', 'Jadwal Interview'
+        ACCEPTED = 'ACCEPTED', 'Diterima'
+        CLOSED = 'CLOSED', 'Selesai (Lunas)'
         REJECTED = 'REJECTED', 'Ditolak/Batal'
 
     type = models.CharField(max_length=20, choices=Type.choices, default=Type.SANTRI)
-    name = models.CharField(max_length=150)
+    name = models.CharField(max_length=150, blank=True, null=True)
     phone_number = models.CharField(max_length=50)
     data = models.JSONField(default=dict, blank=True, help_text="Dynamic data based on form format")
     status = models.CharField(max_length=20, choices=Status.choices, default=Status.NEW)
+    
+    # CS Assignment
+    cs = models.ForeignKey('users.User', on_delete=models.SET_NULL, null=True, blank=True, related_name='assigned_leads')
+    
+    # AFU & Delivery Tracking
+    is_delivered = models.BooleanField(default=False)
+    afu_count = models.IntegerField(default=0)
+    last_afu_at = models.DateTimeField(blank=True, null=True)
+    last_message_at = models.DateTimeField(blank=True, null=True)
+
     notes = models.TextField(blank=True, null=True)
     ai_analysis = models.JSONField(default=dict, blank=True, help_text="AI Analysis Result (Interest, Summary, Recommendation)")
     last_draft = models.TextField(blank=True, null=True, help_text="Last AI-generated message draft.")
