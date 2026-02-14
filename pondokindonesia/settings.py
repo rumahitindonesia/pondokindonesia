@@ -95,72 +95,79 @@ UNFOLD = {
             },
             {
                 "title": "Manajemen Pengelola",
-                "permission": "core.permissions.is_superuser",
                 "collapsible": True,
                 "items": [
                     {
                         "title": "Data Pondok (Tenant)",
                         "icon": "business",
                         "link": "/admin/tenants/tenant/",
+                        "permission": "core.permissions.is_superuser",
                     },
                     {
                         "title": "Pengguna SaaS",
                         "icon": "person",
                         "link": "/admin/users/user/",
+                        "permission": "core.permissions.is_superuser",
                     },
                     {
                         "title": "Paket Berlangganan",
                         "icon": "loyalty",
                         "link": "/admin/core/pricingplan/",
+                        "permission": "core.permissions.is_superuser",
                     },
                     {
                         "title": "Subscription Aktif",
                         "icon": "verified_user",
                         "link": "/admin/core/tenantsubscription/",
+                        "permission": "core.permissions.is_superuser",
                     },
                 ],
             },
             {
                 "title": "CRM & Database",
-                "permission": "core.permissions.is_cs_or_admin",
                 "collapsible": True,
                 "items": [
                     {
                         "title": "Leads & Prospek",
                         "icon": "group_add",
                         "link": "/admin/core/lead/",
+                        "permission": "core.permissions.is_cs_or_admin",
                     },
                     {
                         "title": "Data Santri",
                         "icon": "school",
                         "link": "/admin/crm/santri/",
+                        "permission": "core.permissions.is_cs_or_admin",
                     },
                     {
                         "title": "Data Donatur",
                         "icon": "volunteer_activism",
                         "link": "/admin/crm/donatur/",
+                        "permission": "core.permissions.is_cs_or_admin",
                     },
                     {
                         "title": "Program Pondok",
                         "icon": "list_alt",
                         "link": "/admin/crm/program/",
+                        "permission": "core.permissions.is_cs_or_admin",
                     },
                 ],
             },
             {
                 "title": "Keuangan & Donasi",
-                "permission": "core.permissions.is_admin_psb",
                 "collapsible": True,
                 "items": [
                     {
                         "title": "Tagihan Santri",
                         "icon": "payments",
                         "link": "/admin/crm/tagihan/",
+                        "permission": "core.permissions.is_admin_psb",
                     },
                     {
                         "title": "Riwayat Donasi",
                         "icon": "receipt_long",
                         "link": "/admin/crm/transaksidonasi/",
+                        "permission": "core.permissions.is_admin_psb",
                     },
                 ],
             },
@@ -196,13 +203,13 @@ UNFOLD = {
             },
             {
                 "title": "Pengaturan Sistem",
-                "permission": "core.permissions.is_superuser",
                 "collapsible": True,
                 "items": [
                     {
                         "title": "API Integrasi",
                         "icon": "settings",
                         "link": "/admin/core/apisetting/",
+                        "permission": "core.permissions.is_superuser",
                     },
                 ],
             },
