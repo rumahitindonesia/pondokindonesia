@@ -18,6 +18,7 @@ from django.urls import reverse
 
 @admin.register(Absensi)
 class AbsensiAdmin(BaseTenantAdmin, ModelAdmin):
+    pass
     # list_display = ['pengurus', 'tanggal', 'waktu_masuk', 'waktu_keluar', 'status', 'tenant']
     # list_filter = ['status', 'tanggal', 'tenant', 'pengurus__jabatan']
     # search_fields = ['pengurus__nama']
