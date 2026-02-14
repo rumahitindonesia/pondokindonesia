@@ -38,82 +38,82 @@ class AbsensiAdmin(BaseTenantAdmin, ModelAdmin):
         }),
     )
 
-    def get_office_context(self, request):
-        tenant = getattr(request, 'tenant', None)
-        # Fallback to User's Tenant
-        if not tenant and not request.user.is_superuser and hasattr(request.user, 'tenant'):
-            tenant = request.user.tenant
+    # def get_office_context(self, request):
+    #     tenant = getattr(request, 'tenant', None)
+    #     # Fallback to User's Tenant
+    #     if not tenant and not request.user.is_superuser and hasattr(request.user, 'tenant'):
+    #         tenant = request.user.tenant
 
-        if tenant:
-            lokasi = LokasiKantor.objects.filter(tenant=tenant).first()
-            if lokasi:
-                return json.dumps({
-                    'nama': lokasi.nama,
-                    'latitude': str(lokasi.latitude),
-                    'longitude': str(lokasi.longitude),
-                    'radius_meter': lokasi.radius_meter
-                })
+    #     if tenant:
+    #         lokasi = LokasiKantor.objects.filter(tenant=tenant).first()
+    #         if lokasi:
+    #             return json.dumps({
+    #                 'nama': lokasi.nama,
+    #                 'latitude': str(lokasi.latitude),
+    #                 'longitude': str(lokasi.longitude),
+    #                 'radius_meter': lokasi.radius_meter
+    #             })
         
-        # Default Fallback (Monas)
-        return json.dumps({
-            'nama': 'Default (Monas)',
-            'latitude': '-6.175110', 
-            'longitude': '106.827253',
-            'radius_meter': 100
-        })
+    #     # Default Fallback (Monas)
+    #     return json.dumps({
+    #         'nama': 'Default (Monas)',
+    #         'latitude': '-6.175110', 
+    #         'longitude': '106.827253',
+    #         'radius_meter': 100
+    #     })
 
-    def add_view(self, request, form_url='', extra_context=None):
-        # Cek apakah user ini Pengurus dan sudah absen hari ini
-        try:
-            if hasattr(request.user, 'pengurus_profile'):
-                pengurus = request.user.pengurus_profile
-                today = timezone.localdate()
-                existing = Absensi.objects.filter(pengurus=pengurus, tanggal=today).first()
-                if existing:
-                    # Redirect ke Change View (Mode Pulang)
-                    url = reverse('admin:hr_absensi_change', args=[existing.pk])
-                    return redirect(url)
-        except Exception:
-            pass # User might not have a Pengurus profile
+    # def add_view(self, request, form_url='', extra_context=None):
+    #     # Cek apakah user ini Pengurus dan sudah absen hari ini
+    #     try:
+    #         if hasattr(request.user, 'pengurus_profile'):
+    #             pengurus = request.user.pengurus_profile
+    #             today = timezone.localdate()
+    #             existing = Absensi.objects.filter(pengurus=pengurus, tanggal=today).first()
+    #             if existing:
+    #                 # Redirect ke Change View (Mode Pulang)
+    #                 url = reverse('admin:hr_absensi_change', args=[existing.pk])
+    #                 return redirect(url)
+    #     except Exception:
+    #         pass # User might not have a Pengurus profile
 
-        extra_context = extra_context or {}
-        extra_context['office_json'] = self.get_office_context(request)
-        return super().add_view(request, form_url, extra_context=extra_context)
+    #     extra_context = extra_context or {}
+    #     extra_context['office_json'] = self.get_office_context(request)
+    #     return super().add_view(request, form_url, extra_context=extra_context)
 
-    def change_view(self, request, object_id, form_url='', extra_context=None):
-        extra_context = extra_context or {}
-        extra_context['office_json'] = self.get_office_context(request)
-        return super().change_view(request, object_id, form_url, extra_context=extra_context)
+    # def change_view(self, request, object_id, form_url='', extra_context=None):
+    #     extra_context = extra_context or {}
+    #     extra_context['office_json'] = self.get_office_context(request)
+    #     return super().change_view(request, object_id, form_url, extra_context=extra_context)
 
-    def save_model(self, request, obj, form, change):
-        # 1. Set Pengurus (jika buat baru)
-        if not obj.pk and not obj.pengurus_id and hasattr(request.user, 'pengurus_profile'):
-            obj.pengurus = request.user.pengurus_profile
+    # def save_model(self, request, obj, form, change):
+    #     # 1. Set Pengurus (jika buat baru)
+    #     if not obj.pk and not obj.pengurus_id and hasattr(request.user, 'pengurus_profile'):
+    #         obj.pengurus = request.user.pengurus_profile
         
-        # 2. Handle Foto Base64
-        foto_b64 = request.POST.get('foto_base64')
-        lat = request.POST.get('detected_lat')
-        lon = request.POST.get('detected_lon')
+    #     # 2. Handle Foto Base64
+    #     foto_b64 = request.POST.get('foto_base64')
+    #     lat = request.POST.get('detected_lat')
+    #     lon = request.POST.get('detected_lon')
 
-        if foto_b64:
-            format, imgstr = foto_b64.split(';base64,') 
-            ext = format.split('/')[-1] 
-            fname = f"absensi_{obj.pengurus.nama}_{timezone.now().strftime('%Y%m%d_%H%M%S')}.{ext}"
-            data = ContentFile(base64.b64decode(imgstr), name=fname)
+    #     if foto_b64:
+    #         format, imgstr = foto_b64.split(';base64,') 
+    #         ext = format.split('/')[-1] 
+    #         fname = f"absensi_{obj.pengurus.nama}_{timezone.now().strftime('%Y%m%d_%H%M%S')}.{ext}"
+    #         data = ContentFile(base64.b64decode(imgstr), name=fname)
 
-            if not obj.waktu_masuk:
-                # Absen Masuk
-                obj.foto_masuk = data
-                obj.waktu_masuk = timezone.now()
-                obj.lokasi_masuk = f"{lat}, {lon}"
-                obj.status = Absensi.Status.HADIR # Default OK
-            elif obj.waktu_masuk and not obj.waktu_keluar:
-                # Absen Pulang
-                obj.foto_keluar = data
-                obj.waktu_keluar = timezone.now()
-                obj.lokasi_keluar = f"{lat}, {lon}"
+    #         if not obj.waktu_masuk:
+    #             # Absen Masuk
+    #             obj.foto_masuk = data
+    #             obj.waktu_masuk = timezone.now()
+    #             obj.lokasi_masuk = f"{lat}, {lon}"
+    #             obj.status = Absensi.Status.HADIR # Default OK
+    #         elif obj.waktu_masuk and not obj.waktu_keluar:
+    #             # Absen Pulang
+    #             obj.foto_keluar = data
+    #             obj.waktu_keluar = timezone.now()
+    #             obj.lokasi_keluar = f"{lat}, {lon}"
 
-        super().save_model(request, obj, form, change)
+    #     super().save_model(request, obj, form, change)
 
 
 @admin.register(Jabatan)
