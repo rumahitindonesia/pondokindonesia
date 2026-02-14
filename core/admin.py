@@ -1,4 +1,4 @@
-from django.contrib import admin
+from django.contrib import admin, messages
 from django.db import models
 from unfold.admin import ModelAdmin
 from .models import get_current_tenant, APISetting
