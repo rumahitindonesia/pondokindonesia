@@ -151,6 +151,7 @@ def dashboard_callback(request, context):
         chart_non_donasi_data = [daily_non_donasi_map[i] for i in range(1, days_in_month + 1)]
         chart_donasi_data = [daily_donasi_map[i] for i in range(1, days_in_month + 1)]
         
+        import json
         context.update({
             "master_kpis": [
                 {
@@ -198,9 +199,9 @@ def dashboard_callback(request, context):
                     "footer": "Leads status 'Baru'",
                 },
             ],
-            "chart_labels": chart_labels,
-            "chart_non_donasi_data": chart_non_donasi_data,
-            "chart_donasi_data": chart_donasi_data,
+            "chart_labels": json.dumps(chart_labels),
+            "chart_non_donasi_data": json.dumps(chart_non_donasi_data),
+            "chart_donasi_data": json.dumps(chart_donasi_data),
             "priority_leads": priority_leads,
             "overdue_tagihan": overdue_tagihan,
             "potential_donatur": potential_donatur,

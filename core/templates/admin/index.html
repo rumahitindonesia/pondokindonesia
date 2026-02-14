@@ -31,19 +31,17 @@
                     </span>
                 </div>
                 <div>
-                    <h3 class="font-bold text-lg text-base-900 dark:text-font-important-dark tracking-tight">{{ card.title }}</h3>
+                    <h3 class="font-bold text-lg text-base-900 dark:text-font-important-dark tracking-tight">{{
+                        card.title }}</h3>
                     {% if card.footer %}
-                    <span class="text-xs text-base-500 dark:text-font-default-dark/70">
-                        {{ card.footer }}
-                    </span>
+                    <span class="text-xs text-base-500 dark:text-font-default-dark/70">{{ card.footer }}</span>
                     {% endif %}
                 </div>
             </div>
 
             <div class="flex flex-col">
-                <span class="font-black text-4xl text-font-important-light dark:text-font-important-dark">
-                    {{ card.metric }}
-                </span>
+                <span class="font-black text-4xl text-font-important-light dark:text-font-important-dark">{{ card.metric
+                    }}</span>
             </div>
         </div>
         {% endfor %}
@@ -265,7 +263,8 @@
                                 <h4
                                     class="font-semibold text-sm text-font-important-light dark:text-font-important-dark">
                                     {{ tgh.santri.nama_lengkap }}</h4>
-                                <p class="text-[10px] text-red-600 font-medium dark:text-red-400">{{ tgh.program.nama_program }} - {{ tgh.bulan|default:tgh.tgl_buat|date:"M Y" }}</p>
+                                <p class="text-[10px] text-red-600 font-medium dark:text-red-400">{{
+                                    tgh.program.nama_program }} - {{ tgh.bulan|default:tgh.tgl_buat|date:"M Y" }}</p>
                             </div>
                         </div>
                         <a href="https://wa.me/{{ tgh.santri.no_hp_wali|cut:'+' }}?text=Assalamualaikum,%20mohon%20maaf%20mengingatkan%20untuk%20pembayaran%20{{ tgh.program.nama_program }}%20an%20{{ tgh.santri.nama_lengkap }}."
@@ -308,7 +307,8 @@
                                 <h4
                                     class="font-semibold text-sm text-font-important-light dark:text-font-important-dark">
                                     {{ dntr.nama_donatur }}</h4>
-                                <p class="text-[10px] text-green-600 font-medium dark:text-green-400">{{ dntr.get_kategori_display }}</p>
+                                <p class="text-[10px] text-green-600 font-medium dark:text-green-400">{{
+                                    dntr.get_kategori_display }}</p>
                             </div>
                         </div>
                         <a href="https://wa.me/{{ dntr.no_hp|cut:'+' }}?text=Assalamualaikum%20{{ dntr.nama_donatur }},%20semoga%20sehat%20selalu.%20Kami%20ingin%20menyapa%20Bapak/Ibu%20kembali."
