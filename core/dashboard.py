@@ -82,6 +82,29 @@ def dashboard_callback(request, context):
         # Lead Status Distribution
         leads_new = Lead.objects.filter(tenant=tenant, status='NEW').count()
         
+        # --- PRIORITY LISTS (New) ---
+        from django.db.models import Case, When, Value, IntegerField
+        
+        # 1. Hot Leads (Top 5)
+        priority_leads = Lead.objects.filter(tenant=tenant).exclude(status__in=['CLOSED', 'REJECTED']).annotate(
+            interest_score=Case(
+                When(ai_analysis__interest_level='Hot', then=Value(3)),
+                When(ai_analysis__interest_level='Warm', then=Value(2)),
+                When(ai_analysis__interest_level='Cold', then=Value(1)),
+                default=Value(0),
+                output_field=IntegerField(),
+            )
+        ).order_by('-interest_score', '-created_at')[:5]
+
+        # 2. Overdue SPP (Top 5)
+        overdue_tagihan = Tagihan.objects.filter(
+            tenant=tenant, 
+            status='BELUM'
+        ).order_by('tgl_buat')[:5]
+
+        # 3. Potential Donors (Top 5 - Insidentil or newest)
+        potential_donatur = Donatur.objects.filter(tenant=tenant).order_by('-tgl_bergabung')[:5]
+
         tenant_name = tenant.name if tenant else "Pondok"
         
         context.update({
@@ -115,6 +138,9 @@ def dashboard_callback(request, context):
                     "footer": "Leads status 'Baru'",
                 },
             ],
+            "priority_leads": priority_leads,
+            "overdue_tagihan": overdue_tagihan,
+            "potential_donatur": potential_donatur,
         })
 
     return context
