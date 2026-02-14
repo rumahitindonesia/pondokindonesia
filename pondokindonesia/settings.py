@@ -111,7 +111,7 @@ UNFOLD = {
                     },
                     {
                         "title": "Daftar Jabatan (Role)",
-                        "icon": "vcard",
+                        "icon": "badge",
                         "link": "/admin/users/role/",
                         "permission": "core.permissions.can_view_role",
                     },
