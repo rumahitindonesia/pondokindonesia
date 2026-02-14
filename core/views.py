@@ -65,6 +65,11 @@ def webhook_whatsapp(request, tenant_slug=None):
             # Try to get name from 'push_name' (StarSender standard), fallback to 'pushName' or 'name'
             sender_name = data.get('push_name') or data.get('pushName') or data.get('name') or ''
             timestamp = data.get('timestamp', '')
+            is_me = data.get('is_me', False)
+            
+            # Ignore outgoing messages (from bot itself)
+            if is_me:
+                return HttpResponse('OK', status=200)
             
             # Save Message (associated with tenant if present, or global if None)
             WhatsAppMessage.objects.create(
