@@ -1,0 +1,247 @@
+{% extends "admin/change_form.html" %}
+{% load i18n admin_urls static %}
+
+{% block extrahead %}
+{{ block.super }}
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+    integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+    integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+<style>
+    #attendance-ui {
+        background: #f8f9fa;
+        padding: 20px;
+        border-radius: 8px;
+        margin-bottom: 20px;
+        text-align: center;
+    }
+
+    #camera-container,
+    #map-container {
+        width: 100%;
+        max-width: 400px;
+        height: 300px;
+        margin: 10px auto;
+        background: #000;
+        border-radius: 8px;
+        overflow: hidden;
+        position: relative;
+    }
+
+    video {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+
+    #map {
+        width: 100%;
+        height: 100%;
+    }
+
+    .status-badge {
+        padding: 10px;
+        border-radius: 5px;
+        font-weight: bold;
+        margin-bottom: 10px;
+        display: inline-block;
+    }
+
+    .status-ok {
+        background: #d4edda;
+        color: #155724;
+    }
+
+    .status-error {
+        background: #f8d7da;
+        color: #721c24;
+    }
+
+    .btn-capture {
+        background: #007bff;
+        color: white;
+        padding: 10px 20px;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        font-size: 16px;
+        margin-top: 10px;
+    }
+
+    .btn-capture:disabled {
+        background: #ccc;
+        cursor: not-allowed;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div id="attendance-ui">
+    <h2>📸 Absensi Harian</h2>
+
+    <div id="location-status" class="status-badge status-error">
+        Detecting Location...
+    </div>
+
+    <!-- Hidden Inputs to populate -->
+    <input type="hidden" name="foto_base64" id="id_foto_base64">
+    <input type="hidden" name="detected_lat" id="id_detected_lat">
+    <input type="hidden" name="detected_lon" id="id_detected_lon">
+
+    <div class="flex-container" style="display: flex; flex-wrap: wrap; justify-content: center; gap: 20px;">
+        <div id="camera-container">
+            <video id="video" autoplay playsinline></video>
+            <canvas id="canvas" style="display:none;"></canvas>
+            <img id="photo-preview" style="display:none; width:100%; height:100%; object-fit:cover;">
+        </div>
+        <div id="map-container">
+            <div id="map"></div>
+        </div>
+    </div>
+
+    <button type="button" id="btn-capture" class="btn-capture" disabled>
+        📸 Ambil Foto & Validasi Lokasi
+    </button>
+    <button type="button" id="btn-retake" class="btn-capture" style="background:#6c757d; display:none;">
+        🔄 Foto Ulang
+    </button>
+</div>
+
+<!-- Standard Admin Form -->
+{{ block.super }}
+
+<!-- Office Data from View -->
+<script id="office-data" type="application/json">
+        {{ office_json|safe }}
+    </script>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const video = document.getElementById('video');
+        const canvas = document.getElementById('canvas');
+        const photoPreview = document.getElementById('photo-preview');
+        const btnCapture = document.getElementById('btn-capture');
+        const btnRetake = document.getElementById('btn-retake');
+        const locationStatus = document.getElementById('location-status');
+        const mapElement = document.getElementById('map');
+
+        // Hidden inputs
+        const inputFoto = document.getElementById('id_foto_base64');
+        const inputLat = document.getElementById('id_detected_lat');
+        const inputLon = document.getElementById('id_detected_lon');
+
+        let map, userMarker, circle;
+        let userLat, userLon;
+
+        // Parse Office Data
+        const officeData = JSON.parse(document.getElementById('office-data').textContent);
+        const OFFICE_LAT = parseFloat(officeData.latitude);
+        const OFFICE_LON = parseFloat(officeData.longitude);
+        const RADIUS = parseInt(officeData.radius_meter);
+
+        // 1. Init Map
+        function initMap() {
+            map = L.map('map').setView([OFFICE_LAT, OFFICE_LON], 16);
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '© OpenStreetMap'
+            }).addTo(map);
+
+            // Office Circle
+            circle = L.circle([OFFICE_LAT, OFFICE_LON], {
+                color: 'green',
+                fillColor: '#90EE90',
+                fillOpacity: 0.5,
+                radius: RADIUS
+            }).addTo(map);
+
+            L.marker([OFFICE_LAT, OFFICE_LON]).addTo(map)
+                .bindPopup(officeData.nama).openPopup();
+        }
+
+        // 2. Start Camera
+        async function startCamera() {
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+                video.srcObject = stream;
+            } catch (err) {
+                alert("Gagal akses kamera: " + err);
+            }
+        }
+
+        // 3. Get Location & Validate
+        function checkLocation() {
+            if (!navigator.geolocation) {
+                locationStatus.textContent = "Geolocation tidak didukung browser ini.";
+                return;
+            }
+
+            navigator.geolocation.watchPosition(
+                (position) => {
+                    userLat = position.coords.latitude;
+                    userLon = position.coords.longitude;
+
+                    inputLat.value = userLat;
+                    inputLon.value = userLon;
+
+                    // Update Marker
+                    if (userMarker) {
+                        userMarker.setLatLng([userLat, userLon]);
+                    } else {
+                        userMarker = L.marker([userLat, userLon], { icon: L.divIcon({ className: 'user-marker', html: '📍' }) }).addTo(map);
+                    }
+
+                    // Calculate Distance
+                    const distance = map.distance([userLat, userLon], [OFFICE_LAT, OFFICE_LON]); // Leaflet method
+
+                    if (distance <= RADIUS) {
+                        locationStatus.textContent = `✅ Dalam Jangkauan (${Math.round(distance)}m)`;
+                        locationStatus.className = 'status-badge status-ok';
+                        if (inputFoto.value === "") btnCapture.disabled = false; // Only enable if not already captured
+                    } else {
+                        locationStatus.textContent = `❌ Terlalu Jauh (${Math.round(distance)}m)`;
+                        locationStatus.className = 'status-badge status-error';
+                        btnCapture.disabled = true;
+                    }
+                },
+                (error) => {
+                    locationStatus.textContent = "Gagal deteksi lokasi: " + error.message;
+                },
+                { enableHighAccuracy: true }
+            );
+        }
+
+        // 4. Capture Photo using Canvas
+        btnCapture.addEventListener('click', () => {
+            const context = canvas.getContext('2d');
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            context.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+            const dataData = canvas.toDataURL('image/jpeg');
+            inputFoto.value = dataData; // Put base64 to hidden input
+
+            // Show preview
+            photoPreview.src = dataData;
+            photoPreview.style.display = 'block';
+            video.style.display = 'none';
+
+            btnCapture.style.display = 'none';
+            btnRetake.style.display = 'inline-block';
+        });
+
+        btnRetake.addEventListener('click', () => {
+            inputFoto.value = "";
+            photoPreview.style.display = 'none';
+            video.style.display = 'block';
+            btnCapture.style.display = 'inline-block';
+            btnRetake.style.display = 'none';
+            // Re-check enabled state logic if needed
+        });
+
+        // Initialize
+        initMap();
+        startCamera();
+        checkLocation();
+    });
+</script>
+{% endblock %}
