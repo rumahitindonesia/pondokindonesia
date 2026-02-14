@@ -19,6 +19,7 @@ class RoleAdmin(BaseTenantAdmin, ModelAdmin):
     list_display = ('name', 'slug', 'scope', 'is_system')
     list_filter = ('tenant', 'is_system')
     search_fields = ('name', 'slug')
+    filter_horizontal = ('permissions',)
 
     def scope(self, obj):
         return "Global" if not obj.tenant else f"Tenant: {obj.tenant}"
