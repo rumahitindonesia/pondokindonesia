@@ -20,6 +20,18 @@ class LokasiKantorAdmin(BaseTenantAdmin, ModelAdmin):
         }),
     )
 
+    def add_view(self, request, form_url='', extra_context=None):
+        from django.conf import settings
+        extra_context = extra_context or {}
+        extra_context['google_maps_api_key'] = getattr(settings, 'GOOGLE_MAPS_API_KEY', '')
+        return super().add_view(request, form_url, extra_context=extra_context)
+
+    def change_view(self, request, object_id, form_url='', extra_context=None):
+        from django.conf import settings
+        extra_context = extra_context or {}
+        extra_context['google_maps_api_key'] = getattr(settings, 'GOOGLE_MAPS_API_KEY', '')
+        return super().change_view(request, object_id, form_url, extra_context=extra_context)
+
 from django.utils import timezone
 import json
 import base64

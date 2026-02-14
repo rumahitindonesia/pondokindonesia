@@ -3,10 +3,6 @@
 
 {% block extrahead %}
 {{ block.super }}
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
-    integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
-    integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
 <style>
     #map-container {
         height: 400px;
@@ -29,117 +25,121 @@
         border-radius: 4px;
         color: #000;
     }
-
-    .location-search-box button {
-        padding: 8px 16px;
-        background: #4f46e5;
-        color: white;
-        border: none;
-        border-radius: 4px;
-        cursor: pointer;
-    }
-
-    .location-search-box button:hover {
-        background: #4338ca;
-    }
 </style>
 {% endblock %}
 
 {% block after_field_sets %}
 <div style="padding: 10px;">
-    <h3 class="font-bold mb-2">📌 Pilih Lokasi Kantor</h3>
+    <h3 class="font-bold mb-2">📌 Pilih Lokasi Kantor (Google Maps)</h3>
     <p class="text-sm text-gray-500 mb-2">Geser pin di peta atau cari nama lokasi untuk mengisi Latitude & Longitude.
     </p>
 
+    {% if google_maps_api_key %}
     <div class="location-search-box">
-        <input type="text" id="search-location" placeholder="Cari alamat atau nama tempat (contoh: Monas, Jakarta)..."
-            onkeydown="if(event.key === 'Enter'){event.preventDefault(); searchLocation();}">
-        <button type="button" onclick="searchLocation()">Cari</button>
+        <input type="text" id="search-location" placeholder="Cari alamat atau nama tempat (contoh: Monas, Jakarta)...">
     </div>
-
     <div id="map-container"></div>
-</div>
 
-<script>
-    document.addEventListener("DOMContentLoaded", function () {
-        var latInput = document.getElementById("id_latitude");
-        var lngInput = document.getElementById("id_longitude");
+    <script>
+        function initMap() {
+            var latInput = document.getElementById("id_latitude");
+            var lngInput = document.getElementById("id_longitude");
 
-        // Default: Monas if empty
-        var defaultLat = -6.175392;
-        var defaultLng = 106.827153;
-        var zoomLevel = 13;
+            // Default: Monas if empty
+            var defaultLat = -6.175392;
+            var defaultLng = 106.827153;
+            var zoomLevel = 13;
 
-        if (latInput.value && lngInput.value) {
-            defaultLat = parseFloat(latInput.value);
-            defaultLng = parseFloat(lngInput.value);
-            zoomLevel = 16;
-        }
+            if (latInput.value && lngInput.value) {
+                try {
+                    defaultLat = parseFloat(latInput.value.replace(',', '.'));
+                    defaultLng = parseFloat(lngInput.value.replace(',', '.'));
+                    zoomLevel = 17;
+                } catch (e) { console.error("Error parsing coords", e); }
+            }
 
-        var map = L.map('map-container').setView([defaultLat, defaultLng], zoomLevel);
+            var center = { lat: defaultLat, lng: defaultLng };
 
-        L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            maxZoom: 19,
-            attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-        }).addTo(map);
+            var map = new google.maps.Map(document.getElementById("map-container"), {
+                zoom: zoomLevel,
+                center: center,
+                mapTypeId: "roadmap",
+                streetViewControl: false,
+            });
 
-        var marker = L.marker([defaultLat, defaultLng], { draggable: true }).addTo(map);
+            var marker = new google.maps.Marker({
+                position: center,
+                map: map,
+                draggable: true,
+                title: "Lokasi Kantor"
+            });
 
-        // Update Lat/Lng when marker is dragged
-        marker.on('dragend', function (e) {
-            var position = marker.getLatLng();
-            latInput.value = position.lat.toFixed(6);
-            lngInput.value = position.lng.toFixed(6);
-        });
+            // Update inputs when marker drags
+            marker.addListener("dragend", function () {
+                var pos = marker.getPosition();
+                latInput.value = pos.lat().toFixed(6);
+                lngInput.value = pos.lng().toFixed(6);
+            });
 
-        // Update marker when map is clicked
-        map.on('click', function (e) {
-            marker.setLatLng(e.latlng);
-            latInput.value = e.latlng.lat.toFixed(6);
-            lngInput.value = e.latlng.lng.toFixed(6);
-        });
+            // Update marker when map is clicked
+            map.addListener("click", function (e) {
+                marker.setPosition(e.latLng);
+                latInput.value = e.latLng.lat().toFixed(6);
+                lngInput.value = e.latLng.lng().toFixed(6);
+            });
 
-        // Make inputs read-only if desired, or let them be editable
-        // latInput.readOnly = true;
-        // lngInput.readOnly = true;
+            // Search Box
+            var input = document.getElementById("search-location");
+            var searchBox = new google.maps.places.SearchBox(input);
 
-        // Search Function
-        window.searchLocation = function () {
-            var query = document.getElementById("search-location").value;
-            if (!query) return;
+            // Bias the SearchBox results towards current map's viewport.
+            map.addListener("bounds_changed", function () {
+                searchBox.setBounds(map.getBounds());
+            });
 
-            var btn = document.querySelector(".location-search-box button");
-            var originalText = btn.innerText;
-            btn.innerText = "Mencari...";
-            btn.disabled = true;
+            searchBox.addListener("places_changed", function () {
+                var places = searchBox.getPlaces();
 
-            fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}`)
-                .then(response => response.json())
-                .then(data => {
-                    if (data && data.length > 0) {
-                        var result = data[0];
-                        var lat = parseFloat(result.lat);
-                        var lon = parseFloat(result.lon);
+                if (places.length == 0) {
+                    return;
+                }
 
-                        map.setView([lat, lon], 16);
-                        marker.setLatLng([lat, lon]);
-
-                        latInput.value = lat.toFixed(6);
-                        lngInput.value = lon.toFixed(6);
-                    } else {
-                        alert("Lokasi tidak ditemukan!");
+                // For each place, get the icon, name and location.
+                var bounds = new google.maps.LatLngBounds();
+                places.forEach(function (place) {
+                    if (!place.geometry || !place.geometry.location) {
+                        console.log("Returned place contains no geometry");
+                        return;
                     }
-                })
-                .catch(e => {
-                    console.error(e);
-                    alert("Gagal mencari lokasi.");
-                })
-                .finally(() => {
-                    btn.innerText = originalText;
-                    btn.disabled = false;
+
+                    // Move marker to the first result
+                    if (places.indexOf(place) === 0) {
+                        marker.setPosition(place.geometry.location);
+                        latInput.value = place.geometry.location.lat().toFixed(6);
+                        lngInput.value = place.geometry.location.lng().toFixed(6);
+                    }
+
+                    if (place.geometry.viewport) {
+                        // Only geocodes have viewport.
+                        bounds.union(place.geometry.viewport);
+                    } else {
+                        bounds.extend(place.geometry.location);
+                    }
                 });
-        };
-    });
-</script>
+                map.fitBounds(bounds);
+            });
+        }
+    </script>
+    <script
+        src="https://maps.googleapis.com/maps/api/js?key={{ google_maps_api_key }}&libraries=places&callback=initMap&loading=async"
+        async defer></script>
+    {% else %}
+    <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative" role="alert">
+        <strong class="font-bold">Google Maps API Key Missing!</strong>
+        <span class="block sm:inline">Silakan tambahkan <code>GOOGLE_MAPS_API_KEY</code> di file <code>.env</code> Anda
+            untuk menggunakan fitur peta ini.</span>
+    </div>
+    {% endif %}
+</div>
 {{ block.super }}
 {% endblock %}
