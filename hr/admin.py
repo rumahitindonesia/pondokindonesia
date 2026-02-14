@@ -46,7 +46,7 @@ class TugasAdmin(BaseTenantAdmin, ModelAdmin):
             'fields': ('penerima', 'lead', 'jenis', 'prioritas', 'bobot', 'tenggat_waktu')
         }),
         ('Status & Penyelesaian', {
-            'fields': ('status', 'tanggal_selesai', 'waktu_diselesaikan', 'catatan_penyelesaian')
+            'fields': ('status', 'url_posting', 'tanggal_selesai', 'waktu_diselesaikan', 'catatan_penyelesaian')
         }),
         ('Penilaian (Manager)', {
             'fields': ('skor', 'review_manager'),

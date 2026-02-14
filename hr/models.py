@@ -64,6 +64,7 @@ class Tugas(TenantAwareModel):
         SELESAI = 'SELESAI', _('Selesai')
         DIBATALKAN = 'DIBATALKAN', _('Dibatalkan')
         PENDING_APPROVAL = 'PENDING_APPROVAL', _('Menunggu Persetujuan')
+        REVISI = 'REVISI', _('Perlu Revisi')
 
     class Prioritas(models.TextChoices):
         RENDAH = 'RENDAH', _('Rendah')
@@ -129,6 +130,7 @@ class Tugas(TenantAwareModel):
     
     # Attachment
     file = models.FileField(upload_to='tugas_files/', blank=True, null=True, verbose_name=_("Lampiran"))
+    url_posting = models.URLField(_("Link Posting / Bukti Tayang"), blank=True, null=True, help_text=_("Link konten yang sudah diposting (untuk bukti selesai)."))
 
     # Penyelesaian & Penilaian (Scoring)
     waktu_diselesaikan = models.DateTimeField(_("Waktu Diselesaikan"), null=True, blank=True)
