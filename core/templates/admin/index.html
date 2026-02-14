@@ -135,8 +135,7 @@
                                 <h4
                                     class="font-semibold text-sm text-font-important-light dark:text-font-important-dark">
                                     {{ bill.santri.nama_lengkap }}</h4>
-                                <p class="text-[10px] text-red-600 font-medium dark:text-red-400">{{
-                                    bill.program.nama_program }} - {{ bill.bulan|default:bill.tgl_buat|date:"M Y" }}</p>
+                                <p class="text-[10px] text-red-600 font-medium dark:text-red-400">{{ bill.program.nama_program }} - {{ bill.bulan|default:bill.tgl_buat|date:"M Y" }}</p>
                             </div>
                         </div>
                         <a href="https://wa.me/{{ bill.santri.no_hp_wali|cut:'+' }}?text=Assalamualaikum,%20mohon%20maaf%20mengingatkan%20untuk%20pembayaran%20{{ bill.program.nama_program }}%20an%20{{ bill.santri.nama_lengkap }}."
@@ -179,8 +178,7 @@
                                 <h4
                                     class="font-semibold text-sm text-font-important-light dark:text-font-important-dark">
                                     {{ donor.nama_donatur }}</h4>
-                                <p class="text-[10px] text-green-600 font-medium dark:text-green-400">{{
-                                    donor.get_kategori_display }}</p>
+                                <p class="text-[10px] text-green-600 font-medium dark:text-green-400">{{ donor.get_kategori_display }}</p>
                             </div>
                         </div>
                         <a href="https://wa.me/{{ donor.no_hp|cut:'+' }}?text=Assalamualaikum%20{{ donor.nama_donatur }},%20semoga%20sehat%20selalu.%20Kami%20ingin%20menyapa%20Bapak/Ibu%20kembali."
