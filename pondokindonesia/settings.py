@@ -242,6 +242,18 @@ UNFOLD = {
                         "link": "/admin/hr/tugas/",
                         "permission": "core.permissions.can_view_tugas",
                     },
+                    {
+                        "title": "Absensi Harian",
+                        "icon": "fact_check",
+                        "link": "/admin/hr/absensi/",
+                        "permission": "core.permissions.can_view_tugas",
+                    },
+                    {
+                        "title": "Lokasi Kantor",
+                        "icon": "location_on",
+                        "link": "/admin/hr/lokasikantor/",
+                        "permission": "core.permissions.can_view_tugas",
+                    },
                 ],
             },
         ],
