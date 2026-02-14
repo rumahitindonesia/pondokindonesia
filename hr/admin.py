@@ -8,6 +8,17 @@ class LokasiKantorAdmin(BaseTenantAdmin, ModelAdmin):
     list_display = ['nama', 'radius_meter', 'latitude', 'longitude', 'tenant']
     search_fields = ['nama']
     list_filter = ['tenant']
+    change_form_template = 'admin/hr/lokasikantor/change_form.html'
+    
+    fieldsets = (
+        (None, {
+            'fields': ('nama', 'radius_meter')
+        }),
+        ('Titik Koordinat', {
+            'fields': ('latitude', 'longitude'),
+            'description': 'Geser pin pada peta (di bawah) untuk mengisi koordinat secara otomatis.'
+        }),
+    )
 
 from django.utils import timezone
 import json

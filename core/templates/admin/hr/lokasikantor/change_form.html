@@ -1,0 +1,145 @@
+{% extends "admin/change_form.html" %}
+{% load static %}
+
+{% block extrahead %}
+{{ block.super }}
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+    integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+    integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+<style>
+    #map-container {
+        height: 400px;
+        width: 100%;
+        margin-bottom: 20px;
+        border-radius: 8px;
+        z-index: 0;
+    }
+
+    .location-search-box {
+        display: flex;
+        gap: 10px;
+        margin-bottom: 10px;
+    }
+
+    .location-search-box input {
+        flex: 1;
+        padding: 8px;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+        color: #000;
+    }
+
+    .location-search-box button {
+        padding: 8px 16px;
+        background: #4f46e5;
+        color: white;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+    }
+
+    .location-search-box button:hover {
+        background: #4338ca;
+    }
+</style>
+{% endblock %}
+
+{% block after_field_sets %}
+<div style="padding: 10px;">
+    <h3 class="font-bold mb-2">📌 Pilih Lokasi Kantor</h3>
+    <p class="text-sm text-gray-500 mb-2">Geser pin di peta atau cari nama lokasi untuk mengisi Latitude & Longitude.
+    </p>
+
+    <div class="location-search-box">
+        <input type="text" id="search-location" placeholder="Cari alamat atau nama tempat (contoh: Monas, Jakarta)..."
+            onkeydown="if(event.key === 'Enter'){event.preventDefault(); searchLocation();}">
+        <button type="button" onclick="searchLocation()">Cari</button>
+    </div>
+
+    <div id="map-container"></div>
+</div>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        var latInput = document.getElementById("id_latitude");
+        var lngInput = document.getElementById("id_longitude");
+
+        // Default: Monas if empty
+        var defaultLat = -6.175392;
+        var defaultLng = 106.827153;
+        var zoomLevel = 13;
+
+        if (latInput.value && lngInput.value) {
+            defaultLat = parseFloat(latInput.value);
+            defaultLng = parseFloat(lngInput.value);
+            zoomLevel = 16;
+        }
+
+        var map = L.map('map-container').setView([defaultLat, defaultLng], zoomLevel);
+
+        L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            maxZoom: 19,
+            attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+        }).addTo(map);
+
+        var marker = L.marker([defaultLat, defaultLng], { draggable: true }).addTo(map);
+
+        // Update Lat/Lng when marker is dragged
+        marker.on('dragend', function (e) {
+            var position = marker.getLatLng();
+            latInput.value = position.lat.toFixed(6);
+            lngInput.value = position.lng.toFixed(6);
+        });
+
+        // Update marker when map is clicked
+        map.on('click', function (e) {
+            marker.setLatLng(e.latlng);
+            latInput.value = e.latlng.lat.toFixed(6);
+            lngInput.value = e.latlng.lng.toFixed(6);
+        });
+
+        // Make inputs read-only if desired, or let them be editable
+        // latInput.readOnly = true;
+        // lngInput.readOnly = true;
+
+        // Search Function
+        window.searchLocation = function () {
+            var query = document.getElementById("search-location").value;
+            if (!query) return;
+
+            var btn = document.querySelector(".location-search-box button");
+            var originalText = btn.innerText;
+            btn.innerText = "Mencari...";
+            btn.disabled = true;
+
+            fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data && data.length > 0) {
+                        var result = data[0];
+                        var lat = parseFloat(result.lat);
+                        var lon = parseFloat(result.lon);
+
+                        map.setView([lat, lon], 16);
+                        marker.setLatLng([lat, lon]);
+
+                        latInput.value = lat.toFixed(6);
+                        lngInput.value = lon.toFixed(6);
+                    } else {
+                        alert("Lokasi tidak ditemukan!");
+                    }
+                })
+                .catch(e => {
+                    console.error(e);
+                    alert("Gagal mencari lokasi.");
+                })
+                .finally(() => {
+                    btn.innerText = originalText;
+                    btn.disabled = false;
+                });
+        };
+    });
+</script>
+{{ block.super }}
+{% endblock %}
