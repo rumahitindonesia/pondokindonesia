@@ -72,6 +72,13 @@ def dashboard_callback(request, context):
             tenant=tenant, 
             tgl_donasi__gte=first_day_of_month
         ).aggregate(total=Sum('nominal'))['total'] or 0
+
+        # Non-Donation Earnings (LUNAS bills paid this month)
+        total_non_donasi_month = Tagihan.objects.filter(
+            tenant=tenant,
+            status='LUNAS',
+            tgl_bayar__gte=first_day_of_month
+        ).aggregate(total=Sum('nominal'))['total'] or 0
         
         # Unpaid Bills
         unpaid_bills_count = Tagihan.objects.filter(
@@ -108,6 +115,22 @@ def dashboard_callback(request, context):
         tenant_name = tenant.name if tenant else "Pondok"
         
         context.update({
+            "master_kpis": [
+                {
+                    "title": "Perolehan Non Donasi",
+                    "metric": f"Rp {total_non_donasi_month:,.0f}",
+                    "icon": "payments",
+                    "color": "blue",
+                    "footer": "Total SPP/Tagihan Lunas (Bulan Ini)",
+                },
+                {
+                    "title": "Perolehan Donasi",
+                    "metric": f"Rp {total_donasi_month:,.0f}",
+                    "icon": "volunteer_activism",
+                    "color": "green",
+                    "footer": "Total Donasi Masuk (Bulan Ini)",
+                },
+            ],
             "kpi_cards": [
                 {
                     "title": "Santri Aktif",
@@ -117,16 +140,9 @@ def dashboard_callback(request, context):
                     "footer": f"Total santri di {tenant_name}",
                 },
                 {
-                    "title": "Donasi Bulan Ini",
-                    "metric": f"Rp {total_donasi_month:,.0f}",
-                    "icon": "volunteer_activism",
-                    "color": "green",
-                    "footer": "Total pemasukan donasi",
-                },
-                {
                     "title": "Tagihan Belum Lunas",
                     "metric": unpaid_bills_count,
-                    "icon": "payments",
+                    "icon": "priority_high",
                     "color": "red",
                     "footer": "Perlu segera di-followup",
                 },
