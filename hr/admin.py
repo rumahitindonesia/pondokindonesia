@@ -18,26 +18,25 @@ from django.urls import reverse
 
 @admin.register(Absensi)
 class AbsensiAdmin(BaseTenantAdmin, ModelAdmin):
-    pass
-    # list_display = ['pengurus', 'tanggal', 'waktu_masuk', 'waktu_keluar', 'status', 'tenant']
-    # list_filter = ['status', 'tanggal', 'tenant', 'pengurus__jabatan']
-    # search_fields = ['pengurus__nama']
-    # autocomplete_fields = ['pengurus']
-    # date_hierarchy = 'tanggal'
-    # readonly_fields = ['waktu_masuk', 'foto_masuk', 'lokasi_masuk', 'waktu_keluar', 'foto_keluar', 'lokasi_keluar']
-    # # change_form_template = 'admin/hr/absensi/change_form.html'
+    list_display = ['pengurus', 'tanggal', 'waktu_masuk', 'waktu_keluar', 'status', 'tenant']
+    list_filter = ['status', 'tanggal', 'tenant', 'pengurus__jabatan']
+    search_fields = ['pengurus__nama']
+    autocomplete_fields = ['pengurus']
+    date_hierarchy = 'tanggal'
+    readonly_fields = ['waktu_masuk', 'foto_masuk', 'lokasi_masuk', 'waktu_keluar', 'foto_keluar', 'lokasi_keluar']
+    # change_form_template = 'admin/hr/absensi/change_form.html'
 
-    # fieldsets = (
-    #     (None, {
-    #         'fields': ('pengurus', 'tanggal', 'status', 'catatan')
-    #     }),
-    #     ('Absen Masuk', {
-    #         'fields': ('waktu_masuk', 'foto_masuk', 'lokasi_masuk')
-    #     }),
-    #     ('Absen Pulang', {
-    #         'fields': ('waktu_keluar', 'foto_keluar', 'lokasi_keluar')
-    #     }),
-    # )
+    fieldsets = (
+        (None, {
+            'fields': ('pengurus', 'tanggal', 'status', 'catatan')
+        }),
+        ('Absen Masuk', {
+            'fields': ('waktu_masuk', 'foto_masuk', 'lokasi_masuk')
+        }),
+        ('Absen Pulang', {
+            'fields': ('waktu_keluar', 'foto_keluar', 'lokasi_keluar')
+        }),
+    )
 
     # def get_office_context(self, request):
     #     tenant = getattr(request, 'tenant', None)
