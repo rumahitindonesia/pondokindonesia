@@ -104,30 +104,31 @@ class Command(BaseCommand):
                 nominal=paid_prog.nominal_standar,
                 bulan='Januari 2026',
                 status='LUNAS',
-                tgl_bayar=timezone.now() - timedelta(days=random.randint(1, 4))
+                tgl_bayar=timezone.now() - timedelta(days=random.randint(0, 10))
             )
 
         self.stdout.write("Seeded Santri and Tagihan (Unpaid & Paid).")
 
         # 6. Seed Donatur & 7. Donasi
-        donor_names = ['H. Sulaiman', 'Ibu Fatimah', 'Bp. Ridwan']
+        donor_names = ['H. Sulaiman', 'Ibu Fatimah', 'Bp. Ridwan', 'H. Ahmad', 'Ibu Siti']
         for name in donor_names:
             donor, _ = Donatur.objects.get_or_create(
                 tenant=tenant,
                 nama_donatur=name,
                 defaults={
                     'no_hp': f'+62811223344{random.randint(0,9)}',
-                    'kategori': 'TETAP' if name == 'H. Sulaiman' else 'INSIDENTIL'
+                    'kategori': 'TETAP' if 'H.' in name else 'INSIDENTIL'
                 }
             )
-            # Seed a donation for each donor
-            TransaksiDonasi.objects.create(
-                tenant=tenant,
-                donatur=donor,
-                program=donasi_program,
-                nominal=random.choice([100000, 250000, 500000]),
-                tgl_donasi=timezone.now()
-            )
-        self.stdout.write("Seeded Donatur and Donation Transactions.")
+            # Seed multiple donations for each donor on different days
+            for _ in range(random.randint(1, 3)):
+                TransaksiDonasi.objects.create(
+                    tenant=tenant,
+                    donatur=donor,
+                    program=donasi_program,
+                    nominal=random.choice([50000, 100000, 250000, 500000]),
+                    tgl_donasi=timezone.now() - timedelta(days=random.randint(0, 15))
+                )
+        self.stdout.write("Seeded Donatur and Donation Transactions (Spread out).")
 
         self.stdout.write(self.style.SUCCESS("Successfully seeded dummy data!"))

@@ -31,7 +31,8 @@
                     </span>
                 </div>
                 <div>
-                    <h3 class="font-bold text-lg text-base-900 dark:text-font-important-dark tracking-tight">{{ card.title }}</h3>
+                    <h3 class="font-bold text-lg text-base-900 dark:text-font-important-dark tracking-tight">{{
+                        card.title }}</h3>
                     {% if card.footer %}
                     <span class="text-xs text-base-500 dark:text-font-default-dark/70">
                         {{ card.footer }}
@@ -51,45 +52,138 @@
     {% endif %}
 
     {% if kpi_cards %}
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
+    <!-- Daily Financial Chart -->
+    <div
+        class="bg-white border border-base-200 rounded-default overflow-hidden shadow-sm dark:bg-base-900 dark:border-base-800 mb-8">
+        <div
+            class="bg-base-50/50 border-b border-base-200 px-6 py-4 dark:bg-base-800/20 dark:border-base-800 flex items-center justify-between">
+            <h3
+                class="font-semibold text-font-important-light text-sm dark:text-font-important-dark flex items-center gap-2">
+                <span class="material-symbols-outlined text-primary-600">bar_chart</span>
+                Grafik Perolehan Harian (Bulan Ini)
+            </h3>
+        </div>
+        <div class="p-6">
+            <canvas id="dailyEarningsChart" style="width: 100%; height: 300px;"></canvas>
+        </div>
+    </div>
+
+    <!-- Mini KPI Cards -->
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-12">
         {% for card in kpi_cards %}
-        <div class="border p-6 rounded-default shadow-sm transition-all hover:shadow-md 
-            {% if card.color == 'blue' %}bg-blue-50 border-blue-200 dark:bg-base-800 dark:border-blue-500
-            {% elif card.color == 'green' %}bg-green-100 border-green-200 dark:bg-base-800 dark:border-green-500
-            {% elif card.color == 'orange' %}bg-orange-100 border-orange-200 dark:bg-base-800 dark:border-orange-500
-            {% elif card.color == 'red' %}bg-red-50 border-red-200 dark:bg-base-800 dark:border-red-500
-            {% elif card.color == 'primary' %}bg-primary-50 border-primary-200 dark:bg-base-800 dark:border-primary-500
-            {% else %}bg-white border-base-200 dark:bg-base-900 dark:border-base-800{% endif %}">
-
-            <div class="flex items-center gap-4 mb-3">
-                <div class="p-2.5 rounded-full shadow-sm
-                    {% if card.color == 'blue' %}bg-blue-500 text-white
-                    {% elif card.color == 'green' %}bg-green-600 text-white
-                    {% elif card.color == 'orange' %}bg-orange-500 text-white
-                    {% elif card.color == 'red' %}bg-red-600 text-white
-                    {% elif card.color == 'primary' %}bg-primary-600 text-white
-                    {% else %}bg-base-600 text-white{% endif %}">
-                    <span class="material-symbols-outlined block md-20">
-                        {{ card.icon }}
-                    </span>
-                </div>
-                <h3 class="font-semibold text-base-900 dark:text-font-important-dark tracking-tight">{{ card.title }}
-                </h3>
+        <div
+            class="border p-4 rounded-default shadow-sm transition-all hover:shadow-md bg-white border-base-200 dark:bg-base-900 dark:border-base-800 flex items-center gap-3">
+            <div class="p-2 rounded-full 
+                {% if card.color == 'blue' %}bg-blue-500 text-white
+                {% elif card.color == 'green' %}bg-green-600 text-white
+                {% elif card.color == 'orange' %}bg-orange-500 text-white
+                {% elif card.color == 'red' %}bg-red-600 text-white
+                {% elif card.color == 'primary' %}bg-primary-600 text-white
+                {% else %}bg-base-600 text-white{% endif %}">
+                <span class="material-symbols-outlined block text-lg">
+                    {{ card.icon }}
+                </span>
             </div>
-
-            <div class="flex flex-col">
-                <span class="font-bold text-3xl text-font-important-light dark:text-font-important-dark">
-                    {{ card.metric }}
-                </span>
-                {% if card.footer %}
-                <span class="text-xs text-base-500 mt-1 dark:text-font-default-dark/70">
-                    {{ card.footer }}
-                </span>
-                {% endif %}
+            <div>
+                <p class="text-[10px] text-base-500 dark:text-font-default-dark/70 uppercase font-bold">{{ card.title }}
+                </p>
+                <p class="font-bold text-xl text-font-important-light dark:text-font-important-dark">{{ card.metric }}
+                </p>
             </div>
         </div>
         {% endfor %}
     </div>
+
+    <!-- Chart.js and Initialization -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script id="chart-data" type="application/json">
+        {
+            "labels": {{ chart_labels|safe }},
+            "nonDonasi": {{ chart_non_donasi_data|safe }},
+            "donasi": {{ chart_donasi_data|safe }}
+        }
+    </script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const dataElement = document.getElementById('chart-data');
+            const data = JSON.parse(dataElement.textContent);
+            const ctx = document.getElementById('dailyEarningsChart').getContext('2d');
+
+            new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: data.labels,
+                    datasets: [
+                        {
+                            label: 'Non Donasi',
+                            data: data.nonDonasi,
+                            backgroundColor: '#3b82f6', // blue-500
+                            borderRadius: 4
+                        },
+                        {
+                            label: 'Donasi',
+                            data: data.donasi,
+                            backgroundColor: '#16a34a', // green-600
+                            borderRadius: 4
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: true,
+                            position: 'top',
+                            align: 'end',
+                            labels: {
+                                boxWidth: 12,
+                                usePointStyle: true,
+                                pointStyle: 'circle',
+                                font: {
+                                    size: 11
+                                }
+                            }
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function (context) {
+                                    let label = context.dataset.label || '';
+                                    if (label) {
+                                        label += ': ';
+                                    }
+                                    if (context.parsed.y !== null) {
+                                        label += new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(context.parsed.y);
+                                    }
+                                    return label;
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            grid: {
+                                display: false
+                            }
+                        },
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                callback: function (value) {
+                                    if (value >= 1000000) return 'Rp ' + (value / 1000000) + 'jt';
+                                    if (value >= 1000) return 'Rp ' + (value / 1000) + 'rb';
+                                    return 'Rp ' + value;
+                                },
+                                font: {
+                                    size: 10
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        });
+    </script>
     {% endif %}
 
     {% block dashboard_content %}
@@ -172,7 +266,8 @@
                                 <h4
                                     class="font-semibold text-sm text-font-important-light dark:text-font-important-dark">
                                     {{ tgh.santri.nama_lengkap }}</h4>
-                                <p class="text-[10px] text-red-600 font-medium dark:text-red-400">{{ tgh.program.nama_program }} - {{ tgh.bulan|default:tgh.tgl_buat|date:"M Y" }}</p>
+                                <p class="text-[10px] text-red-600 font-medium dark:text-red-400">{{
+                                    tgh.program.nama_program }} - {{ tgh.bulan|default:tgh.tgl_buat|date:"M Y" }}</p>
                             </div>
                         </div>
                         <a href="https://wa.me/{{ tgh.santri.no_hp_wali|cut:'+' }}?text=Assalamualaikum,%20mohon%20maaf%20mengingatkan%20untuk%20pembayaran%20{{ tgh.program.nama_program }}%20an%20{{ tgh.santri.nama_lengkap }}."
@@ -215,7 +310,8 @@
                                 <h4
                                     class="font-semibold text-sm text-font-important-light dark:text-font-important-dark">
                                     {{ dntr.nama_donatur }}</h4>
-                                <p class="text-[10px] text-green-600 font-medium dark:text-green-400">{{ dntr.get_kategori_display }}</p>
+                                <p class="text-[10px] text-green-600 font-medium dark:text-green-400">{{
+                                    dntr.get_kategori_display }}</p>
                             </div>
                         </div>
                         <a href="https://wa.me/{{ dntr.no_hp|cut:'+' }}?text=Assalamualaikum%20{{ dntr.nama_donatur }},%20semoga%20sehat%20selalu.%20Kami%20ingin%20menyapa%20Bapak/Ibu%20kembali."

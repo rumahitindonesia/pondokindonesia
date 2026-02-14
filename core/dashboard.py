@@ -113,6 +113,43 @@ def dashboard_callback(request, context):
         potential_donatur = Donatur.objects.filter(tenant=tenant).order_by('-tgl_bergabung')[:5]
 
         tenant_name = tenant.name if tenant else "Pondok"
+
+        # --- DAILY CHART DATA ---
+        import calendar
+        from django.db.models.functions import TruncDate
+        
+        days_in_month = calendar.monthrange(now.year, now.month)[1]
+        chart_labels = [str(i) for i in range(1, days_in_month + 1)]
+        
+        # Initialize daily data maps
+        daily_non_donasi_map = {i: 0 for i in range(1, days_in_month + 1)}
+        daily_donasi_map = {i: 0 for i in range(1, days_in_month + 1)}
+        
+        # Fetch data
+        non_donasi_query = Tagihan.objects.filter(
+            tenant=tenant,
+            status='LUNAS',
+            tgl_bayar__year=now.year,
+            tgl_bayar__month=now.month
+        ).annotate(day=TruncDate('tgl_bayar')).values('day').annotate(total=Sum('nominal'))
+
+        donasi_query = TransaksiDonasi.objects.filter(
+            tenant=tenant,
+            tgl_donasi__year=now.year,
+            tgl_donasi__month=now.month
+        ).annotate(day=TruncDate('tgl_donasi')).values('day').annotate(total=Sum('nominal'))
+
+        # Map to days
+        for entry in non_donasi_query:
+            if entry['day']:
+                daily_non_donasi_map[entry['day'].day] = float(entry['total'])
+        
+        for entry in donasi_query:
+            if entry['day']:
+                daily_donasi_map[entry['day'].day] = float(entry['total'])
+
+        chart_non_donasi_data = [daily_non_donasi_map[i] for i in range(1, days_in_month + 1)]
+        chart_donasi_data = [daily_donasi_map[i] for i in range(1, days_in_month + 1)]
         
         context.update({
             "master_kpis": [
@@ -142,7 +179,7 @@ def dashboard_callback(request, context):
                 {
                     "title": "Total Donatur",
                     "metric": total_donatur,
-                    "icon": "volunteer_activism",
+                    "icon": "favorite",
                     "color": "green",
                     "footer": f"Donatur terdaftar di {tenant_name}",
                 },
@@ -161,6 +198,9 @@ def dashboard_callback(request, context):
                     "footer": "Leads status 'Baru'",
                 },
             ],
+            "chart_labels": chart_labels,
+            "chart_non_donasi_data": chart_non_donasi_data,
+            "chart_donasi_data": chart_donasi_data,
             "priority_leads": priority_leads,
             "overdue_tagihan": overdue_tagihan,
             "potential_donatur": potential_donatur,
