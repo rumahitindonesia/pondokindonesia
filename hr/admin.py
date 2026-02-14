@@ -24,7 +24,7 @@ class AbsensiAdmin(BaseTenantAdmin, ModelAdmin):
     autocomplete_fields = ['pengurus']
     date_hierarchy = 'tanggal'
     readonly_fields = ['waktu_masuk', 'foto_masuk', 'lokasi_masuk', 'waktu_keluar', 'foto_keluar', 'lokasi_keluar']
-    change_form_template = 'admin/hr/absensi/change_form.html'
+    # change_form_template = 'admin/hr/absensi/change_form.html'
 
     fieldsets = (
         (None, {
