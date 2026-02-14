@@ -24,7 +24,7 @@ class LeadWorkflowService:
             return None
             
         # 2. Get active CS users
-        eligible_cs = User.objects.filter(
+        eligible_cs = User.all_objects.filter(
             tenant=tenant,
             role=cs_role,
             is_active=True
