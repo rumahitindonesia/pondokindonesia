@@ -27,9 +27,14 @@ class RoleAdmin(BaseTenantAdmin, ModelAdmin):
 
     def get_queryset(self, request):
         tenant = getattr(request, 'tenant', None)
+        # Superuser see everything (including Global)
+        if request.user.is_superuser:
+            return Role.all_objects.all()
+        # Tenant Admin see ONLY their specific roles
         if tenant:
-            return Role.global_objects.all()
-        return super().get_queryset(request)
+            return Role.all_objects.filter(tenant=tenant)
+        # Central Admin (no tenant) see Global roles
+        return Role.all_objects.filter(tenant__isnull=True)
 
 @admin.register(User)
 class UserAdmin(BaseTenantAdmin, BaseUserAdmin, ModelAdmin):
