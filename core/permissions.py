@@ -40,3 +40,6 @@ def can_view_pengurus(request):
 
 def can_view_jabatan(request):
     return request.user.is_active and (request.user.is_superuser or request.user.has_perm('hr.view_jabatan'))
+
+def can_view_tugas(request):
+    return request.user.is_active and (request.user.is_superuser or request.user.has_perm('hr.view_tugas'))

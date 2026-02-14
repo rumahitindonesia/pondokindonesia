@@ -236,6 +236,12 @@ UNFOLD = {
                         "link": "/admin/hr/jabatan/",
                         "permission": "core.permissions.can_view_jabatan",
                     },
+                    {
+                        "title": "Daftar Tugas",
+                        "icon": "assignment",
+                        "link": "/admin/hr/tugas/",
+                        "permission": "core.permissions.can_view_tugas",
+                    },
                 ],
             },
         ],
