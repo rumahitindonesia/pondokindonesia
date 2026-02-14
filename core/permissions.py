@@ -31,3 +31,6 @@ def can_view_user(request):
 
 def can_view_apisetting(request):
     return request.user.is_active and (request.user.is_superuser or request.user.has_perm('core.view_apisetting'))
+
+def can_view_role(request):
+    return request.user.is_active and (request.user.is_superuser or request.user.has_perm('users.view_role'))

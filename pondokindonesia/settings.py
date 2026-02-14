@@ -110,6 +110,12 @@ UNFOLD = {
                         "permission": "core.permissions.can_view_user",
                     },
                     {
+                        "title": "Daftar Jabatan (Role)",
+                        "icon": "vcard",
+                        "link": "/admin/users/role/",
+                        "permission": "core.permissions.can_view_role",
+                    },
+                    {
                         "title": "Paket Berlangganan",
                         "icon": "loyalty",
                         "link": "/admin/core/pricingplan/",
