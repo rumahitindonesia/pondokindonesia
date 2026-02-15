@@ -105,6 +105,17 @@ class Tugas(TenantAwareModel):
         verbose_name=_("Terkait Lead (Opsional)"),
         help_text=_("Pilih jika tugas ini berkaitan khusus dengan satu Lead.")
     )
+
+    # Linked OKR (Initiative)
+    key_result = models.ForeignKey(
+        'hr.KeyResult',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='initiatives',
+        verbose_name=_("Mendukung Key Result"),
+        help_text=_("Pilih Key Result yang didukung oleh tugas ini (Inisiatif).")
+    )
     
     # Tracking
     status = models.CharField(
@@ -331,3 +342,74 @@ class RealisasiKPI(TenantAwareModel):
             score = (achieved / target) * 100
             self.nilai_akhir = min(score, 100.0) 
         super().save(*args, **kwargs)
+
+# --- OKR (OBJECTIVES & KEY RESULTS) ---
+
+class Objective(TenantAwareModel):
+    judul = models.CharField(_("Objective (Tujuan)"), max_length=255, help_text="Tujuan Strategis, misal: 'Menjadi Market Leader'")
+    owner = models.ForeignKey(Pengurus, on_delete=models.CASCADE, related_name='objectives', verbose_name=_("Owner"))
+    periode = models.ForeignKey(PeriodePenilaian, on_delete=models.CASCADE, verbose_name=_("Periode"))
+    progress = models.DecimalField(_("Progress (%)"), max_digits=5, decimal_places=2, default=0.0)
+    is_active = models.BooleanField(_("Aktif"), default=True)
+
+    class Meta:
+        verbose_name = _("Objective")
+        verbose_name_plural = _("Objectives")
+        ordering = ['-id']
+
+    def __str__(self):
+        return f"{self.judul} ({self.progress}%)"
+
+    def calculate_progress(self):
+        krs = self.key_results.all()
+        if not krs.exists():
+            return 0.0
+        
+        # Average of KR progress (normalized to 100%)
+        # Logic: Sum(KR.achieved_percent) / Count(KR)
+        total_percent = 0
+        for kr in krs:
+            if kr.target > 0:
+                percent = (kr.current_value / kr.target) * 100
+                total_percent += min(percent, 100) # Cap at 100% per KR to avoid skewing
+            else:
+                total_percent += 0 # Avoid division by zero
+        
+        avg = total_percent / krs.count()
+        return round(avg, 2)
+
+class KeyResult(TenantAwareModel):
+    class Mode(models.TextChoices):
+        MANUAL = 'MANUAL', _('Manual Input')
+        AUTO = 'AUTO', _('Otomatis (System)')
+
+    objective = models.ForeignKey(Objective, on_delete=models.CASCADE, related_name='key_results')
+    judul = models.CharField(_("Key Result"), max_length=255, help_text="ukuran keberhasilan, misal: '1000 Santri Baru'")
+    target = models.DecimalField(_("Target"), max_digits=12, decimal_places=2)
+    current_value = models.DecimalField(_("Realisasi Saat Ini"), max_digits=12, decimal_places=2, default=0)
+    unit = models.CharField(_("Satuan"), max_length=50, blank=True, help_text="Contoh: Santri, Rp, %, Leads")
+    
+    # Auto-Calculation
+    mode = models.CharField(_("Mode Pengisian"), max_length=20, choices=Mode.choices, default=Mode.MANUAL)
+    source = models.CharField(
+        _("Sumber Data Otomatis"), 
+        max_length=50, 
+        choices=KamusKPI.Sumber.choices, 
+        blank=True, 
+        null=True,
+        help_text="Pilih sumber data jika Mode = Otomatis"
+    )
+
+    class Meta:
+        verbose_name = _("Key Result")
+        verbose_name_plural = _("Key Results")
+
+    def __str__(self):
+        return f"{self.judul} ({self.current_value}/{self.target} {self.unit})"
+
+    def save(self, *args, **kwargs):
+        super().save(*args, **kwargs)
+        # Update Parent Objective Progress
+        new_progress = self.objective.calculate_progress()
+        self.objective.progress = new_progress
+        self.objective.save()

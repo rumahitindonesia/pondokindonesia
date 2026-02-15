@@ -294,6 +294,24 @@ UNFOLD = {
                     },
                 ],
             },
+            {
+                "title": "OKR (Objectives & Key Results)",
+                "collapsible": True,
+                "items": [
+                    {
+                        "title": "Objectives (Tujuan)",
+                        "icon": "flag",
+                        "link": "/admin/hr/objective/",
+                        "permission": "core.permissions.can_view_pengurus",
+                    },
+                    {
+                        "title": "Key Results (Hasil Kunci)",
+                        "icon": "emoji_events",
+                        "link": "/admin/hr/keyresult/",
+                        "permission": "core.permissions.can_view_pengurus",
+                    },
+                ],
+            },
         ],
     },
 }

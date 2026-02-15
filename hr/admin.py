@@ -1,7 +1,7 @@
 from django.contrib import admin
 from unfold.admin import ModelAdmin
 from core.admin import BaseTenantAdmin
-from .models import Jabatan, Pengurus, Tugas, LokasiKantor, Absensi, PeriodePenilaian, KamusKPI, JenisAmalan, LogAmalan, TargetKPI, RealisasiKPI
+from .models import Jabatan, Pengurus, Tugas, LokasiKantor, Absensi, PeriodePenilaian, KamusKPI, JenisAmalan, LogAmalan, TargetKPI, RealisasiKPI, Objective, KeyResult
 
 @admin.register(LokasiKantor)
 class LokasiKantorAdmin(BaseTenantAdmin, ModelAdmin):
@@ -197,7 +197,7 @@ class TugasAdmin(BaseTenantAdmin, ModelAdmin):
             'fields': ('judul', 'deskripsi', 'file', 'pembuat')
         }),
         ('Detail Penugasan', {
-            'fields': ('penerima', 'lead', 'jenis', 'prioritas', 'bobot', 'tenggat_waktu')
+            'fields': ('penerima', 'lead', 'key_result', 'jenis', 'prioritas', 'bobot', 'tenggat_waktu')
         }),
         ('Status & Penyelesaian', {
             'fields': ('status', 'url_posting', 'tanggal_selesai', 'waktu_diselesaikan', 'catatan_penyelesaian')
@@ -282,3 +282,40 @@ class TargetKPIAdmin(BaseTenantAdmin, ModelAdmin):
             return obj.realisasi.nilai_akhir
         return "-"
     get_score.short_description = "Skor Akhir"
+
+# --- OKR ADMIN ---
+
+class KeyResultInline(admin.StackedInline):
+    model = KeyResult
+    extra = 1
+    verbose_name_plural = "Key Results (Hasil Kunci)"
+
+@admin.register(Objective)
+class ObjectiveAdmin(BaseTenantAdmin, ModelAdmin):
+    list_display = ['judul', 'owner', 'periode', 'progress', 'is_active', 'tenant']
+    list_filter = ['is_active', 'periode', 'tenant', 'owner']
+    search_fields = ['judul', 'owner__nama']
+    autocomplete_fields = ['owner']
+    readonly_fields = ['progress']
+    inlines = [KeyResultInline]
+
+    fieldsets = (
+        (None, {
+            'fields': ('judul', 'owner', 'periode', 'progress', 'is_active')
+        }),
+    )
+
+@admin.register(KeyResult)
+class KeyResultAdmin(BaseTenantAdmin, ModelAdmin):
+    list_display = ['judul', 'objective', 'current_value', 'target', 'unit', 'progress_bar', 'tenant']
+    list_filter = ['objective__periode', 'tenant']
+    search_fields = ['judul', 'objective__judul']
+    autocomplete_fields = ['objective']
+
+    def progress_bar(self, obj):
+        if obj.target > 0:
+            percent = (obj.current_value / obj.target) * 100
+            percent = min(percent, 100)
+            return f"{percent:.1f}%"
+        return "0%"
+    progress_bar.short_description = "Progress"
