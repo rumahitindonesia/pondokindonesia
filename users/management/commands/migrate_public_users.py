@@ -3,6 +3,7 @@ from crm.models import Santri, Donatur
 from core.models import Lead
 from users.models import User
 from django.db import transaction
+from django.db.models import Q
 
 
 def normalize_phone(phone):
@@ -65,21 +66,16 @@ class Command(BaseCommand):
             try:
                 if not dry_run:
                     with transaction.atomic():
-                        user, created = User.objects.get_or_create(
-                            phone_number=phone_normalized,
-                            defaults={
-                                'username': f'wali_{phone_normalized}',
-                                'user_type': User.UserType.WALI,
-                                'is_wali': True,
-                                'santri_id': santri.id,
-                                'tenant': santri.tenant,
-                                'is_staff': False,
-                                'is_active': True
-                            }
-                        )
+                        # Try to find user by phone or username
+                        username = f'wali_{phone_normalized}'
+                        user = User.objects.filter(
+                            Q(phone_number=phone_normalized) | Q(username=username)
+                        ).first()
                         
-                        if not created:
-                            # Update to WALI (highest priority)
+                        if user:
+                            # Update existing user
+                            if not user.phone_number:
+                                user.phone_number = phone_normalized
                             user.user_type = User.UserType.WALI
                             user.is_wali = True
                             user.santri_id = santri.id
@@ -89,6 +85,17 @@ class Command(BaseCommand):
                             stats['santri_updated'] += 1
                             self.stdout.write(f'  Updated: {santri.nama_lengkap} ({phone_normalized})')
                         else:
+                            # Create new user
+                            user = User.objects.create(
+                                username=username,
+                                phone_number=phone_normalized,
+                                user_type=User.UserType.WALI,
+                                is_wali=True,
+                                santri_id=santri.id,
+                                tenant=santri.tenant,
+                                is_staff=False,
+                                is_active=True
+                            )
                             stats['santri_created'] += 1
                             self.stdout.write(self.style.SUCCESS(f'  Created: {santri.nama_lengkap} ({phone_normalized})'))
                 else:
@@ -114,21 +121,15 @@ class Command(BaseCommand):
             try:
                 if not dry_run:
                     with transaction.atomic():
-                        user, created = User.objects.get_or_create(
-                            phone_number=phone_normalized,
-                            defaults={
-                                'username': f'donatur_{phone_normalized}',
-                                'user_type': User.UserType.DONATUR,
-                                'is_donatur': True,
-                                'donatur_id': donatur.id,
-                                'tenant': donatur.tenant,
-                                'is_staff': False,
-                                'is_active': True
-                            }
-                        )
+                        username = f'donatur_{phone_normalized}'
+                        user = User.objects.filter(
+                            Q(phone_number=phone_normalized) | Q(username=username)
+                        ).first()
                         
-                        if not created:
-                            # Only update if not already WALI
+                        if user:
+                            # Update existing user
+                            if not user.phone_number:
+                                user.phone_number = phone_normalized
                             if user.user_type != User.UserType.WALI:
                                 user.user_type = User.UserType.DONATUR
                             user.is_donatur = True
@@ -139,6 +140,16 @@ class Command(BaseCommand):
                             stats['donatur_updated'] += 1
                             self.stdout.write(f'  Updated: {donatur.nama_donatur} ({phone_normalized})')
                         else:
+                            user = User.objects.create(
+                                username=username,
+                                phone_number=phone_normalized,
+                                user_type=User.UserType.DONATUR,
+                                is_donatur=True,
+                                donatur_id=donatur.id,
+                                tenant=donatur.tenant,
+                                is_staff=False,
+                                is_active=True
+                            )
                             stats['donatur_created'] += 1
                             self.stdout.write(self.style.SUCCESS(f'  Created: {donatur.nama_donatur} ({phone_normalized})'))
                 else:
@@ -164,21 +175,15 @@ class Command(BaseCommand):
             try:
                 if not dry_run:
                     with transaction.atomic():
-                        user, created = User.objects.get_or_create(
-                            phone_number=phone_normalized,
-                            defaults={
-                                'username': f'lead_{phone_normalized}',
-                                'user_type': User.UserType.LEAD,
-                                'is_lead': True,
-                                'lead_id': lead.id,
-                                'tenant': lead.tenant,
-                                'is_staff': False,
-                                'is_active': True
-                            }
-                        )
+                        username = f'lead_{phone_normalized}'
+                        user = User.objects.filter(
+                            Q(phone_number=phone_normalized) | Q(username=username)
+                        ).first()
                         
-                        if not created:
-                            # Only update if not already WALI or DONATUR
+                        if user:
+                            # Update existing user
+                            if not user.phone_number:
+                                user.phone_number = phone_normalized
                             if user.user_type not in [User.UserType.WALI, User.UserType.DONATUR]:
                                 user.user_type = User.UserType.LEAD
                             user.is_lead = True
@@ -189,6 +194,16 @@ class Command(BaseCommand):
                             stats['lead_updated'] += 1
                             self.stdout.write(f'  Updated: {lead.name} ({phone_normalized})')
                         else:
+                            user = User.objects.create(
+                                username=username,
+                                phone_number=phone_normalized,
+                                user_type=User.UserType.LEAD,
+                                is_lead=True,
+                                lead_id=lead.id,
+                                tenant=lead.tenant,
+                                is_staff=False,
+                                is_active=True
+                            )
                             stats['lead_created'] += 1
                             self.stdout.write(self.style.SUCCESS(f'  Created: {lead.name} ({phone_normalized})'))
                 else:
