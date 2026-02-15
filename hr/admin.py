@@ -250,11 +250,13 @@ class JenisAmalanAdmin(BaseTenantAdmin, ModelAdmin):
 
 @admin.register(LogAmalan)
 class LogAmalanAdmin(BaseTenantAdmin, ModelAdmin):
-    list_display = ['pengurus', 'amalan', 'tanggal', 'is_done', 'tenant']
+    list_display = ['pengurus', 'amalan', 'tanggal', 'is_done', 'keterangan', 'tenant']
+    list_editable = ['is_done', 'keterangan']
     list_filter = ['is_done', 'tanggal', 'amalan', 'tenant']
     search_fields = ['pengurus__nama', 'amalan__nama']
     date_hierarchy = 'tanggal'
     autocomplete_fields = ['pengurus', 'amalan']
+    list_per_page = 50
 
 class RealisasiKPIInline(admin.StackedInline):
     model = RealisasiKPI

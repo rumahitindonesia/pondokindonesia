@@ -3,6 +3,8 @@ from django.utils.translation import gettext_lazy as _
 from core.models import TenantAwareModel
 from django.conf import settings
 
+from django.utils import timezone
+
 class Jabatan(TenantAwareModel):
     nama = models.CharField(_("Nama Jabatan"), max_length=150)
     atasan = models.ForeignKey(
@@ -186,7 +188,7 @@ class Absensi(TenantAwareModel):
         related_name='riwayat_absensi',
         verbose_name=_("Pengurus")
     )
-    tanggal = models.DateField(_("Tanggal"), auto_now_add=True)
+    tanggal = models.DateField(_("Tanggal"), default=timezone.now)
     
     # Masuk
     waktu_masuk = models.DateTimeField(_("Waktu Masuk"), null=True, blank=True)
@@ -276,7 +278,7 @@ class JenisAmalan(TenantAwareModel):
 
 class LogAmalan(TenantAwareModel):
     pengurus = models.ForeignKey(Pengurus, on_delete=models.CASCADE, related_name='log_amalan')
-    tanggal = models.DateField(_("Tanggal"), auto_now_add=True)
+    tanggal = models.DateField(_("Tanggal"), default=timezone.now)
     amalan = models.ForeignKey(JenisAmalan, on_delete=models.CASCADE)
     is_done = models.BooleanField(_("Dikerjakan"), default=False)
     keterangan = models.CharField(_("Keterangan"), max_length=255, blank=True, null=True)
