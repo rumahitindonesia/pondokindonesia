@@ -1,0 +1,227 @@
+{% extends 'portal/base.html' %}
+
+{% block title %}Tagihan SPP - Portal Pondok{% endblock %}
+
+{% block extra_css %}
+<style>
+    .back-link {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        color: #667eea;
+        text-decoration: none;
+        font-weight: 600;
+        margin-bottom: 20px;
+        font-size: 14px;
+    }
+
+    .back-link:hover {
+        text-decoration: underline;
+    }
+
+    .santri-info {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 20px;
+        border-radius: 15px;
+        margin-bottom: 20px;
+    }
+
+    .santri-info h2 {
+        margin: 0 0 5px 0;
+        font-size: 20px;
+    }
+
+    .santri-info p {
+        margin: 0;
+        opacity: 0.9;
+        font-size: 14px;
+    }
+
+    .summary-card {
+        background: #f8f9fa;
+        border-radius: 12px;
+        padding: 20px;
+        margin-bottom: 25px;
+    }
+
+    .summary-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 10px;
+    }
+
+    .summary-row:last-child {
+        margin-bottom: 0;
+        padding-top: 10px;
+        border-top: 2px solid #dee2e6;
+        font-weight: 700;
+        font-size: 18px;
+    }
+
+    .tagihan-card {
+        background: white;
+        border: 2px solid #e0e0e0;
+        border-radius: 12px;
+        padding: 18px;
+        margin-bottom: 15px;
+        transition: all 0.3s;
+    }
+
+    .tagihan-card:hover {
+        border-color: #667eea;
+        box-shadow: 0 5px 15px rgba(102, 126, 234, 0.1);
+    }
+
+    .tagihan-card.overdue {
+        border-color: #dc3545;
+        background: #fff5f5;
+    }
+
+    .tagihan-card.paid {
+        border-color: #28a745;
+        background: #f0fff4;
+    }
+
+    .tagihan-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 12px;
+    }
+
+    .tagihan-month {
+        font-size: 16px;
+        font-weight: 600;
+        color: #333;
+    }
+
+    .status-badge {
+        padding: 5px 12px;
+        border-radius: 20px;
+        font-size: 12px;
+        font-weight: 600;
+    }
+
+    .status-badge.belum-lunas {
+        background: #fff3cd;
+        color: #856404;
+    }
+
+    .status-badge.terlambat {
+        background: #f8d7da;
+        color: #721c24;
+    }
+
+    .status-badge.lunas {
+        background: #d4edda;
+        color: #155724;
+    }
+
+    .tagihan-amount {
+        font-size: 24px;
+        font-weight: 700;
+        color: #667eea;
+        margin-bottom: 8px;
+    }
+
+    .tagihan-info {
+        font-size: 13px;
+        color: #666;
+    }
+
+    .section-title {
+        font-size: 18px;
+        font-weight: 700;
+        color: #333;
+        margin: 30px 0 15px 0;
+        padding-bottom: 10px;
+        border-bottom: 2px solid #e0e0e0;
+    }
+
+    .empty-state {
+        text-align: center;
+        padding: 40px 20px;
+        color: #999;
+    }
+
+    .empty-state .icon {
+        font-size: 60px;
+        margin-bottom: 15px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<a href="{% url 'portal:dashboard' %}" class="back-link">
+    ← Kembali ke Dashboard
+</a>
+
+<div class="santri-info">
+    <h2>{{ santri.nama_lengkap }}</h2>
+    <p>NIS: {{ santri.nis }}</p>
+</div>
+
+{% if tagihan_belum_lunas %}
+<div class="summary-card">
+    <div class="summary-row">
+        <span>Jumlah Tagihan Belum Lunas:</span>
+        <span>{{ tagihan_belum_lunas|length }} bulan</span>
+    </div>
+    <div class="summary-row">
+        <span>Total yang Harus Dibayar:</span>
+        <span style="color: #dc3545;">Rp {{ total_belum_lunas|floatformat:0 }}</span>
+    </div>
+</div>
+{% endif %}
+
+<div class="section-title">💳 Tagihan Belum Lunas</div>
+
+{% if tagihan_belum_lunas %}
+{% for tagihan in tagihan_belum_lunas %}
+<div class="tagihan-card {% if tagihan.status == 'TERLAMBAT' %}overdue{% endif %}">
+    <div class="tagihan-header">
+        <div class="tagihan-month">{{ tagihan.bulan|date:"F Y" }}</div>
+        <span class="status-badge {% if tagihan.status == 'TERLAMBAT' %}terlambat{% else %}belum-lunas{% endif %}">
+            {{ tagihan.get_status_display }}
+        </span>
+    </div>
+    <div class="tagihan-amount">Rp {{ tagihan.jumlah|floatformat:0 }}</div>
+    <div class="tagihan-info">
+        📅 Jatuh Tempo: {{ tagihan.jatuh_tempo|date:"d F Y" }}
+        {% if tagihan.is_overdue %}
+        <br>⚠️ <strong style="color: #dc3545;">Terlambat {{ tagihan.jatuh_tempo|timesince }}</strong>
+        {% endif %}
+    </div>
+    {% if tagihan.catatan %}
+    <div class="tagihan-info" style="margin-top: 8px; padding-top: 8px; border-top: 1px solid #e0e0e0;">
+        📝 {{ tagihan.catatan }}
+    </div>
+    {% endif %}
+</div>
+{% endfor %}
+{% else %}
+<div class="empty-state">
+    <div class="icon">✅</div>
+    <p>Tidak ada tagihan yang belum lunas</p>
+</div>
+{% endif %}
+
+{% if tagihan_lunas %}
+<div class="section-title">✅ Riwayat Pembayaran</div>
+
+{% for tagihan in tagihan_lunas %}
+<div class="tagihan-card paid">
+    <div class="tagihan-header">
+        <div class="tagihan-month">{{ tagihan.bulan|date:"F Y" }}</div>
+        <span class="status-badge lunas">{{ tagihan.get_status_display }}</span>
+    </div>
+    <div class="tagihan-amount" style="color: #28a745;">Rp {{ tagihan.jumlah|floatformat:0 }}</div>
+    <div class="tagihan-info">
+        ✅ Dibayar: {{ tagihan.tanggal_bayar|date:"d F Y, H:i" }}
+    </div>
+</div>
+{% endfor %}
+{% endif %}
+{% endblock %}

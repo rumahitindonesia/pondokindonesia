@@ -12,24 +12,24 @@
         margin-bottom: 30px;
         text-align: center;
     }
-
+    
     .dashboard-header h2 {
         font-size: 24px;
         margin-bottom: 5px;
     }
-
+    
     .dashboard-header p {
         opacity: 0.9;
         font-size: 14px;
     }
-
+    
     .menu-grid {
         display: grid;
         grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
         gap: 15px;
         margin-bottom: 30px;
     }
-
+    
     .menu-item {
         background: white;
         border: 2px solid #e0e0e0;
@@ -41,29 +41,29 @@
         transition: all 0.3s;
         display: block;
     }
-
+    
     .menu-item:hover {
         border-color: #667eea;
         transform: translateY(-5px);
         box-shadow: 0 10px 20px rgba(102, 126, 234, 0.2);
     }
-
+    
     .menu-item .icon {
         font-size: 40px;
         margin-bottom: 10px;
     }
-
+    
     .menu-item .label {
         font-size: 14px;
         font-weight: 600;
     }
-
+    
     .logout-btn {
         background: #f8f9fa;
         color: #666;
         border: 2px solid #e0e0e0;
     }
-
+    
     .logout-btn:hover {
         background: #fff;
         border-color: #dc3545;
@@ -76,17 +76,35 @@
 <div class="dashboard-header">
     <h2>Selamat Datang! 👋</h2>
     {% if user_type == 'WALI' %}
-    <p>Wali Santri: {{ santri.nama }}</p>
+        <p>Wali Santri: {{ santri.nama_lengkap }}</p>
     {% elif user_type == 'DONATUR' %}
-    <p>Donatur: {{ donatur.nama }}</p>
+        <p>Donatur: {{ donatur.nama }}</p>
     {% elif user_type == 'CALON_WALI' %}
-    <p>Calon Wali: {{ lead.nama }}</p>
+        <p>Calon Wali: {{ lead.nama }}</p>
     {% endif %}
 </div>
 
+{% if user_type == 'WALI' and tagihan_belum_lunas %}
+<div style="background: #fff3cd; border: 2px solid #ffc107; border-radius: 15px; padding: 20px; margin-bottom: 20px;">
+    <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 10px;">
+        <div style="font-size: 40px;">💳</div>
+        <div>
+            <h3 style="margin: 0; color: #856404;">Tagihan Belum Lunas</h3>
+            <p style="margin: 5px 0 0 0; color: #856404; font-size: 14px;">{{ tagihan_belum_lunas|length }} tagihan menunggu pembayaran</p>
+        </div>
+    </div>
+    <div style="font-size: 24px; font-weight: 700; color: #856404; margin-top: 10px;">
+        Rp {{ total_tagihan|floatformat:0 }}
+    </div>
+    <a href="{% url 'portal:tagihan_spp' %}" style="display: inline-block; margin-top: 15px; padding: 10px 20px; background: #ffc107; color: #000; border-radius: 8px; text-decoration: none; font-weight: 600;">
+        Lihat Detail →
+    </a>
+</div>
+{% endif %}
+
 <div class="menu-grid">
     {% if user_type == 'WALI' %}
-    <a href="#" class="menu-item">
+    <a href="{% url 'portal:tagihan_spp' %}" class="menu-item">
         <div class="icon">💳</div>
         <div class="label">Tagihan SPP</div>
     </a>
@@ -95,21 +113,21 @@
         <div class="label">Progress Belajar</div>
     </a>
     {% endif %}
-
+    
     {% if user_type == 'DONATUR' or user_type == 'WALI' %}
     <a href="#" class="menu-item">
         <div class="icon">💝</div>
         <div class="label">Donasi</div>
     </a>
     {% endif %}
-
+    
     {% if user_type == 'CALON_WALI' %}
     <a href="#" class="menu-item">
         <div class="icon">📋</div>
         <div class="label">Progress Pendaftaran</div>
     </a>
     {% endif %}
-
+    
     <a href="#" class="menu-item">
         <div class="icon">📜</div>
         <div class="label">Riwayat</div>

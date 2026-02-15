@@ -136,3 +136,80 @@ class TransaksiDonasi(TenantAwareModel):
 
     def __str__(self):
         return f"{self.program.nama_program} - {self.donatur.nama_donatur} ({self.nominal})"
+
+class TagihanSPP(TenantAwareModel):
+    """Monthly tuition fee bills for Santri"""
+    class Status(models.TextChoices):
+        BELUM_LUNAS = 'BELUM_LUNAS', 'Belum Lunas'
+        LUNAS = 'LUNAS', 'Lunas'
+        TERLAMBAT = 'TERLAMBAT', 'Terlambat'
+    
+    santri = models.ForeignKey(
+        'Santri',
+        on_delete=models.CASCADE,
+        related_name='tagihan_spp',
+        verbose_name="Santri"
+    )
+    
+    bulan = models.DateField(
+        verbose_name="Bulan Tagihan",
+        help_text="Tanggal 1 dari bulan yang ditagih (e.g., 2026-02-01 untuk Feb 2026)"
+    )
+    
+    jumlah = models.DecimalField(
+        max_digits=12,
+        decimal_places=0,
+        verbose_name="Jumlah Tagihan",
+        help_text="Nominal tagihan SPP bulan ini"
+    )
+    
+    jatuh_tempo = models.DateField(
+        verbose_name="Jatuh Tempo",
+        help_text="Batas waktu pembayaran"
+    )
+    
+    status = models.CharField(
+        max_length=20,
+        choices=Status.choices,
+        default=Status.BELUM_LUNAS,
+        verbose_name="Status Pembayaran"
+    )
+    
+    tanggal_bayar = models.DateTimeField(
+        null=True,
+        blank=True,
+        verbose_name="Tanggal Pembayaran"
+    )
+    
+    catatan = models.TextField(
+        blank=True,
+        verbose_name="Catatan",
+        help_text="Catatan tambahan untuk tagihan ini"
+    )
+    
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        verbose_name = "Tagihan SPP"
+        verbose_name_plural = "Tagihan SPP"
+        ordering = ['-bulan', 'santri']
+        unique_together = ['santri', 'bulan', 'tenant']
+    
+    def __str__(self):
+        from datetime import datetime
+        bulan_str = self.bulan.strftime('%B %Y') if isinstance(self.bulan, datetime) else str(self.bulan)
+        return f"{self.santri.nama_lengkap} - {bulan_str}"
+    
+    def is_overdue(self):
+        """Check if payment is overdue"""
+        from django.utils import timezone
+        if self.status == self.Status.LUNAS:
+            return False
+        return timezone.now().date() > self.jatuh_tempo
+    
+    def save(self, *args, **kwargs):
+        # Auto-update status to TERLAMBAT if overdue
+        if self.is_overdue() and self.status == self.Status.BELUM_LUNAS:
+            self.status = self.Status.TERLAMBAT
+        super().save(*args, **kwargs)

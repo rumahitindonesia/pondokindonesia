@@ -125,7 +125,15 @@ class DashboardView(View):
             }
             
             if session.user_type == 'WALI':
+                from crm.models import TagihanSPP
                 context['santri'] = session.santri
+                # Get unpaid tagihan
+                tagihan_belum_lunas = TagihanSPP.objects.filter(
+                    santri=session.santri,
+                    status__in=['BELUM_LUNAS', 'TERLAMBAT']
+                ).order_by('jatuh_tempo')[:5]
+                context['tagihan_belum_lunas'] = tagihan_belum_lunas
+                context['total_tagihan'] = sum(t.jumlah for t in tagihan_belum_lunas)
             elif session.user_type == 'DONATUR':
                 context['donatur'] = session.donatur
             elif session.user_type == 'CALON_WALI':

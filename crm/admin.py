@@ -3,7 +3,7 @@ from unfold.admin import ModelAdmin
 from import_export.admin import ImportExportMixin
 from django.utils import timezone
 from django.contrib import messages
-from .models import Program, Santri, Donatur, Tagihan, TransaksiDonasi
+from .models import Program, Santri, Donatur, Tagihan, TransaksiDonasi, TagihanSPP
 from core.services.ipaymu import IPaymuService
 from core.services.subscription import SubscriptionService
 from core.admin import BaseTenantAdmin
@@ -264,3 +264,27 @@ class TransaksiDonasiAdmin(ImportExportMixin, BaseTenantAdmin, ModelAdmin):
             count += 1
 
         self.message_user(request, f"{count} receipts sent via WhatsApp.")
+
+@admin.register(TagihanSPP)
+class TagihanSPPAdmin(BaseTenantAdmin, ModelAdmin):
+    list_display = ['santri', 'bulan_display', 'jumlah_display', 'jatuh_tempo', 'status', 'tanggal_bayar', 'tenant']
+    list_filter = ['status', 'bulan', 'jatuh_tempo', 'tenant']
+    search_fields = ['santri__nama_lengkap', 'santri__nis']
+    date_hierarchy = 'bulan'
+    
+    fieldsets = (
+        (None, {
+            'fields': ('santri', 'bulan', 'jumlah', 'jatuh_tempo')
+        }),
+        ('Status Pembayaran', {
+            'fields': ('status', 'tanggal_bayar', 'catatan')
+        }),
+    )
+    
+    def bulan_display(self, obj):
+        return obj.bulan.strftime('%B %Y')
+    bulan_display.short_description = 'Bulan'
+    
+    def jumlah_display(self, obj):
+        return f"Rp {obj.jumlah:,.0f}"
+    jumlah_display.short_description = 'Jumlah'
