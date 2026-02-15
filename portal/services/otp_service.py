@@ -56,15 +56,13 @@ Jangan bagikan kode ini kepada siapapun.
 
 Terima kasih! 🙏"""
             
-            # Get Rumah IT tenant (has StarSender API configured)
-            from tenants.models import Tenant
-            tenant = Tenant.objects.filter(name__icontains='rumah').first()
-            
-            if not tenant:
-                logger.error("Rumah IT tenant not found")
-                return False, "Konfigurasi sistem belum lengkap. Hubungi admin.", None
+            # Detect tenant based on phone number (from user's data)
+            # This allows each tenant to use their own WhatsApp gateway
+            # Falls back to global API if tenant-specific not found
+            tenant = OTPService._detect_tenant(phone_number)
             
             # StarSenderService.send_message returns (success: bool, data: dict/str)
+            # StarSenderService.get_api_key() already handles tenant-specific + global fallback
             success, data = StarSenderService.send_message(phone_number, message, tenant=tenant)
             
             if success:
@@ -157,6 +155,33 @@ Terima kasih! 🙏"""
         
         # Unknown user
         return None, None
+    
+    @staticmethod
+    def _detect_tenant(phone_number):
+        """
+        Detect tenant based on user's phone number
+        Returns: Tenant instance or None (will use global API settings)
+        """
+        # Check Santri first (Wali Santri)
+        santri = Santri.objects.filter(
+            Q(telepon_ayah=phone_number) | Q(telepon_ibu=phone_number)
+        ).first()
+        if santri and santri.tenant:
+            return santri.tenant
+        
+        # Check Donatur
+        donatur = Donatur.objects.filter(telepon=phone_number).first()
+        if donatur and donatur.tenant:
+            return donatur.tenant
+        
+        # Check Lead
+        lead = Lead.objects.filter(telepon=phone_number).first()
+        if lead and lead.tenant:
+            return lead.tenant
+        
+        # No tenant found - will use global API settings as fallback
+        # This is handled by StarSenderService.get_api_key()
+        return None
     
     @staticmethod
     def create_session(phone_number, user_type, user_data):
