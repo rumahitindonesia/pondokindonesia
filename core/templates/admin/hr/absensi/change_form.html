@@ -135,7 +135,7 @@
     let isPhotoTaken = false;
 
     // Parse Office Data passed from View
-    const officeData = {{ office_json| safe |default: "{}" }};
+    const officeData = {{ office_json|safe|default:"{}" }};
     const officeLat = parseFloat(officeData.latitude || -6.175392);
     const officeLng = parseFloat(officeData.longitude || 106.827153);
     const officeRadius = parseInt(officeData.radius_meter || 100);
