@@ -29,7 +29,7 @@ class OTPService:
                 else:
                     phone_number = '62' + phone_number
             
-            # Validate user exists (check Santri.no_hp_wali or Donatur.telepon)
+            # Validate user exists (check User table directly)
             user_type, user_data = OTPService._identify_user(phone_number)
             if not user_type:
                 logger.warning(f"Phone number not registered: {phone_number}")
@@ -50,44 +50,36 @@ class OTPService:
             # Create OTP record
             otp = OTPVerification.objects.create(
                 phone_number=phone_number,
-                otp_code=otp_code
+                otp_code=otp_code,
+                expires_at=timezone.now() + timezone.timedelta(minutes=5)
             )
             
-            # Send via WhatsApp
-            message = f"""🔐 *Kode OTP Portal Pondok*
-
-Kode OTP Anda: *{otp_code}*
-
-Berlaku selama 5 menit.
-Jangan bagikan kode ini kepada siapapun.
-
-Terima kasih! 🙏"""
-            
-            # Detect tenant based on phone number (from user's data)
-            # This allows each tenant to use their own WhatsApp gateway
-            # Falls back to global API if tenant-specific not found
+            # Detect tenant for API key usage
             tenant = OTPService._detect_tenant(phone_number)
             
-            # StarSenderService.send_message returns (success: bool, data: dict/str)
-            # StarSenderService.get_api_key() already handles tenant-specific + global fallback
-            success, data = StarSenderService.send_message(phone_number, message, tenant=tenant)
+            # Send via WhatsApp
+            message = f"Kode OTP Portal Pondok: *{otp_code}*\n\nJangan berikan kode ini kepada siapapun. Kode berlaku selama 5 menit."
+            is_sent, error_msg = StarSenderService.send_message(
+                to=phone_number, 
+                body=message,
+                tenant=tenant
+            )
             
-            if success:
-                logger.info(f"OTP sent successfully to {phone_number}")
+            if is_sent:
                 return True, "Kode OTP telah dikirim ke WhatsApp Anda.", otp.id
             else:
-                logger.error(f"Failed to send OTP to {phone_number}: {data}")
-                return False, "Gagal mengirim OTP. Silakan coba lagi.", None
+                logger.error(f"Failed to send OTP to {phone_number}: {error_msg}")
+                return False, "Gagal mengirim OTP. Silakan coba lagi nanti.", None
                 
         except Exception as e:
-            logger.error(f"Error generating OTP for {phone_number}: {str(e)}")
-            return False, f"Terjadi kesalahan: {str(e)}", None
-    
+            logger.exception(f"Error generating OTP: {str(e)}")
+            return False, "Terjadi kesalahan sistem.", None
+
     @staticmethod
-    def verify_otp(phone_number, otp_code):
+    def verify_otp(phone_number, otp_code, request=None):
         """
-        Verify OTP code
-        Returns: (success: bool, message: str, user_type: str or None, user_data: dict or None)
+        Verify OTP code and create session
+        Returns: (success: bool, result: dict or str)
         """
         try:
             # Normalize phone number
@@ -98,139 +90,140 @@ Terima kasih! 🙏"""
                 else:
                     phone_number = '62' + phone_number
             
-            # Find latest OTP for this phone number
+            # Check OTP
             otp = OTPVerification.objects.filter(
                 phone_number=phone_number,
                 otp_code=otp_code,
-                is_verified=False
-            ).order_by('-created_at').first()
+                is_verified=False,
+                expires_at__gt=timezone.now()
+            ).first()
             
             if not otp:
-                return False, "Kode OTP tidak valid.", None, None
-            
-            if otp.is_expired():
-                return False, "Kode OTP sudah kadaluarsa. Silakan minta kode baru.", None, None
+                return False, "Kode OTP salah atau sudah kadaluarsa."
             
             # Mark as verified
             otp.is_verified = True
             otp.verified_at = timezone.now()
             otp.save()
             
-            # Determine user type and get data
+            # Identify user (from User table)
             user_type, user_data = OTPService._identify_user(phone_number)
+            if not user_type:
+                return False, "User tidak ditemukan."
             
-            return True, "OTP berhasil diverifikasi.", user_type, user_data
+            # Create session
+            session_token = OTPService.create_session(phone_number, user_type, user_data)
+            
+            # If request object is provided, set session data directly
+            if request:
+                request.session['public_user_phone'] = phone_number
+                request.session['public_user_type'] = user_type
+                request.session['public_user_data'] = user_data
+                request.session['public_session_token'] = session_token
+                request.session.modified = True
+            
+            return True, {
+                'token': session_token,
+                'user_type': user_type,
+                'redirect_url': OTPService.get_redirect_url(user_type)
+            }
             
         except Exception as e:
-            logger.error(f"Error verifying OTP for {phone_number}: {str(e)}")
-            return False, f"Terjadi kesalahan: {str(e)}", None, None
-    
+            logger.exception(f"Error verifying OTP: {str(e)}")
+            return False, "Terjadi kesalahan sistem."
+
     @staticmethod
     def _identify_user(phone_number):
         """
-        Identify user type based on phone number
+        Identify user type based on phone number (from centralized User table)
         Returns: (user_type: str, user_data: dict)
         """
-        # Generate both formats for matching (62xxx and 08xxx)
-        phone_62 = phone_number  # Already normalized to 62xxx
-        phone_08 = '0' + phone_number[2:] if phone_number.startswith('62') else phone_number
-        
-        # Check if Wali Santri (via Santri.no_hp_wali) - check both formats
-        santri = Santri.objects.filter(
-            Q(no_hp_wali=phone_62) | Q(no_hp_wali=phone_08)
+        # Check User table (centralized)
+        user = User.objects.filter(
+            phone_number=phone_number,
+            is_staff=False,
+            is_active=True
         ).first()
         
-        if santri:
-            return 'WALI', {
-                'santri_id': santri.id,
-                'santri_nama': santri.nama,
-                'program': santri.program.nama if santri.program else '-'
-            }
+        if not user:
+            return None, None
         
-        # Check if Donatur (via Donatur.no_hp) - check both formats
-        donatur = Donatur.objects.filter(
-            Q(no_hp=phone_62) | Q(no_hp=phone_08)
-        ).first()
-        if donatur:
-            return 'DONATUR', {
-                'donatur_id': donatur.id,
-                'donatur_nama': donatur.nama
-            }
+        # Return user data based on user_type
+        # Priority logic is already handled by signals/migration (WALI > DONATUR > LEAD)
         
-        # Check if Lead (Calon Wali) - check both formats
-        lead = Lead.objects.filter(
-            Q(phone_number=phone_62) | Q(phone_number=phone_08)
-        ).first()
-        if lead:
-            return 'CALON_WALI', {
-                'lead_id': lead.id,
-                'lead_nama': lead.name,
-                'status': lead.status
-            }
+        if user.user_type == User.UserType.WALI:
+            santri = Santri.objects.filter(id=user.santri_id).first()
+            if santri:
+                return 'WALI', {
+                    'user_id': user.id,
+                    'santri_id': santri.id,
+                    'santri_nama': santri.nama_lengkap,
+                    'nis': santri.nis,
+                    'program': santri.program.nama if santri.program and hasattr(santri.program, 'nama') else '-'
+                }
         
-        # Unknown user
+        elif user.user_type == User.UserType.DONATUR:
+            donatur = Donatur.objects.filter(id=user.donatur_id).first()
+            if donatur:
+                return 'DONATUR', {
+                    'user_id': user.id,
+                    'donatur_id': donatur.id,
+                    'donatur_nama': donatur.nama_donatur
+                }
+        
+        elif user.user_type == User.UserType.LEAD:
+            lead = Lead.objects.filter(id=user.lead_id).first()
+            if lead:
+                return 'CALON_WALI', {
+                    'user_id': user.id,
+                    'lead_id': lead.id,
+                    'lead_nama': lead.name,
+                    'status': lead.status
+                }
+        
+        # Fallback if user_type is set but related record missing (should not happen with good data integrity)
         return None, None
-    
+
     @staticmethod
     def _detect_tenant(phone_number):
         """
-        Detect tenant based on user's phone number
+        Detect tenant based on user's phone number (from centralized User table)
         Returns: Tenant instance or None (will use global API settings)
         """
-        # Generate both formats for matching (62xxx and 08xxx)
-        phone_62 = phone_number
-        phone_08 = '0' + phone_number[2:] if phone_number.startswith('62') else phone_number
-        
-        # Check Santri first (Wali Santri via no_hp_wali)
-        santri = Santri.objects.filter(
-            Q(no_hp_wali=phone_62) | Q(no_hp_wali=phone_08)
+        user = User.objects.filter(
+            phone_number=phone_number,
+            is_staff=False,
+            is_active=True
         ).first()
-        if santri and santri.tenant:
-            return santri.tenant
         
-        # Check Donatur (via Donatur.no_hp)
-        donatur = Donatur.objects.filter(
-            Q(no_hp=phone_62) | Q(no_hp=phone_08)
-        ).first()
-        if donatur and donatur.tenant:
-            return donatur.tenant
-        
-        # Check Lead
-        lead = Lead.objects.filter(
-            Q(phone_number=phone_62) | Q(phone_number=phone_08)
-        ).first()
-        if lead and lead.tenant:
-            return lead.tenant
+        if user and user.tenant:
+            return user.tenant
         
         # No tenant found - will use global API settings as fallback
-        # This is handled by StarSenderService.get_api_key()
         return None
     
     @staticmethod
     def create_session(phone_number, user_type, user_data):
-        """
-        Create or update public user session
-        Returns: PublicUserSession instance
-        """
-        # Deactivate old sessions for this phone number
-        PublicUserSession.objects.filter(
+        """Create a new public user session"""
+        token = ''.join([str(random.randint(0, 9)) for _ in range(32)])  # Simple token for now
+        
+        PublicUserSession.objects.create(
+            session_token=token,
             phone_number=phone_number,
-            is_active=True
-        ).update(is_active=False)
+            user_type=user_type,
+            user_data=user_data,
+            expires_at=timezone.now() + timezone.timedelta(days=1)
+        )
         
-        # Create new session
-        session_data = {
-            'phone_number': phone_number,
-            'user_type': user_type,
-            'is_active': True
-        }
-        
+        return token
+
+    @staticmethod
+    def get_redirect_url(user_type):
+        """Get redirect URL based on user type"""
         if user_type == 'WALI':
-            session_data['santri_id'] = user_data.get('santri_id')
+            return '/portal/dashboard-wali/'
         elif user_type == 'DONATUR':
-            session_data['donatur_id'] = user_data.get('donatur_id')
+            return '/portal/dashboard-donatur/'
         elif user_type == 'CALON_WALI':
-            session_data['lead_id'] = user_data.get('lead_id')
-        
-        session = PublicUserSession.objects.create(**session_data)
-        return session
+            return '/portal/dashboard-calon-wali/'
+        return '/portal/'
