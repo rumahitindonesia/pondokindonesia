@@ -73,27 +73,26 @@ class VerifyOTPView(View):
             return render(request, self.template_name, {'phone_number': phone_number})
         
         # Verify OTP
-        success, message, user_type, user_data = OTPService.verify_otp(phone_number, otp_code)
+        # Returns (success, result) where result is dict (if success) or message (if fail)
+        success, result = OTPService.verify_otp(phone_number, otp_code)
         
         if success:
-            if user_type is None:
-                messages.error(request, 'Nomor WhatsApp Anda tidak terdaftar dalam sistem.')
-                return redirect('portal:login')
-            
-            # Create session
-            session = OTPService.create_session(phone_number, user_type, user_data)
+            # result contains token, user_type, redirect_url
+            session_token = result.get('token')
+            user_type = result.get('user_type')
             
             # Store session key in Django session
-            request.session['portal_session_key'] = session.session_key
+            request.session['portal_session_key'] = session_token
             request.session['portal_user_type'] = user_type
             
             # Clear OTP phone number
-            del request.session['otp_phone_number']
+            if 'otp_phone_number' in request.session:
+                del request.session['otp_phone_number']
             
-            messages.success(request, f'Selamat datang! Login berhasil sebagai {session.get_user_type_display()}.')
+            messages.success(request, 'Selamat datang! Login berhasil.')
             return redirect('portal:dashboard')
         else:
-            messages.error(request, message)
+            messages.error(request, result)
             return render(request, self.template_name, {'phone_number': phone_number})
 
 
