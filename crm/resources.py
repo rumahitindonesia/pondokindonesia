@@ -59,6 +59,25 @@ class TagihanResource(BaseTenantResource):
         model = Tagihan
         fields = ('santri', 'program', 'nominal', 'bulan', 'status', 'tgl_bayar', 'keterangan')
 
+class TagihanSPPResource(BaseTenantResource):
+    santri = fields.Field(
+        column_name='santri_nis',
+        attribute='santri',
+        widget=ForeignKeyWidget(Santri, 'nis')
+    )
+
+    def __init__(self, request=None, **kwargs):
+        super().__init__(request, **kwargs)
+        tenant = self.get_tenant()
+        if tenant:
+             self.fields['santri'].widget.queryset = Santri.objects.filter(tenant=tenant)
+
+    class Meta:
+        from .models import TagihanSPP
+        model = TagihanSPP
+        fields = ('santri', 'bulan', 'jumlah', 'jatuh_tempo', 'status', 'tanggal_bayar', 'catatan')
+        import_id_fields = ('santri', 'bulan')
+
 class TransaksiDonasiResource(BaseTenantResource):
     donatur = fields.Field(
         column_name='donatur_kode',

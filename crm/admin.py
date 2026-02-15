@@ -7,7 +7,7 @@ from .models import Program, Santri, Donatur, Tagihan, TransaksiDonasi, TagihanS
 from core.services.ipaymu import IPaymuService
 from core.services.subscription import SubscriptionService
 from core.admin import BaseTenantAdmin
-from .resources import SantriResource, DonaturResource, ProgramResource, TagihanResource, TransaksiDonasiResource
+from .resources import SantriResource, DonaturResource, ProgramResource, TagihanResource, TransaksiDonasiResource, TagihanSPPResource
 
 from core.services.starsender import StarSenderService
 
@@ -266,7 +266,15 @@ class TransaksiDonasiAdmin(ImportExportMixin, BaseTenantAdmin, ModelAdmin):
         self.message_user(request, f"{count} receipts sent via WhatsApp.")
 
 @admin.register(TagihanSPP)
-class TagihanSPPAdmin(BaseTenantAdmin, ModelAdmin):
+class TagihanSPPAdmin(ImportExportMixin, BaseTenantAdmin, ModelAdmin):
+    resource_classes = [TagihanSPPResource]
+    
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.change_list_template = "admin/import_export/change_list_custom.html"
+        self.import_template_name = "admin/import_export/import.html"
+        self.export_template_name = "admin/import_export/export.html"
+    
     list_display = ['santri', 'bulan_display', 'jumlah_display', 'jatuh_tempo', 'status', 'tanggal_bayar', 'tenant']
     list_filter = ['status', 'bulan', 'jatuh_tempo', 'tenant']
     search_fields = ['santri__nama_lengkap', 'santri__nis']
