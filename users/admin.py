@@ -41,13 +41,17 @@ class UserAdmin(BaseTenantAdmin, BaseUserAdmin, ModelAdmin):
     form = UserChangeForm
     add_form = UserCreationForm
     change_password_form = AdminPasswordChangeForm
-    list_display = ('username', 'email', 'phone_number', 'role', 'tenant', 'is_staff')
+    list_display = ('username', 'email', 'phone_number', 'user_type', 'role', 'tenant', 'is_staff')
     list_filter = ('role', 'is_staff', 'is_superuser', 'is_active', 'groups')
     search_fields = ('username', 'email', 'phone_number')
     
     fieldsets = (
         (None, {'fields': ('username', 'password')}),
         (_('Personal info'), {'fields': ('first_name', 'last_name', 'email', 'phone_number')}),
+        (_('Public User Info'), {
+            'fields': ('user_type', 'is_wali', 'is_donatur', 'is_lead', 'santri_id', 'donatur_id', 'lead_id'),
+            'classes': ('collapse',)
+        }),
         (_('Permissions'), {
             'fields': ('is_active', 'is_staff', 'is_superuser', 'groups', 'user_permissions'),
         }),

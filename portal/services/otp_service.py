@@ -4,6 +4,7 @@ from portal.models import OTPVerification, PublicUserSession
 from core.services.starsender import StarSenderService
 from crm.models import Santri, Donatur
 from core.models import Lead
+from users.models import User
 import random
 import logging
 
