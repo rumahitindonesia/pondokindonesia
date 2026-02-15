@@ -149,11 +149,11 @@ Terima kasih! 🙏"""
             }
         
         # Check if Lead (Calon Wali)
-        lead = Lead.objects.filter(telepon=phone_number).first()
+        lead = Lead.objects.filter(phone_number=phone_number).first()
         if lead:
             return 'CALON_WALI', {
                 'lead_id': lead.id,
-                'lead_nama': lead.nama,
+                'lead_nama': lead.name,
                 'status': lead.status
             }
         
@@ -177,7 +177,7 @@ Terima kasih! 🙏"""
             return donatur.tenant
         
         # Check Lead
-        lead = Lead.objects.filter(telepon=phone_number).first()
+        lead = Lead.objects.filter(phone_number=phone_number).first()
         if lead and lead.tenant:
             return lead.tenant
         
