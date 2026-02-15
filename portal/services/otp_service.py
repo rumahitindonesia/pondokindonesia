@@ -28,6 +28,12 @@ class OTPService:
                 else:
                     phone_number = '62' + phone_number
             
+            # Validate user exists (check Santri.no_hp_wali or Donatur.telepon)
+            user_type, user_data = OTPService._identify_user(phone_number)
+            if not user_type:
+                logger.warning(f"Phone number not registered: {phone_number}")
+                return False, "Nomor WhatsApp tidak terdaftar. Silakan hubungi admin untuk mendaftar.", None
+            
             # Check rate limiting: max 3 OTP requests per 15 minutes
             recent_otps = OTPVerification.objects.filter(
                 phone_number=phone_number,
@@ -134,8 +140,8 @@ Terima kasih! 🙏"""
                 'program': santri.program.nama if santri.program else '-'
             }
         
-        # Check if Donatur
-        donatur = Donatur.objects.filter(telepon=phone_number).first()
+        # Check if Donatur (via Donatur.no_hp)
+        donatur = Donatur.objects.filter(no_hp=phone_number).first()
         if donatur:
             return 'DONATUR', {
                 'donatur_id': donatur.id,
@@ -165,8 +171,8 @@ Terima kasih! 🙏"""
         if santri and santri.tenant:
             return santri.tenant
         
-        # Check Donatur
-        donatur = Donatur.objects.filter(telepon=phone_number).first()
+        # Check Donatur (via Donatur.no_hp)
+        donatur = Donatur.objects.filter(no_hp=phone_number).first()
         if donatur and donatur.tenant:
             return donatur.tenant
         
