@@ -3,7 +3,7 @@ import django
 import sys
 
 # Setup Django Environment
-sys.path.append('/home/pondok-it/app')
+sys.path.append(os.getcwd())
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'pondokindonesia.settings')
 django.setup()
 
