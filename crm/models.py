@@ -189,6 +189,10 @@ class TagihanSPP(TenantAwareModel):
     
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+
+    @property
+    def tgl_buat(self):
+        return self.created_at
     
     class Meta:
         verbose_name = "Tagihan SPP"
