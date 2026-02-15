@@ -175,7 +175,7 @@ class TagihanSPP(TenantAwareModel):
         verbose_name="Status Pembayaran"
     )
     
-    tanggal_bayar = models.DateTimeField(
+    tanggal_bayar = models.DateField(
         null=True,
         blank=True,
         verbose_name="Tanggal Pembayaran"
