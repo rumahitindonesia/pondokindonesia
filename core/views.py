@@ -156,23 +156,25 @@ def webhook_whatsapp(request, tenant_slug=None):
             # --- INITIAL LOG & DEDUPLICATION ---
             sender = c_sender or sender # Digits only for storage
 
-            # 1. Refined Deduplication (only for gateway self-messages with format)
+            # 1. STRONG Deduplication - Block ALL duplicate messages within 30s
+            # This prevents double insert when StarSender sends webhook twice:
+            # - First: user -> gateway (actual message)
+            # - Second: gateway -> user (echo/confirmation)
             from django.utils import timezone
             from datetime import timedelta
             
-            is_gateway_message = c_sender and c_device and c_sender == c_device
-            if is_gateway_message:
-                # Get forms to check if message matches any format
-                forms_for_check = WhatsAppForm.objects.filter(tenant=current_tenant, is_active=True) if current_tenant else WhatsAppForm.objects.filter(tenant__isnull=True, is_active=True)
-                has_format = any(message.upper().startswith(form.keyword.upper()) for form in forms_for_check)
-                
-                if has_format:
-                    # Check for duplicates only if it's a gateway message with format
-                    if WhatsAppMessage.objects.filter(sender=sender, message=message, created_at__gte=timezone.now() - timedelta(seconds=30)).exists():
-                        logger.debug(f"Blocked: Duplicate gateway message with format")
-                        return HttpResponse('OK', status=200)
+            # Check for exact duplicate (same sender, same message, within 30s)
+            duplicate_exists = WhatsAppMessage.objects.filter(
+                sender=sender, 
+                message=message, 
+                created_at__gte=timezone.now() - timedelta(seconds=30)
+            ).exists()
+            
+            if duplicate_exists:
+                logger.info(f"[DUPLICATE BLOCKED] Same message from {sender} within 30s: {message[:50]}")
+                return HttpResponse('OK', status=200)
 
-            # 2. Log Message ONLY after passing all filters
+            # 2. Log Message ONLY after passing duplicate check
             try:
                 WhatsAppMessage.objects.create(
                     tenant=current_tenant,
