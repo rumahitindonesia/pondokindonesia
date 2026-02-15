@@ -55,142 +55,158 @@ def process_ai_reply(message, tenant, sender, sender_name):
 def webhook_whatsapp(request, tenant_slug=None):
     if request.method == 'POST':
         try:
-            # Resolve Tenant
+            data = json.loads(request.body)
+            
+            # 2. Extract Basic Data
+            device = data.get('device', '').strip()
+            message = data.get('message', '').strip()
+            sender = data.get('from', '').strip()
+            sender_name = data.get('push_name') or data.get('pushName') or data.get('name') or ''
+            is_me = data.get('is_me', False)
+
+            # Normalize for comparison
+            import re
+            def clean_num(n): return re.sub(r'\D', '', str(n))
+            
+            # 1. Resolve Tenant
             current_tenant = None
             if tenant_slug:
                 current_tenant = get_object_or_404(Tenant, subdomain=tenant_slug)
             
-            data = json.loads(request.body)
+            # If still None, try middleware
+            if not current_tenant and hasattr(request, 'tenant') and request.tenant:
+                current_tenant = request.tenant
             
-            # Extract data
-            device = data.get('device', '')
-            message = data.get('message', '')
-            sender = data.get('from', '')
-            # Try to get name from 'push_name' (StarSender standard), fallback to 'pushName' or 'name'
-            sender_name = data.get('push_name') or data.get('pushName') or data.get('name') or ''
-            timestamp = data.get('timestamp', '')
-            is_me = data.get('is_me', False)
-            
-            # Ignore outgoing messages (from bot itself)
-            if is_me:
+            # If still None, try to identify by device number
+            if not current_tenant and device:
+                clean_device = clean_num(device)
+                # Check for tenant by phone_number matching (last 10 digits as safe bet)
+                current_tenant = Tenant.objects.filter(phone_number__icontains=clean_device[-10:]).first()
+                if current_tenant:
+                    from core.models import set_current_tenant
+                    set_current_tenant(current_tenant)
+
+            # Ignore outgoing messages or echoes from the device itself
+            if is_me or clean_num(sender) == clean_num(device):
                 return HttpResponse('OK', status=200)
             
-            # Save Message (associated with tenant if present, or global if None)
+            # 3. Log Message
             WhatsAppMessage.objects.create(
                 tenant=current_tenant,
                 device=device,
                 message=message,
                 sender=sender,
                 sender_name=sender_name,
-                timestamp=timestamp,
                 raw_data=data
             )
             
-            replied = False
+            # 4. Identify Sender (Staff vs External)
+            from users.models import User
+            staff = User.all_objects.filter(
+                is_active=True, 
+                is_staff=True,
+                phone_number__icontains=sender[-10:]
+            ).first()
             
-            # 0. Check for Staff Commands (format: username#command#...)
-            from core.services.staff_command_service import StaffCommandService
-            staff_msg = StaffCommandService.process_message(current_tenant, message, sender)
-            if staff_msg:
-                StarSenderService.send_message(to=sender, body=staff_msg, tenant=current_tenant)
-                return HttpResponse('OK', status=200)
-
-            # 1. Lead Workflow & Data Extraction
-            from core.services.lead_workflow_service import LeadWorkflowService
-            
-            # Find or initiate lead
-            lead, created = Lead.objects.get_or_create(
-                tenant=current_tenant, 
-                phone_number=sender,
-                defaults={'status': Lead.Status.WAITING_DATA}
-            )
-            
-            # Record last message time
-            from django.utils import timezone
-            lead.last_message_at = timezone.now()
-            lead.save()
-
             replied = False
 
-            # If waiting for info, try to parse
-            if lead.status == Lead.Status.WAITING_DATA:
-                if LeadWorkflowService.parse_data_format(lead, message):
-                    # Data parsed! Assign to CS
-                    assigned_cs = LeadWorkflowService.assign_to_cs(lead)
-                    if assigned_cs:
-                        StarSenderService.send_message(
-                            to=sender,
-                            body=f"Terima kasih {lead.name}, data Anda sudah diterima dan akan segera dibantu oleh CS kami ({assigned_cs.username}).",
-                            tenant=current_tenant
-                        )
+            # --- FLOW BRANCHING ---
+
+            if staff:
+                # 5. INTERNAL FLOW (Staff)
+                from core.services.staff_command_service import StaffCommandService
+                staff_msg = StaffCommandService.process_message_v2(current_tenant, message, staff)
+                if staff_msg:
+                    StarSenderService.send_message(to=sender, body=staff_msg, tenant=current_tenant)
                     replied = True
-
-            # 2. Lead Registration (Legacy Forms - maintained for compatibility)
+            
             if not replied:
+                # 6. EXTERNAL FLOW (Public/Lead)
+                # Sort forms by keyword length DESC to avoid "D" matching before "DAFTAR"
                 forms = WhatsAppForm.objects.filter(tenant=current_tenant, is_active=True) if current_tenant else WhatsAppForm.objects.filter(tenant__isnull=True, is_active=True)
+                forms = sorted(forms, key=lambda x: len(x.keyword.strip()), reverse=True)
+                
                 for form in forms:
                     keyword = form.keyword.strip()
-                    if message.strip().upper().startswith(keyword.upper()):
-                        # (Legacy form logic maintained below)
+                    if message.upper().startswith(keyword.upper()):
+                        # Found matching form
                         body = message[len(keyword):].strip()
-                        if form.separator and body.startswith(form.separator): body = body[1:]
-                        parts = [p.strip() for p in body.split(form.separator)]
-                        fields = [f.strip() for f in form.field_map.split(form.separator)]
                         
-                        if len(parts) >= len(fields) and len(fields) > 0:
-                            lead_data = {fields[i]: parts[i] for i in range(len(fields))}
-                            lead_name = lead_data.get('nama') or lead_data.get('name') or sender_name or parts[0]
-                            
-                            lead.name = lead_name
-                            lead.data.update(lead_data)
-                            lead.save()
-                            
-                            # Assign CS for legacy forms too
-                            LeadWorkflowService.assign_to_cs(lead)
-                            
-                            resp = form.response_template
-                            try:
-                                fmt = lead_data.copy(); fmt['name'] = lead_name
-                                resp = resp.format(**fmt)
-                            except: pass
-                            
-                            # 3. Auto-Insert Logic
-                            if form.auto_insert:
-                                from crm.services import CRMService
-                                res_obj, auto_msg = CRMService.convert_lead(lead, form.lead_type)
-                                if res_obj:
-                                    resp = f"{resp}\n\n[Auto-Insert] {auto_msg}"
-
-                            if form.use_ai_response:
-                                # ... existing ai logic ...
-                                input_prompt = resp
-                                system_instruction = "You are a helpful admin assistant..."
-                                threading.Thread(target=process_ai_reply, args=(input_prompt, current_tenant, sender, sender_name)).start()
-                            else:
-                                StarSenderService.send_message(to=sender, body=resp, tenant=current_tenant)
-                            replied = True
-                            break
-
-            # 3. Auto Reply Logic
-            if not replied:
-                replies = WhatsAppAutoReply.objects.filter(tenant=current_tenant, is_active=True) if current_tenant else WhatsAppAutoReply.objects.filter(tenant__isnull=True, is_active=True)
-                for reply in replies:
-                    if reply.keyword.lower() in message.lower():
-                        response_text = reply.response
-                        safe_name = sender_name if sender_name else ""
+                        # Clean multiple separators or spaces at start
+                        if form.separator:
+                            while body.startswith(form.separator) or body.startswith(' '):
+                                body = body[1:].strip()
+                        
+                        parts = [p.strip() for p in body.split(form.separator)] if form.separator else [body]
+                        fields = [f.strip() for f in form.field_map.split(form.separator)] if form.separator else ['data']
+                        
+                        # Map data (even if parts < fields, we fill what we can)
+                        lead_data = {}
+                        for i in range(min(len(parts), len(fields))):
+                            lead_data[fields[i].lower()] = parts[i]
+                        
+                        # PRIORITIZE finding the 'nama' in lead_data
+                        lead_name_from_data = lead_data.get('nama') or lead_data.get('name')
+                        
+                        # Safety: avoid using keyword as name if parsing failed
+                        if lead_name_from_data and lead_name_from_data.upper() == keyword.upper():
+                            lead_name_from_data = None
+                        
+                        lead_name = lead_name_from_data or sender_name or "Unknown"
+                        
+                        # Create or Update Lead
+                        lead, created = Lead.objects.update_or_create(
+                            tenant=current_tenant,
+                            phone_number=sender,
+                            defaults={
+                                'name': lead_name,
+                                'type': form.lead_type,
+                                'data': lead_data,
+                                'status': Lead.Status.NEW
+                            }
+                        )
+                        
+                        # Auto-Assign CS
+                        from core.services.lead_workflow_service import LeadWorkflowService
+                        assigned_cs = LeadWorkflowService.assign_to_cs(lead)
+                        
+                        # Prepare Response
+                        resp = form.response_template
                         try:
-                            response_text = response_text.format(name=safe_name)
-                        except KeyError: pass
-                        StarSenderService.send_message(to=sender, body=response_text, tenant=current_tenant)
+                            fmt_data = lead_data.copy()
+                            fmt_data['name'] = lead_name
+                            if assigned_cs: fmt_data['cs_name'] = assigned_cs.username
+                            resp = resp.format(**fmt_data)
+                        except: pass
+                        
+                        # Auto-Insert to CRM if configured
+                        if form.auto_insert:
+                            from crm.services import CRMService
+                            res_obj, auto_msg = CRMService.convert_lead(lead, form.lead_type)
+                            if res_obj:
+                                resp = f"{resp}\n\n[Auto-Insert] {auto_msg}"
+
+                        StarSenderService.send_message(to=sender, body=resp, tenant=current_tenant)
                         replied = True
                         break
-            
-            # AI Fallback
-            if not replied:
-                # If first contact (WAITING_DATA), AI will ask for info
-                import threading
-                thread = threading.Thread(target=process_ai_reply, args=(message, current_tenant, sender, sender_name))
-                thread.start()
+
+                # B. AI Fallback (Natural interaction for undefined formats)
+                if not replied:
+                    import threading
+                    # For external numbers, ensure lead exists
+                    lead, created = Lead.objects.get_or_create(
+                        tenant=current_tenant,
+                        phone_number=sender,
+                        defaults={'status': Lead.Status.WAITING_DATA}
+                    )
+                    
+                    threading.Thread(
+                        target=process_ai_reply, 
+                        args=(message, current_tenant, sender, sender_name)
+                    ).start()
+                    replied = True
+
+            return HttpResponse('OK', status=200)
 
             return HttpResponse('OK', status=200)
             
