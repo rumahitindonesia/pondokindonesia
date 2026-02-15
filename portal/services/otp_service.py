@@ -146,16 +146,20 @@ Terima kasih! 🙏"""
                 'program': santri.program.nama if santri.program else '-'
             }
         
-        # Check if Donatur (via Donatur.no_hp)
-        donatur = Donatur.objects.filter(no_hp=phone_number).first()
+        # Check if Donatur (via Donatur.no_hp) - check both formats
+        donatur = Donatur.objects.filter(
+            Q(no_hp=phone_62) | Q(no_hp=phone_08)
+        ).first()
         if donatur:
             return 'DONATUR', {
                 'donatur_id': donatur.id,
                 'donatur_nama': donatur.nama
             }
         
-        # Check if Lead (Calon Wali)
-        lead = Lead.objects.filter(phone_number=phone_number).first()
+        # Check if Lead (Calon Wali) - check both formats
+        lead = Lead.objects.filter(
+            Q(phone_number=phone_62) | Q(phone_number=phone_08)
+        ).first()
         if lead:
             return 'CALON_WALI', {
                 'lead_id': lead.id,
@@ -172,18 +176,28 @@ Terima kasih! 🙏"""
         Detect tenant based on user's phone number
         Returns: Tenant instance or None (will use global API settings)
         """
+        # Generate both formats for matching (62xxx and 08xxx)
+        phone_62 = phone_number
+        phone_08 = '0' + phone_number[2:] if phone_number.startswith('62') else phone_number
+        
         # Check Santri first (Wali Santri via no_hp_wali)
-        santri = Santri.objects.filter(no_hp_wali=phone_number).first()
+        santri = Santri.objects.filter(
+            Q(no_hp_wali=phone_62) | Q(no_hp_wali=phone_08)
+        ).first()
         if santri and santri.tenant:
             return santri.tenant
         
         # Check Donatur (via Donatur.no_hp)
-        donatur = Donatur.objects.filter(no_hp=phone_number).first()
+        donatur = Donatur.objects.filter(
+            Q(no_hp=phone_62) | Q(no_hp=phone_08)
+        ).first()
         if donatur and donatur.tenant:
             return donatur.tenant
         
         # Check Lead
-        lead = Lead.objects.filter(phone_number=phone_number).first()
+        lead = Lead.objects.filter(
+            Q(phone_number=phone_62) | Q(phone_number=phone_08)
+        ).first()
         if lead and lead.tenant:
             return lead.tenant
         
