@@ -3,7 +3,7 @@ from unfold.admin import ModelAdmin
 from import_export.admin import ImportExportMixin
 from django.utils import timezone
 from django.contrib import messages
-from .models import Program, Santri, Donatur, Tagihan, TransaksiDonasi, TagihanSPP
+from .models import Program, Santri, Donatur, Tagihan, TransaksiDonasi, TagihanSPP, PaymentMethodSetting, PembayaranSPP
 from core.services.ipaymu import IPaymuService
 from core.services.subscription import SubscriptionService
 from core.admin import BaseTenantAdmin
@@ -288,3 +288,72 @@ class TagihanSPPAdmin(BaseTenantAdmin, ModelAdmin):
     def jumlah_display(self, obj):
         return f"Rp {obj.jumlah:,.0f}"
     jumlah_display.short_description = 'Jumlah'
+
+@admin.register(PaymentMethodSetting)
+class PaymentMethodSettingAdmin(BaseTenantAdmin, ModelAdmin):
+    list_display = ['method_type', 'bank_name', 'account_number', 'account_name', 'is_active', 'display_order', 'tenant']
+    list_filter = ['method_type', 'is_active', 'tenant']
+    search_fields = ['bank_name', 'account_number', 'account_name']
+    
+    fieldsets = (
+        (None, {
+            'fields': ('method_type', 'is_active', 'display_order')
+        }),
+        ('Bank Transfer', {
+            'fields': ('bank_name', 'account_number', 'account_name'),
+            'description': 'Isi jika metode pembayaran adalah Transfer Bank'
+        }),
+        ('QRIS', {
+            'fields': ('qris_image',),
+            'description': 'Upload gambar QRIS jika metode pembayaran adalah QRIS'
+        }),
+    )
+
+
+@admin.register(PembayaranSPP)
+class PembayaranSPPAdmin(BaseTenantAdmin, ModelAdmin):
+    list_display = ['tagihan', 'jumlah_display', 'payment_method', 'tanggal_transfer', 'status', 'verified_by', 'tenant']
+    list_filter = ['status', 'tanggal_transfer', 'tenant']
+    search_fields = ['tagihan__santri__nama_lengkap', 'tagihan__santri__nis']
+    date_hierarchy = 'created_at'
+    
+    fieldsets = (
+        ('Informasi Pembayaran', {
+            'fields': ('tagihan', 'payment_method', 'jumlah_bayar', 'tanggal_transfer', 'bukti_transfer', 'catatan_pembayar')
+        }),
+        ('Verifikasi Admin', {
+            'fields': ('status', 'verified_by', 'verified_at', 'catatan_admin')
+        }),
+    )
+    
+    readonly_fields = ['verified_at']
+    
+    def jumlah_display(self, obj):
+        return f"Rp {obj.jumlah_bayar:,.0f}"
+    jumlah_display.short_description = 'Jumlah'
+    
+    actions = ['verify_payment', 'reject_payment']
+    
+    def verify_payment(self, request, queryset):
+        from django.utils import timezone
+        count = 0
+        for pembayaran in queryset.filter(status='PENDING'):
+            pembayaran.status = 'VERIFIED'
+            pembayaran.verified_by = request.user
+            pembayaran.verified_at = timezone.now()
+            pembayaran.save()
+            count += 1
+        self.message_user(request, f"{count} pembayaran berhasil diverifikasi.")
+    verify_payment.short_description = "✅ Verifikasi pembayaran terpilih"
+    
+    def reject_payment(self, request, queryset):
+        from django.utils import timezone
+        count = 0
+        for pembayaran in queryset.filter(status='PENDING'):
+            pembayaran.status = 'REJECTED'
+            pembayaran.verified_by = request.user
+            pembayaran.verified_at = timezone.now()
+            pembayaran.save()
+            count += 1
+        self.message_user(request, f"{count} pembayaran ditolak.")
+    reject_payment.short_description = "❌ Tolak pembayaran terpilih"

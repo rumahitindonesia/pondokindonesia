@@ -213,3 +213,159 @@ class TagihanSPP(TenantAwareModel):
         if self.is_overdue() and self.status == self.Status.BELUM_LUNAS:
             self.status = self.Status.TERLAMBAT
         super().save(*args, **kwargs)
+
+
+class PaymentMethodSetting(TenantAwareModel):
+    """Payment method settings for manual payments (Bank Transfer & QRIS)"""
+    class MethodType(models.TextChoices):
+        BANK_TRANSFER = 'BANK_TRANSFER', 'Transfer Bank'
+        QRIS = 'QRIS', 'QRIS'
+    
+    method_type = models.CharField(
+        max_length=20,
+        choices=MethodType.choices,
+        verbose_name="Jenis Metode"
+    )
+    
+    # For Bank Transfer
+    bank_name = models.CharField(
+        max_length=100,
+        blank=True,
+        verbose_name="Nama Bank",
+        help_text="Contoh: BCA, Mandiri, BRI"
+    )
+    account_number = models.CharField(
+        max_length=50,
+        blank=True,
+        verbose_name="Nomor Rekening"
+    )
+    account_name = models.CharField(
+        max_length=150,
+        blank=True,
+        verbose_name="Nama Pemilik Rekening"
+    )
+    
+    # For QRIS
+    qris_image = models.ImageField(
+        upload_to='payment_methods/qris/',
+        blank=True,
+        null=True,
+        verbose_name="Gambar QRIS",
+        help_text="Upload gambar QRIS untuk pembayaran"
+    )
+    
+    is_active = models.BooleanField(
+        default=True,
+        verbose_name="Aktif"
+    )
+    
+    display_order = models.IntegerField(
+        default=0,
+        verbose_name="Urutan Tampilan",
+        help_text="Urutan tampilan di halaman pembayaran (lebih kecil = lebih atas)"
+    )
+    
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        verbose_name = "Metode Pembayaran"
+        verbose_name_plural = "Metode Pembayaran"
+        ordering = ['display_order', 'method_type']
+    
+    def __str__(self):
+        if self.method_type == self.MethodType.BANK_TRANSFER:
+            return f"{self.bank_name} - {self.account_number}"
+        else:
+            return "QRIS"
+
+
+class PembayaranSPP(TenantAwareModel):
+    """Manual payment records for SPP bills"""
+    class Status(models.TextChoices):
+        PENDING = 'PENDING', 'Menunggu Verifikasi'
+        VERIFIED = 'VERIFIED', 'Terverifikasi'
+        REJECTED = 'REJECTED', 'Ditolak'
+    
+    tagihan = models.ForeignKey(
+        'TagihanSPP',
+        on_delete=models.CASCADE,
+        related_name='pembayaran',
+        verbose_name="Tagihan SPP"
+    )
+    
+    payment_method = models.ForeignKey(
+        'PaymentMethodSetting',
+        on_delete=models.SET_NULL,
+        null=True,
+        verbose_name="Metode Pembayaran"
+    )
+    
+    jumlah_bayar = models.DecimalField(
+        max_digits=12,
+        decimal_places=0,
+        verbose_name="Jumlah Dibayar"
+    )
+    
+    bukti_transfer = models.ImageField(
+        upload_to='bukti_pembayaran/',
+        verbose_name="Bukti Transfer"
+    )
+    
+    tanggal_transfer = models.DateField(
+        verbose_name="Tanggal Transfer",
+        help_text="Tanggal melakukan transfer"
+    )
+    
+    catatan_pembayar = models.TextField(
+        blank=True,
+        verbose_name="Catatan",
+        help_text="Catatan tambahan dari pembayar"
+    )
+    
+    status = models.CharField(
+        max_length=20,
+        choices=Status.choices,
+        default=Status.PENDING,
+        verbose_name="Status Verifikasi"
+    )
+    
+    # Admin verification fields
+    verified_by = models.ForeignKey(
+        'users.User',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='verified_payments',
+        verbose_name="Diverifikasi Oleh"
+    )
+    verified_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        verbose_name="Waktu Verifikasi"
+    )
+    catatan_admin = models.TextField(
+        blank=True,
+        verbose_name="Catatan Admin",
+        help_text="Catatan dari admin saat verifikasi"
+    )
+    
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        verbose_name = "Pembayaran SPP"
+        verbose_name_plural = "Pembayaran SPP"
+        ordering = ['-created_at']
+    
+    def __str__(self):
+        return f"{self.tagihan.santri.nama_lengkap} - {self.tagihan.bulan.strftime('%B %Y')} - Rp {self.jumlah_bayar:,.0f}"
+    
+    def save(self, *args, **kwargs):
+        # Auto-update tagihan status when payment is verified
+        if self.status == self.Status.VERIFIED and self.tagihan.status != 'LUNAS':
+            from django.utils import timezone
+            self.tagihan.status = 'LUNAS'
+            self.tagihan.tanggal_bayar = timezone.now()
+            self.tagihan.save()
+        super().save(*args, **kwargs)

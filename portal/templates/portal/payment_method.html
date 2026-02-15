@@ -1,0 +1,43 @@
+{% extends 'portal/base.html' %}
+
+{% block title %}Pilih Metode Pembayaran - Portal Pondok{% endblock %}
+
+{% block content %}
+<a href="{% url 'portal:tagihan_spp' %}" class="back-link" style="display: inline-flex; align-items: center; gap: 8px; color: #667eea; text-decoration: none; font-weight: 600; margin-bottom: 20px;">
+    ← Kembali ke Tagihan
+</a>
+
+<div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 20px; border-radius: 15px; margin-bottom: 25px;">
+    <h2 style="margin: 0 0 10px 0; font-size: 20px;">Pembayaran SPP</h2>
+    <p style="margin: 0; opacity: 0.9; font-size: 14px;">{{ tagihan.bulan|date:"F Y" }}</p>
+    <div style="font-size: 28px; font-weight: 700; margin-top: 10px;">Rp {{ tagihan.jumlah|floatformat:0 }}</div>
+</div>
+
+<h3 style="margin-bottom: 15px; color: #333;">Pilih Metode Pembayaran</h3>
+
+{% for method in payment_methods %}
+<a href="{% url 'portal:payment_form' tagihan.id method.id %}" style="display: block; background: white; border: 2px solid #e0e0e0; border-radius: 12px; padding: 20px; margin-bottom: 15px; text-decoration: none; color: #333; transition: all 0.3s;">
+    <div style="display: flex; align-items: center; gap: 15px;">
+        <div style="font-size: 40px;">
+            {% if method.method_type == 'BANK_TRANSFER' %}🏦{% else %}📱{% endif %}
+        </div>
+        <div style="flex: 1;">
+            <div style="font-weight: 600; font-size: 16px; margin-bottom: 5px;">
+                {{ method.get_method_type_display }}
+            </div>
+            {% if method.method_type == 'BANK_TRANSFER' %}
+            <div style="font-size: 14px; color: #666;">{{ method.bank_name }} - {{ method.account_number }}</div>
+            {% else %}
+            <div style="font-size: 14px; color: #666;">Scan QRIS untuk bayar</div>
+            {% endif %}
+        </div>
+        <div style="color: #667eea; font-size: 20px;">→</div>
+    </div>
+</a>
+{% empty %}
+<div style="text-align: center; padding: 40px; color: #999;">
+    <div style="font-size: 60px; margin-bottom: 15px;">💳</div>
+    <p>Belum ada metode pembayaran tersedia</p>
+</div>
+{% endfor %}
+{% endblock %}

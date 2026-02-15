@@ -1,0 +1,56 @@
+{% extends 'portal/base.html' %}
+
+{% block title %}Upload Bukti Pembayaran - Portal Pondok{% endblock %}
+
+{% block content %}
+<a href="{% url 'portal:payment_method' tagihan.id %}" style="display: inline-flex; align-items: center; gap: 8px; color: #667eea; text-decoration: none; font-weight: 600; margin-bottom: 20px;">
+    ← Pilih Metode Lain
+</a>
+
+<div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 20px; border-radius: 15px; margin-bottom: 25px; text-align: center;">
+    <h2 style="margin: 0 0 5px 0; font-size: 20px;">{{ payment_method.get_method_type_display }}</h2>
+    <p style="margin: 0; opacity: 0.9; font-size: 14px;">{{ tagihan.bulan|date:"F Y" }} - Rp {{ tagihan.jumlah|floatformat:0 }}</p>
+</div>
+
+{% if payment_method.method_type == 'BANK_TRANSFER' %}
+<div style="background: #f8f9fa; border-radius: 12px; padding: 20px; margin-bottom: 25px;">
+    <h3 style="margin: 0 0 15px 0; font-size: 16px; color: #333;">Detail Rekening</h3>
+    <div style="margin-bottom: 10px;"><strong>Bank:</strong> {{ payment_method.bank_name }}</div>
+    <div style="margin-bottom: 10px;"><strong>No. Rekening:</strong> <span style="font-size: 18px; font-weight: 700; color: #667eea;">{{ payment_method.account_number }}</span></div>
+    <div><strong>Atas Nama:</strong> {{ payment_method.account_name }}</div>
+</div>
+{% else %}
+<div style="text-align: center; margin-bottom: 25px;">
+    <p style="margin-bottom: 15px; color: #666;">Scan QRIS di bawah untuk melakukan pembayaran</p>
+    <img src="{{ payment_method.qris_image.url }}" alt="QRIS" style="max-width: 300px; width: 100%; border-radius: 12px; box-shadow: 0 5px 15px rgba(0,0,0,0.1);">
+</div>
+{% endif %}
+
+<form method="post" enctype="multipart/form-data">
+    {% csrf_token %}
+    <div style="margin-bottom: 20px;">
+        <label style="display: block; margin-bottom: 8px; color: #333; font-weight: 500; font-size: 14px;">Jumlah Dibayar</label>
+        <input type="number" name="jumlah_bayar" value="{{ tagihan.jumlah }}" required style="width: 100%; padding: 14px 16px; border: 2px solid #e0e0e0; border-radius: 10px; font-size: 16px;">
+    </div>
+    
+    <div style="margin-bottom: 20px;">
+        <label style="display: block; margin-bottom: 8px; color: #333; font-weight: 500; font-size: 14px;">Tanggal Transfer</label>
+        <input type="date" name="tanggal_transfer" required style="width: 100%; padding: 14px 16px; border: 2px solid #e0e0e0; border-radius: 10px; font-size: 16px;">
+    </div>
+    
+    <div style="margin-bottom: 20px;">
+        <label style="display: block; margin-bottom: 8px; color: #333; font-weight: 500; font-size: 14px;">Bukti Transfer (Foto/Screenshot)</label>
+        <input type="file" name="bukti_transfer" accept="image/*" required style="width: 100%; padding: 14px 16px; border: 2px solid #e0e0e0; border-radius: 10px; font-size: 16px;">
+        <p style="font-size: 13px; color: #666; margin-top: 8px;">📸 Upload foto bukti transfer atau screenshot</p>
+    </div>
+    
+    <div style="margin-bottom: 20px;">
+        <label style="display: block; margin-bottom: 8px; color: #333; font-weight: 500; font-size: 14px;">Catatan (Opsional)</label>
+        <textarea name="catatan" rows="3" style="width: 100%; padding: 14px 16px; border: 2px solid #e0e0e0; border-radius: 10px; font-size: 16px;"></textarea>
+    </div>
+    
+    <button type="submit" style="width: 100%; padding: 14px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; border-radius: 10px; font-size: 16px; font-weight: 600; cursor: pointer;">
+        ✅ Kirim Bukti Pembayaran
+    </button>
+</form>
+{% endblock %}

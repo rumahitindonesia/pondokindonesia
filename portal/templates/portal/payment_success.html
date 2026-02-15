@@ -1,0 +1,42 @@
+{% extends 'portal/base.html' %}
+
+{% block title %}Pembayaran Terkirim - Portal Pondok{% endblock %}
+
+{% block content %}
+<div style="text-align: center; padding: 40px 20px;">
+    <div style="width: 100px; height: 100px; background: linear-gradient(135deg, #28a745 0%, #20c997 100%); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 30px; font-size: 50px;">
+        ✅
+    </div>
+    
+    <h2 style="color: #333; font-size: 24px; margin-bottom: 10px;">Pembayaran Terkirim!</h2>
+    <p style="color: #666; font-size: 14px; margin-bottom: 30px;">Bukti pembayaran Anda sedang diverifikasi oleh admin</p>
+    
+    <div style="background: #f8f9fa; border-radius: 15px; padding: 25px; margin-bottom: 30px; text-align: left;">
+        <h3 style="margin: 0 0 15px 0; font-size: 16px; color: #333;">Detail Pembayaran</h3>
+        <div style="margin-bottom: 10px;"><strong>Tagihan:</strong> {{ pembayaran.tagihan.bulan|date:"F Y" }}</div>
+        <div style="margin-bottom: 10px;"><strong>Jumlah:</strong> Rp {{ pembayaran.jumlah_bayar|floatformat:0 }}</div>
+        <div style="margin-bottom: 10px;"><strong>Metode:</strong> {{ pembayaran.payment_method.get_method_type_display }}</div>
+        <div style="margin-bottom: 10px;"><strong>Tanggal Transfer:</strong> {{ pembayaran.tanggal_transfer|date:"d F Y" }}</div>
+        <div><strong>Status:</strong> <span style="color: #ffc107; font-weight: 600;">⏳ {{ pembayaran.get_status_display }}</span></div>
+    </div>
+    
+    <div style="background: #fff3cd; border: 2px solid #ffc107; border-radius: 12px; padding: 20px; margin-bottom: 30px; text-align: left;">
+        <div style="font-weight: 600; margin-bottom: 10px; color: #856404;">💡 Informasi</div>
+        <ul style="margin: 0; padding-left: 20px; color: #856404; font-size: 14px;">
+            <li>Pembayaran akan diverifikasi dalam 1x24 jam</li>
+            <li>Anda akan menerima notifikasi via WhatsApp setelah verifikasi</li>
+            <li>Jika ada masalah, admin akan menghubungi Anda</li>
+        </ul>
+    </div>
+    
+    <a href="{% url 'portal:tagihan_spp' %}" style="display: inline-block; padding: 14px 30px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border-radius: 10px; text-decoration: none; font-weight: 600; margin-bottom: 15px;">
+        Lihat Tagihan Lainnya
+    </a>
+    
+    <br>
+    
+    <a href="{% url 'portal:dashboard' %}" style="display: inline-block; padding: 14px 30px; background: #f8f9fa; color: #666; border: 2px solid #e0e0e0; border-radius: 10px; text-decoration: none; font-weight: 600;">
+        Kembali ke Dashboard
+    </a>
+</div>
+{% endblock %}
