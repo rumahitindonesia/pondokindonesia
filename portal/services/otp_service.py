@@ -124,10 +124,8 @@ Terima kasih! 🙏"""
         Identify user type based on phone number
         Returns: (user_type: str, user_data: dict)
         """
-        # Check if Wali Santri (via Santri.telepon_ayah or telepon_ibu)
-        santri = Santri.objects.filter(
-            Q(telepon_ayah=phone_number) | Q(telepon_ibu=phone_number)
-        ).first()
+        # Check if Wali Santri (via Santri.no_hp_wali)
+        santri = Santri.objects.filter(no_hp_wali=phone_number).first()
         
         if santri:
             return 'WALI', {
@@ -162,10 +160,8 @@ Terima kasih! 🙏"""
         Detect tenant based on user's phone number
         Returns: Tenant instance or None (will use global API settings)
         """
-        # Check Santri first (Wali Santri)
-        santri = Santri.objects.filter(
-            Q(telepon_ayah=phone_number) | Q(telepon_ibu=phone_number)
-        ).first()
+        # Check Santri first (Wali Santri via no_hp_wali)
+        santri = Santri.objects.filter(no_hp_wali=phone_number).first()
         if santri and santri.tenant:
             return santri.tenant
         
