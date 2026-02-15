@@ -205,17 +205,24 @@ class OTPService:
     @staticmethod
     def create_session(phone_number, user_type, user_data):
         """Create a new public user session"""
-        token = ''.join([str(random.randint(0, 9)) for _ in range(32)])  # Simple token for now
+        # Prepare session data
+        session_kwargs = {
+            'phone_number': phone_number,
+            'user_type': user_type,
+            'is_active': True
+        }
         
-        PublicUserSession.objects.create(
-            session_token=token,
-            phone_number=phone_number,
-            user_type=user_type,
-            user_data=user_data,
-            expires_at=timezone.now() + timezone.timedelta(days=1)
-        )
+        # Map user_data IDs to foreign keys
+        if user_type == 'WALI' and user_data.get('santri_id'):
+            session_kwargs['santri_id'] = user_data.get('santri_id')
+        elif user_type == 'DONATUR' and user_data.get('donatur_id'):
+            session_kwargs['donatur_id'] = user_data.get('donatur_id')
+        elif user_type == 'CALON_WALI' and user_data.get('lead_id'):
+            session_kwargs['lead_id'] = user_data.get('lead_id')
         
-        return token
+        # Create session
+        session = PublicUserSession.objects.create(**session_kwargs)
+        return session.session_key
 
     @staticmethod
     def get_redirect_url(user_type):
