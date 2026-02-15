@@ -130,8 +130,14 @@ Terima kasih! 🙏"""
         Identify user type based on phone number
         Returns: (user_type: str, user_data: dict)
         """
-        # Check if Wali Santri (via Santri.no_hp_wali)
-        santri = Santri.objects.filter(no_hp_wali=phone_number).first()
+        # Generate both formats for matching (62xxx and 08xxx)
+        phone_62 = phone_number  # Already normalized to 62xxx
+        phone_08 = '0' + phone_number[2:] if phone_number.startswith('62') else phone_number
+        
+        # Check if Wali Santri (via Santri.no_hp_wali) - check both formats
+        santri = Santri.objects.filter(
+            Q(no_hp_wali=phone_62) | Q(no_hp_wali=phone_08)
+        ).first()
         
         if santri:
             return 'WALI', {
