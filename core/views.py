@@ -64,6 +64,12 @@ def webhook_whatsapp(request, tenant_slug=None):
             sender_name = data.get('push_name') or data.get('pushName') or data.get('name') or ''
             is_me = data.get('is_me', False)
 
+            # --- SYSTEM NOTIFICATION FILTER (BLUNT BLOCK) ---
+            # Block any message that contains system-generated notification text
+            # This is the most robust way to stop the feedback loop.
+            if "Lead Baru Terdeteksi!" in message:
+                return HttpResponse('OK', status=200)
+            
             # Normalize for comparison
             import re
             def clean_num(n): return re.sub(r'\D', '', str(n))
@@ -110,11 +116,6 @@ def webhook_whatsapp(request, tenant_slug=None):
                     raw_data=data
                 )
             except: pass
-
-            # --- SYSTEM NOTIFICATION FILTER ---
-            # Ignore messages that look like system-generated notifications
-            if message.startswith("Lead Baru Terdeteksi!"):
-                return HttpResponse('OK', status=200)
 
             # --- GHOST LEAD / ECHO FILTER ---
             # If the sender is the gateway number itself, it's an echo.
