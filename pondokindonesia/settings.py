@@ -47,6 +47,7 @@ INSTALLED_APPS = [
     'core',
     'crm',
     'hr',
+    'portal',
     'unfold',
     'unfold.contrib.filters',
     'unfold.contrib.forms',

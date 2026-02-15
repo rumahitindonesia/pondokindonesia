@@ -19,6 +19,7 @@ from django.urls import path, include
 
 urlpatterns = [
     path('admin/', admin.site.header if hasattr(admin.site, 'header') else admin.site.urls),
+    path('portal/', include('portal.urls')),
     path('', include('core.urls')),
 ]
 

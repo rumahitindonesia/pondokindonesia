@@ -1,0 +1,38 @@
+{% extends 'portal/base.html' %}
+
+{% block title %}Login - Portal Pondok{% endblock %}
+
+{% block content %}
+<div style="text-align: center; margin-bottom: 30px;">
+    <h2 style="color: #333; font-size: 22px; margin-bottom: 10px;">Selamat Datang!</h2>
+    <p style="color: #666; font-size: 14px;">Masukkan nomor WhatsApp untuk login</p>
+</div>
+
+<form method="post">
+    {% csrf_token %}
+    <div class="form-group">
+        <label for="phone_number">Nomor WhatsApp</label>
+        <input type="tel" id="phone_number" name="phone_number" placeholder="08123456789 atau 628123456789" required
+            autofocus>
+        <p class="help-text">
+            💡 Gunakan nomor yang terdaftar sebagai Wali Santri atau Donatur
+        </p>
+    </div>
+
+    <button type="submit" class="btn">
+        📱 Kirim Kode OTP
+    </button>
+</form>
+
+<div style="margin-top: 20px; padding: 15px; background: #f8f9fa; border-radius: 10px;">
+    <p style="font-size: 13px; color: #666; margin-bottom: 8px;">
+        <strong>Fitur Portal:</strong>
+    </p>
+    <ul style="font-size: 13px; color: #666; padding-left: 20px;">
+        <li>Bayar tagihan SPP</li>
+        <li>Donasi online</li>
+        <li>Lihat progress pendaftaran</li>
+        <li>Riwayat transaksi</li>
+    </ul>
+</div>
+{% endblock %}

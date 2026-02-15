@@ -1,0 +1,51 @@
+{% extends 'portal/base.html' %}
+
+{% block title %}Verifikasi OTP - Portal Pondok{% endblock %}
+
+{% block content %}
+<div style="text-align: center; margin-bottom: 30px;">
+    <div
+        style="width: 80px; height: 80px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 20px; font-size: 40px;">
+        🔐
+    </div>
+    <h2 style="color: #333; font-size: 22px; margin-bottom: 10px;">Masukkan Kode OTP</h2>
+    <p style="color: #666; font-size: 14px;">Kode telah dikirim ke WhatsApp</p>
+    <p style="color: #667eea; font-weight: 600; font-size: 16px; margin-top: 5px;">{{ phone_number }}</p>
+</div>
+
+<form method="post">
+    {% csrf_token %}
+    <div class="form-group">
+        <label for="otp_code">Kode OTP (6 digit)</label>
+        <input type="text" id="otp_code" name="otp_code" placeholder="000000" maxlength="6" pattern="[0-9]{6}" required
+            autofocus style="text-align: center; font-size: 24px; letter-spacing: 8px; font-weight: 600;">
+        <p class="help-text">
+            ⏱️ Kode berlaku selama 5 menit
+        </p>
+    </div>
+
+    <button type="submit" class="btn">
+        ✅ Verifikasi & Masuk
+    </button>
+</form>
+
+<div style="text-align: center; margin-top: 20px;">
+    <p style="font-size: 13px; color: #666;">
+        Tidak menerima kode?
+        <a href="{% url 'portal:login' %}" style="color: #667eea; text-decoration: none; font-weight: 600;">
+            Kirim ulang
+        </a>
+    </p>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Auto-submit when 6 digits entered
+    document.getElementById('otp_code').addEventListener('input', function (e) {
+        if (this.value.length === 6) {
+            this.form.submit();
+        }
+    });
+</script>
+{% endblock %}
