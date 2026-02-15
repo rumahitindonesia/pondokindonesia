@@ -57,55 +57,66 @@ def webhook_whatsapp(request, tenant_slug=None):
         try:
             data = json.loads(request.body)
             
-            # 2. Extract Basic Data
+            # 2. Basic Extraction & Normalization
             device = data.get('device', '').strip()
             message = data.get('message', '').strip()
             sender = data.get('from', '').strip()
             sender_name = data.get('push_name') or data.get('pushName') or data.get('name') or ''
             is_me = data.get('is_me', False)
 
-            # --- SYSTEM NOTIFICATION FILTER (BLUNT BLOCK) ---
-            # Block any message that contains system-generated notification text
-            # This is the most robust way to stop the feedback loop.
-            if "Lead Baru Terdeteksi!" in message:
-                return HttpResponse('OK', status=200)
-            
-            # Normalize for comparison
+            # Normalize for comparisons
             import re
-            def clean_num(n): return re.sub(r'\D', '', str(n))
-            
-            # 1. Resolve Tenant
-            current_tenant = None
-            if tenant_slug:
-                current_tenant = get_object_or_404(Tenant, subdomain=tenant_slug)
-            
-            # If still None, try middleware
-            if not current_tenant and hasattr(request, 'tenant') and request.tenant:
-                current_tenant = request.tenant
-            
-            # If still None, try to identify by device number
-            if not current_tenant and device:
-                clean_device = clean_num(device)
-                # Check for tenant by phone_number matching (last 10 digits as safe bet)
-                current_tenant = Tenant.objects.filter(phone_number__icontains=clean_device[-10:]).first()
-                if current_tenant:
-                    from core.models import set_current_tenant
-                    set_current_tenant(current_tenant)
-
-            # --- INITIAL LOG & DEDUPLICATION ---
+            def clean_num(n): return re.sub(r'\D', '', str(n)) if n else ""
             c_sender = clean_num(sender)
             c_device = clean_num(device)
-            # Ensure sender is just digits for storage/comparison
-            sender = c_sender or sender
 
-            # 1. Deduplication (Prevent retries/bursts from creating duplicates)
-            from django.utils import timezone
-            from datetime import timedelta
-            # We check if an identical message from this sender was processed in the last 15 seconds
-            if WhatsAppMessage.objects.filter(sender=sender, message=message, created_at__gte=timezone.now() - timedelta(seconds=15)).exists():
+            # --- SYSTEM & ECHO FILTERS (BLUNT BLOCK) ---
+            
+            # 1. Block by Content (Any system prefix)
+            system_prefixes = ["Lead Baru Terdeteksi!", "Lead Baru", "CS assigned"]
+            if any(p in message for p in system_prefixes):
+                return HttpResponse('OK', status=200)
+            
+            # 2. Block by is_me flag
+            if is_me:
                 return HttpResponse('OK', status=200)
 
-            # 2. Log Message IMMEDIATELY to prevent race conditions on retries
+            # 3. Block if Sender matches Device (Gateway sending to itself)
+            if c_device and c_sender == c_device:
+                return HttpResponse('OK', status=200)
+
+            # 4. Global Tenant Phone Block (Sender is ANY known gateway)
+            if c_sender and Tenant.objects.filter(phone_number__icontains=c_sender[-10:]).exists():
+                return HttpResponse('OK', status=200)
+            
+            # 5. Global User Phone Block (Sender is ANY known staff/user)
+            from users.models import User
+            if c_sender and User.all_objects.filter(phone_number__icontains=c_sender[-10:]).exists():
+                return HttpResponse('OK', status=200)
+
+            # --- RESOLVE SPECIFIC TENANT ---
+            current_tenant = None
+            if tenant_slug:
+                current_tenant = Tenant.objects.filter(subdomain=tenant_slug).first()
+            if not current_tenant and device:
+                current_tenant = Tenant.objects.filter(phone_number__icontains=c_device[-10:]).first()
+            if not current_tenant and hasattr(request, 'tenant') and request.tenant:
+                current_tenant = request.tenant
+
+            if current_tenant:
+                from core.models import set_current_tenant
+                set_current_tenant(current_tenant)
+
+            # --- INITIAL LOG & DEDUPLICATION ---
+            sender = c_sender or sender # Digits only for storage
+
+            # 1. Deduplication (30s window to be safe)
+            from django.utils import timezone
+            from datetime import timedelta
+            if WhatsAppMessage.objects.filter(sender=sender, message=message, created_at__gte=timezone.now() - timedelta(seconds=30)).exists():
+                return HttpResponse('OK', status=200)
+
+            # 2. Log Message ONLY after passing all echo/system filters
             try:
                 WhatsAppMessage.objects.create(
                     tenant=current_tenant,
@@ -116,24 +127,8 @@ def webhook_whatsapp(request, tenant_slug=None):
                     raw_data=data
                 )
             except: pass
-
-            # --- GHOST LEAD / ECHO FILTER ---
-            # If the sender is the gateway number itself, it's an echo.
-            c_tenant_phone = clean_num(current_tenant.phone_number) if current_tenant and current_tenant.phone_number else ""
-
-            # Filter if sender == device or sender == personal phone of the pondok
-            is_echo = False
-            if is_me: is_echo = True
-            if not is_echo and c_device and (c_sender == c_device or c_sender.endswith(c_device) or c_device.endswith(c_sender)):
-                is_echo = True
-            if not is_echo and c_tenant_phone and (c_sender == c_tenant_phone or c_sender.endswith(c_tenant_phone) or c_tenant_phone.endswith(c_sender)):
-                is_echo = True
-            
-            if is_echo:
-                return HttpResponse('OK', status=200)
             
             # 4. Identify Sender (Internal User vs External Lead)
-            from users.models import User
             # Filter for ANY internal user (CS, Admin, etc.) to prevent treating them as leads
             internal_user = User.all_objects.filter(
                 is_active=True, 
@@ -258,10 +253,6 @@ def webhook_whatsapp(request, tenant_slug=None):
                     ).start()
                     replied = True
 
-            return HttpResponse('OK', status=200)
-
-            return HttpResponse('OK', status=200)
-            
             return HttpResponse('OK', status=200)
         except json.JSONDecodeError:
             return HttpResponse('Invalid JSON', status=400)
