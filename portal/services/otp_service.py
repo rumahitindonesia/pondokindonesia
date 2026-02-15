@@ -112,7 +112,8 @@ class OTPService:
                 return False, "User tidak ditemukan."
             
             # Create session
-            session_token = OTPService.create_session(phone_number, user_type, user_data)
+            session = OTPService.create_session(phone_number, user_type, user_data)
+            session_token = session.session_key
             
             # If request object is provided, set session data directly
             if request:
@@ -222,7 +223,7 @@ class OTPService:
         
         # Create session
         session = PublicUserSession.objects.create(**session_kwargs)
-        return session.session_key
+        return session
 
     @staticmethod
     def get_redirect_url(user_type):
