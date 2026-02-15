@@ -43,3 +43,6 @@ def can_view_jabatan(request):
 
 def can_view_tugas(request):
     return request.user.is_active and (request.user.is_superuser or request.user.has_perm('hr.view_tugas'))
+
+def can_view_lokasikantor(request):
+    return request.user.is_active and (request.user.is_superuser or request.user.has_perm('hr.view_lokasikantor'))
