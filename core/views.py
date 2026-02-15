@@ -2,11 +2,14 @@ from django.shortcuts import render
 from django.views.decorators.csrf import csrf_exempt
 from django.http import HttpResponse, JsonResponse
 import json
+import logging
 from .models import WhatsAppMessage, WhatsAppAutoReply, WhatsAppForm, Lead, PricingPlan
 from core.services.starsender import StarSenderService
 from core.services.ai_service import AIService
 from tenants.models import Tenant
 from django.shortcuts import get_object_or_404
+
+logger = logging.getLogger(__name__)
 
 def homepage(request):
     tenant = getattr(request, 'tenant', None)
@@ -70,38 +73,81 @@ def webhook_whatsapp(request, tenant_slug=None):
             c_sender = clean_num(sender)
             c_device = clean_num(device)
 
-            # --- SYSTEM & ECHO FILTERS (BLUNT BLOCK) ---
+            # --- SYSTEM & ECHO FILTERS ---
             
-            # 1. Block by Content (Any system prefix)
-            system_prefixes = ["Lead Baru Terdeteksi!", "Lead Baru", "CS assigned"]
-            if any(p in message for p in system_prefixes):
-                return HttpResponse('OK', status=200)
-            
-            # 2. Block by is_me flag
+            # 1. Handle is_me flag (Gateway notification about new lead)
             if is_me:
+                logger.info(f"[is_me=True] Gateway notification received: {message[:100]}")
+                
+                # Parse lead info from message
+                # Expected format: "Lead Baru Terdeteksi! Nama: John, Phone: 081234567890"
+                import re
+                lead_name_match = re.search(r'Nama:\s*([^,]+)', message)
+                lead_phone_match = re.search(r'Phone:\s*(\d+)', message)
+                
+                if lead_name_match and lead_phone_match:
+                    lead_name = lead_name_match.group(1).strip()
+                    lead_phone = lead_phone_match.group(1).strip()
+                    
+                    # Find CS users for this tenant
+                    from users.models import User, Role
+                    cs_role = Role.objects.filter(tenant=current_tenant, slug='cs').first() if current_tenant else None
+                    if not cs_role:
+                        cs_role = Role.objects.filter(tenant__isnull=True, slug='cs').first()
+                    
+                    if cs_role:
+                        cs_users = User.all_objects.filter(
+                            tenant=current_tenant,
+                            role=cs_role,
+                            is_active=True
+                        )
+                        
+                        # Send notification to each CS
+                        notification_msg = f"🔔 *Lead Baru Masuk!*\n\nNama: {lead_name}\nPhone: {lead_phone}\n\nSilakan follow up segera."
+                        
+                        for cs in cs_users:
+                            if cs.phone_number:
+                                StarSenderService.send_message(
+                                    to=cs.phone_number,
+                                    body=notification_msg,
+                                    tenant=current_tenant
+                                )
+                                logger.info(f"CS notification sent to {cs.username} ({cs.phone_number})")
+                        
+                        logger.info(f"CS notification completed for lead: {lead_name} ({lead_phone})")
+                    else:
+                        logger.warning(f"CS role not found for tenant: {current_tenant}")
+                else:
+                    logger.warning(f"Could not parse lead info from is_me message: {message}")
+                
                 return HttpResponse('OK', status=200)
 
-            # 3. Block if Sender matches Device (Gateway sending to itself)
+            # 2. Block if Sender matches Device (Gateway sending to itself)
             if c_device and c_sender == c_device:
+                logger.debug(f"Blocked: Sender matches device (gateway self-message)")
                 return HttpResponse('OK', status=200)
 
-            # 4. Global Tenant Phone Block (Sender is ANY known gateway)
+            # 3. Global Tenant Phone Block (Sender is ANY known gateway)
             if c_sender and Tenant.objects.filter(phone_number__icontains=c_sender[-10:]).exists():
+                logger.debug(f"Blocked: Sender is a known tenant gateway")
                 return HttpResponse('OK', status=200)
             
-            # 5. Global User Phone Block (Sender is ANY known staff/user)
+            # 4. Global User Phone Block (Sender is ANY known staff/user)
             from users.models import User
             if c_sender and User.all_objects.filter(phone_number__icontains=c_sender[-10:]).exists():
+                logger.debug(f"Blocked: Sender is a known staff/user")
                 return HttpResponse('OK', status=200)
 
-            # --- RESOLVE SPECIFIC TENANT ---
+            # --- RESOLVE SPECIFIC TENANT (Prioritize subdomain) ---
             current_tenant = None
             if tenant_slug:
                 current_tenant = Tenant.objects.filter(subdomain=tenant_slug).first()
-            if not current_tenant and device:
-                current_tenant = Tenant.objects.filter(phone_number__icontains=c_device[-10:]).first()
+                logger.debug(f"Tenant resolved from slug: {current_tenant}")
+            
+            # Fallback to request context only
             if not current_tenant and hasattr(request, 'tenant') and request.tenant:
                 current_tenant = request.tenant
+                logger.debug(f"Tenant resolved from request context: {current_tenant}")
 
             if current_tenant:
                 from core.models import set_current_tenant
@@ -110,13 +156,23 @@ def webhook_whatsapp(request, tenant_slug=None):
             # --- INITIAL LOG & DEDUPLICATION ---
             sender = c_sender or sender # Digits only for storage
 
-            # 1. Deduplication (30s window to be safe)
+            # 1. Refined Deduplication (only for gateway self-messages with format)
             from django.utils import timezone
             from datetime import timedelta
-            if WhatsAppMessage.objects.filter(sender=sender, message=message, created_at__gte=timezone.now() - timedelta(seconds=30)).exists():
-                return HttpResponse('OK', status=200)
+            
+            is_gateway_message = c_sender and c_device and c_sender == c_device
+            if is_gateway_message:
+                # Get forms to check if message matches any format
+                forms_for_check = WhatsAppForm.objects.filter(tenant=current_tenant, is_active=True) if current_tenant else WhatsAppForm.objects.filter(tenant__isnull=True, is_active=True)
+                has_format = any(message.upper().startswith(form.keyword.upper()) for form in forms_for_check)
+                
+                if has_format:
+                    # Check for duplicates only if it's a gateway message with format
+                    if WhatsAppMessage.objects.filter(sender=sender, message=message, created_at__gte=timezone.now() - timedelta(seconds=30)).exists():
+                        logger.debug(f"Blocked: Duplicate gateway message with format")
+                        return HttpResponse('OK', status=200)
 
-            # 2. Log Message ONLY after passing all echo/system filters
+            # 2. Log Message ONLY after passing all filters
             try:
                 WhatsAppMessage.objects.create(
                     tenant=current_tenant,
@@ -126,7 +182,9 @@ def webhook_whatsapp(request, tenant_slug=None):
                     sender_name=sender_name,
                     raw_data=data
                 )
-            except: pass
+                logger.info(f"Message logged: {sender} -> {device} | {message[:50]}")
+            except Exception as e:
+                logger.error(f"Failed to log message: {e}")
             
             # 4. Identify Sender (Internal User vs External Lead)
             # Filter for ANY internal user (CS, Admin, etc.) to prevent treating them as leads
@@ -141,10 +199,12 @@ def webhook_whatsapp(request, tenant_slug=None):
 
             if internal_user and internal_user.is_staff:
                 # 5. INTERNAL FLOW (Staff Commands)
+                logger.info(f"[STAFF] Processing staff command from {internal_user.username}")
                 from core.services.staff_command_service import StaffCommandService
                 staff_msg = StaffCommandService.process_message_v2(current_tenant, message, internal_user)
                 if staff_msg:
                     StarSenderService.send_message(to=sender, body=staff_msg, tenant=current_tenant)
+                    logger.info(f"[STAFF] Response sent to {internal_user.username}")
                     replied = True
             
             if not replied:
@@ -157,6 +217,7 @@ def webhook_whatsapp(request, tenant_slug=None):
                     keyword = form.keyword.strip()
                     if message.upper().startswith(keyword.upper()):
                         # Found matching form
+                        logger.info(f"[FORM MATCH] Keyword '{keyword}' matched for form ID {form.id}")
                         body = message[len(keyword):].strip()
                         
                         # Clean multiple separators or spaces at start
@@ -234,12 +295,14 @@ def webhook_whatsapp(request, tenant_slug=None):
                                 print(f"CRM Conversion Error: {e}")
 
                         StarSenderService.send_message(to=sender, body=resp, tenant=current_tenant)
+                        logger.info(f"[FORM] Response sent to {sender} (Lead: {lead_name})")
                         replied = True
                         break
 
                 # B. AI Fallback (Natural interaction for undefined formats)
                 if not replied:
-                    import threading
+                    logger.info(f"[AI FALLBACK] No form matched, using AI for sender: {sender}")
+                    
                     # For external numbers, ensure lead exists
                     lead, created = Lead.objects.get_or_create(
                         tenant=current_tenant,
@@ -247,10 +310,17 @@ def webhook_whatsapp(request, tenant_slug=None):
                         defaults={'status': Lead.Status.WAITING_DATA}
                     )
                     
-                    threading.Thread(
-                        target=process_ai_reply, 
-                        args=(message, current_tenant, sender, sender_name)
-                    ).start()
+                    # Synchronous AI response (no threading)
+                    try:
+                        ai_response = AIService.get_completion(message, tenant=current_tenant, sender_name=sender_name)
+                        if ai_response:
+                            StarSenderService.send_message(to=sender, body=ai_response, tenant=current_tenant)
+                            logger.info(f"[AI] Response sent to {sender}")
+                        else:
+                            logger.warning(f"[AI] No response generated for {sender}")
+                    except Exception as e:
+                        logger.error(f"[AI] Error generating response: {e}")
+                    
                     replied = True
 
             return HttpResponse('OK', status=200)
