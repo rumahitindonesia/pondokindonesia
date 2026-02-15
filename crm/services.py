@@ -107,7 +107,6 @@ class CRMService:
                 donatur=donatur,
                 program=program,
                 nominal=data.get('nominal'),
-                tgl_donasi=timezone.now().date(),
                 keterangan=data.get('keterangan', 'Input via WA'),
                 status=TransaksiDonasi.Status.VERIFIED # Staff input assumes verified
             )

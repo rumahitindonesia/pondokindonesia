@@ -119,6 +119,11 @@ class Tagihan(TenantAwareModel):
         return f"{self.program.nama_program} - {self.santri.nama_lengkap} ({self.get_status_display()})"
 
 class TransaksiDonasi(TenantAwareModel):
+    class Status(models.TextChoices):
+        PENDING = 'PENDING', 'Menunggu Verifikasi'
+        VERIFIED = 'VERIFIED', 'Terverifikasi'
+        REJECTED = 'REJECTED', 'Ditolak'
+
     donatur = models.ForeignKey(Donatur, on_delete=models.CASCADE, related_name='donasi')
     program = models.ForeignKey(Program, on_delete=models.CASCADE, limit_choices_to={'jenis': Program.Jenis.DONASI})
     
@@ -127,6 +132,7 @@ class TransaksiDonasi(TenantAwareModel):
     bukti_transfer = models.ImageField(upload_to='bukti_donasi/', blank=True, null=True)
     external_id = models.CharField(max_length=100, blank=True, null=True, help_text="ID Transaksi iPaymu")
     payment_url = models.URLField(blank=True, null=True, help_text="Link Pembayaran iPaymu")
+    status = models.CharField(max_length=20, choices=Status.choices, default=Status.PENDING)
     keterangan = models.TextField(blank=True, null=True)
 
     class Meta:

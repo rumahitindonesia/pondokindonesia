@@ -245,8 +245,8 @@ class TransaksiDonasiAdmin(ImportExportMixin, BaseTenantAdmin, ModelAdmin):
         self.import_template_name = "admin/import_export/import.html"
         self.export_template_name = "admin/import_export/export.html"
     resource_classes = [TransaksiDonasiResource]
-    list_display = ('program', 'donatur', 'nominal', 'tgl_donasi')
-    list_filter = ('program', 'tenant')
+    list_display = ('program', 'donatur', 'nominal', 'status', 'tgl_donasi')
+    list_filter = ('program', 'status', 'tenant')
     search_fields = ('donatur__nama_donatur', 'program__nama_program')
     actions = ['send_receipt_whatsapp', 'generate_ipaymu_link']
 
