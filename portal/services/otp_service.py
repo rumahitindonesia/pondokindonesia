@@ -56,10 +56,13 @@ Jangan bagikan kode ini kepada siapapun.
 
 Terima kasih! 🙏"""
             
-            # Get tenant from first available Santri (for multi-tenant support)
-            # In public portal, we use the default tenant (first one)
+            # Get Rumah IT tenant (has StarSender API configured)
             from tenants.models import Tenant
-            tenant = Tenant.objects.first()
+            tenant = Tenant.objects.filter(name__icontains='rumah').first()
+            
+            if not tenant:
+                logger.error("Rumah IT tenant not found")
+                return False, "Konfigurasi sistem belum lengkap. Hubungi admin.", None
             
             # StarSenderService.send_message returns (success: bool, data: dict/str)
             success, data = StarSenderService.send_message(phone_number, message, tenant=tenant)
