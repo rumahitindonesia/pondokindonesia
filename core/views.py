@@ -100,14 +100,16 @@ def webhook_whatsapp(request, tenant_slug=None):
                 return HttpResponse('OK', status=200)
 
             # 2. Log Message IMMEDIATELY to prevent race conditions on retries
-            WhatsAppMessage.objects.create(
-                tenant=current_tenant,
-                device=device,
-                message=message,
-                sender=sender,
-                sender_name=sender_name,
-                raw_data=data
-            )
+            try:
+                WhatsAppMessage.objects.create(
+                    tenant=current_tenant,
+                    device=device,
+                    message=message,
+                    sender=sender,
+                    sender_name=sender_name,
+                    raw_data=data
+                )
+            except: pass
 
             # --- SYSTEM NOTIFICATION FILTER ---
             # Ignore messages that look like system-generated notifications
@@ -148,10 +150,6 @@ def webhook_whatsapp(request, tenant_slug=None):
                 if staff_msg:
                     StarSenderService.send_message(to=sender, body=staff_msg, tenant=current_tenant)
                     replied = True
-            elif internal_user:
-                # Internal non-staff (e.g. CS assigned via role but not marked is_staff in Django)
-                # We skip lead creation for existing users
-                replied = True
             
             if not replied:
                 # 6. EXTERNAL FLOW (Public/Lead)
@@ -231,10 +229,13 @@ def webhook_whatsapp(request, tenant_slug=None):
                         
                         # Auto-Insert to CRM if configured
                         if form.auto_insert:
-                            from crm.services import CRMService
-                            res_obj, auto_msg = CRMService.convert_lead(lead, form.lead_type)
-                            if res_obj:
-                                resp = f"{resp}\n\n[Auto-Insert] {auto_msg}"
+                            try:
+                                from crm.services import CRMService
+                                res_obj, auto_msg = CRMService.convert_lead(lead, form.lead_type)
+                                if res_obj:
+                                    resp = f"{resp}\n\n[Auto-Insert] {auto_msg}"
+                            except Exception as e:
+                                print(f"CRM Conversion Error: {e}")
 
                         StarSenderService.send_message(to=sender, body=resp, tenant=current_tenant)
                         replied = True
