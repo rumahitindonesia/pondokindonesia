@@ -184,7 +184,19 @@ def webhook_whatsapp(request, tenant_slug=None):
                         # If form is set to use AI, get completion from response_template (acting as prompt)
                         if form.use_ai_response:
                             from core.services.ai_service import AIService
-                            ai_resp = AIService.get_completion(resp, tenant=current_tenant, sender_name=lead_name)
+                            # Strict prompt to prevent AI from explaining itself or adding meta-talk
+                            strict_prompt = (
+                                "You are a friendly staff member of a Pondok Pesantren. "
+                                "Reply DIRECTLY to the lead using the style and instructions provided. "
+                                "IMPORTANT: DO NOT say 'Here is your message' or 'Certainly'. "
+                                "Output ONLY the message content itself. No quotes, no preamble."
+                            )
+                            ai_resp = AIService.get_completion(
+                                resp, 
+                                tenant=current_tenant, 
+                                sender_name=lead_name,
+                                system_prompt=strict_prompt
+                            )
                             if ai_resp:
                                 resp = ai_resp
                         
