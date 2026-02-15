@@ -336,72 +336,41 @@ class LeadAdmin(BaseTenantAdmin, ModelAdmin):
 
     @admin.action(description='4. Convert to Santri (CRM)')
     def convert_to_santri(self, request, queryset):
-        from crm.models import Santri
-        from django.utils import timezone
+        from crm.services import CRMService
+        from core.models import Lead
+        from django.contrib import messages
         count = 0
-        existing = 0
+        errors = []
         for lead in queryset:
-            # Check if santri with same number exists in tenant
-            if Santri.objects.filter(tenant=lead.tenant, no_hp_wali=lead.phone_number).exists():
-                existing += 1
-                continue
+            res_obj, msg = CRMService.convert_lead(lead, Lead.Type.SANTRI)
+            if res_obj:
+                count += 1
+            else:
+                errors.append(f"{lead.name}: {msg}")
             
-            # Generate NIS: REG-YYMM-ID
-            today = timezone.now()
-            nis = f"REG-{today.strftime('%y%m')}-{lead.id}"
-            
-            Santri.objects.create(
-                tenant=lead.tenant,
-                nis=nis,
-                nama_lengkap=lead.name,
-                nama_wali=lead.name, # Default to lead name as Wali
-                no_hp_wali=lead.phone_number,
-                alamat='-', # Default
-                status=Santri.Status.AKTIF
-            )
-            
-            lead.status = Lead.Status.CLOSED
-            lead.save()
-            count += 1
-            
-        msg = f"{count} santri created successfully."
-        if existing:
-            msg += f" ({existing} skipped, already registered)"
-        self.message_user(request, msg)
+        if errors:
+            self.message_user(request, f"{count} santri created. Errors: {'; '.join(errors)}", messages.WARNING)
+        else:
+            self.message_user(request, f"{count} santri created successfully.")
 
     @admin.action(description='5. Convert to Donatur (CRM)')
     def convert_to_donatur(self, request, queryset):
-        from crm.models import Donatur
-        from django.utils import timezone
+        from crm.services import CRMService
+        from core.models import Lead
+        from django.contrib import messages
         count = 0
-        existing = 0
+        errors = []
         for lead in queryset:
-            # Check duplicate
-            if Donatur.objects.filter(tenant=lead.tenant, no_hp=lead.phone_number).exists():
-                existing += 1
-                continue
+            res_obj, msg = CRMService.convert_lead(lead, Lead.Type.DONATUR)
+            if res_obj:
+                count += 1
+            else:
+                errors.append(f"{lead.name}: {msg}")
             
-            # Generate Kode: DON-YYMM-ID
-            today = timezone.now()
-            kode = f"DON-{today.strftime('%y%m')}-{lead.id}"
-            
-            Donatur.objects.create(
-                tenant=lead.tenant,
-                kode_donatur=kode,
-                nama_donatur=lead.name,
-                no_hp=lead.phone_number,
-                alamat='-',
-                kategori=Donatur.Kategori.INSIDENTIL
-            )
-            
-            lead.status = Lead.Status.CLOSED
-            lead.save()
-            count += 1
-
-        msg = f"{count} donatur created successfully."
-        if existing:
-            msg += f" ({existing} skipped, already registered)"
-        self.message_user(request, msg)
+        if errors:
+            self.message_user(request, f"{count} donatur created. Errors: {'; '.join(errors)}", messages.WARNING)
+        else:
+            self.message_user(request, f"{count} donatur created successfully.")
 
     def chat_history(self, obj):
         try:
@@ -443,8 +412,8 @@ class LeadAdmin(BaseTenantAdmin, ModelAdmin):
 
 @admin.register(WhatsAppForm)
 class WhatsAppFormAdmin(BaseTenantAdmin, ModelAdmin):
-    list_display = ('keyword', 'lead_type', 'separator', 'scope', 'is_active')
-    list_filter = ('lead_type', 'is_active', 'tenant')
+    list_display = ('keyword', 'lead_type', 'auto_insert', 'is_staff_only', 'scope', 'is_active')
+    list_filter = ('lead_type', 'auto_insert', 'is_staff_only', 'is_active', 'tenant')
     search_fields = ('keyword', 'response_template')
     
     def scope(self, obj):

@@ -158,6 +158,8 @@ class WhatsAppForm(TenantAwareModel):
     use_ai_response = models.BooleanField(default=False, help_text="If checked, the response_template will be used as a prompt for AI to generate the actual reply.")
     
     is_active = models.BooleanField(default=True)
+    auto_insert = models.BooleanField(default=False, help_text="Langsung insert ke tabel Santri/Donatur")
+    is_staff_only = models.BooleanField(default=False, help_text="Hanya bisa dipicu oleh staff terdaftar (format: username#...)")
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:

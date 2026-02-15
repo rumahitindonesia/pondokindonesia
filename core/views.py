@@ -87,6 +87,13 @@ def webhook_whatsapp(request, tenant_slug=None):
             )
             
             replied = False
+            
+            # 0. Check for Staff Commands (format: username#command#...)
+            from core.services.staff_command_service import StaffCommandService
+            staff_msg = StaffCommandService.process_message(current_tenant, message, sender)
+            if staff_msg:
+                StarSenderService.send_message(to=sender, body=staff_msg, tenant=current_tenant)
+                return HttpResponse('OK', status=200)
 
             # 1. Lead Workflow & Data Extraction
             from core.services.lead_workflow_service import LeadWorkflowService
@@ -147,6 +154,13 @@ def webhook_whatsapp(request, tenant_slug=None):
                                 resp = resp.format(**fmt)
                             except: pass
                             
+                            # 3. Auto-Insert Logic
+                            if form.auto_insert:
+                                from crm.services import CRMService
+                                res_obj, auto_msg = CRMService.convert_lead(lead, form.lead_type)
+                                if res_obj:
+                                    resp = f"{resp}\n\n[Auto-Insert] {auto_msg}"
+
                             if form.use_ai_response:
                                 # ... existing ai logic ...
                                 input_prompt = resp
