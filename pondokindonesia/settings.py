@@ -168,7 +168,13 @@ UNFOLD = {
                 "collapsible": True,
                 "items": [
                     {
-                        "title": "Tagihan Santri",
+                        "title": "SPP Bulanan",
+                        "icon": "event_repeat",
+                        "link": "/admin/crm/tagihanspp/",
+                        "permission": "core.permissions.can_view_tagihan",
+                    },
+                    {
+                        "title": "Tagihan Lainnya",
                         "icon": "payments",
                         "link": "/admin/crm/tagihan/",
                         "permission": "core.permissions.can_view_tagihan",
