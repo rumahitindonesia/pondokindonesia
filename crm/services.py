@@ -117,3 +117,28 @@ class CRMService:
             return None, "Error: Nama Program tidak ditemukan."
         except Exception as e:
             return None, f"Error: {str(e)}"
+
+    @staticmethod
+    def search_records(tenant, target_type, query):
+        """
+        Search for records (Santri or Donatur) by name and return formatted string.
+        """
+        if target_type == 'donatur':
+            results = Donatur.objects.filter(tenant=tenant, nama_donatur__icontains=query)[:5]
+            if not results: return f"Pencarian donatur '{query}' tidak ditemukan."
+            
+            msg = f"Hasil pencarian Donatur '{query}':\n"
+            for d in results:
+                msg += f"- {d.kode_donatur}: {d.nama_donatur}\n"
+            return msg
+        
+        elif target_type == 'santri':
+            results = Santri.objects.filter(tenant=tenant, nama_lengkap__icontains=query)[:5]
+            if not results: return f"Pencarian santri '{query}' tidak ditemukan."
+            
+            msg = f"Hasil pencarian Santri '{query}':\n"
+            for s in results:
+                msg += f"- {s.nis}: {s.nama_lengkap}\n"
+            return msg
+        
+        return "Target pencarian tidak dikenal."

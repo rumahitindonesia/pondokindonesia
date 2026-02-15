@@ -70,4 +70,10 @@ class StaffCommandService:
                     return "Error: Nominal harus angka."
             return "Error format Donasi: username#donasi#kode_donatur#nama_program#nominal#keterangan"
 
+        elif command == 'kode':
+            # format: username#kode#donatur#nama_pencarian
+            if len(parts) >= 4:
+                return CRMService.search_records(tenant, parts[2].lower(), parts[3])
+            return "Error format Kode: username#kode#donatur/santri#nama"
+
         return None # Command not recognized
