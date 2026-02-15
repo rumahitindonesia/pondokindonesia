@@ -56,8 +56,13 @@ Jangan bagikan kode ini kepada siapapun.
 
 Terima kasih! 🙏"""
             
+            # Get tenant from first available Santri (for multi-tenant support)
+            # In public portal, we use the default tenant (first one)
+            from tenants.models import Tenant
+            tenant = Tenant.objects.first()
+            
             # StarSenderService.send_message returns (success: bool, data: dict/str)
-            success, data = StarSenderService.send_message(phone_number, message)
+            success, data = StarSenderService.send_message(phone_number, message, tenant=tenant)
             
             if success:
                 logger.info(f"OTP sent successfully to {phone_number}")
