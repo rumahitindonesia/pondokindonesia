@@ -1,0 +1,266 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="id">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fitur Lengkap Pondok Indonesia - Solusi Manajemen Pesantren Terpadu</title>
+    <meta name="description"
+        content="Jelajahi fitur lengkap Pondok Indonesia: CRM Santri, Manajemen Keuangan, HR & KPI Staff, Portal Wali Santri, hingga Asisten AI.">
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{% static 'core/css/style.css' %}">
+</head>
+
+<body>
+    <nav>
+        <div class="container">
+            <a href="/" class="logo">Pondok<span class="gradient-text">Indonesia</span></a>
+            <div class="nav-links">
+                <a href="/fitur" class="active">Fitur</a>
+                <a href="/#manfaat">Manfaat</a>
+                <a href="/#pricing">Harga</a>
+                <a href="/admin" class="btn btn-primary" style="padding: 10px 20px;">Dashboard</a>
+            </div>
+        </div>
+    </nav>
+
+    <main>
+        <!-- Hero Section -->
+        <header class="section-padding" style="padding-top: 150px; text-align: center;">
+            <div class="container">
+                <h1
+                    style="font-size: 3.5rem; line-height: 1.1; margin-bottom: 20px; max-width: 900px; margin-left: auto; margin-right: auto;">
+                    Satu Aplikasi untuk <span class="gradient-text">Seluruh Kebutuhan</span> Pesantren Anda.
+                </h1>
+                <p
+                    style="font-size: 1.25rem; color: var(--text-grey); margin-bottom: 40px; max-width: 700px; margin-left: auto; margin-right: auto;">
+                    Tinggalkan cara lama yang ribet. Beralihlah ke sistem manajemen modern yang mengintegrasikan santri,
+                    keuangan, SDM, dan komunikasi dalam satu platform cerdas.
+                </p>
+                <div style="display: flex; gap: 15px; justify-content: center;">
+                    <a href="/admin" class="btn btn-primary">Coba Demo Gratis</a>
+                    <a href="#problem-solution" class="btn" style="border: 1px solid #ddd;">Lihat Solusi</a>
+                </div>
+            </div>
+        </header>
+
+        <!-- Problem & Solution -->
+        <section class="section-padding" id="problem-solution" style="background: #f9fafb;">
+            <div class="container">
+                <div style="text-align: center; margin-bottom: 60px;">
+                    <h2 style="font-size: 2.5rem;">Masalah yang Kami <span class="gradient-text">Selesaikan</span></h2>
+                    <p style="color: var(--text-grey);">Kami paham tantangan mengelola pesantren di era digital.</p>
+                </div>
+
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 30px;">
+                    <!-- Problem 1 -->
+                    <div
+                        style="background: #fff; padding: 30px; border-radius: 20px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);">
+                        <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 20px;">
+                            <div
+                                style="background: #fee2e2; color: #dc2626; width: 40px; height: 40px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 20px;">
+                                ❌</div>
+                            <h3 style="font-size: 1.2rem; margin: 0;">Admin Kewalahan Jawab WA</h3>
+                        </div>
+                        <p style="color: #666; margin-bottom: 20px;">
+                            Staff kehabisan waktu menjawab pertanyaan berulang dari calon wali santri tentang biaya,
+                            jadwal, dan syarat pendaftaran.
+                        </p>
+                        <hr style="border: 0; border-top: 1px solid #eee; margin-bottom: 20px;">
+                        <div style="display: flex; align-items: center; gap: 15px;">
+                            <div
+                                style="background: #dcfce7; color: #16a34a; width: 40px; height: 40px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 20px;">
+                                ✅</div>
+                            <div>
+                                <h4 style="font-size: 1rem; margin: 0; color: #16a34a;">Solusi: AI Auto-Reply</h4>
+                                <p style="font-size: 0.9rem; color: #666; margin: 0;">Asisten AI menjawab 24/7 secara
+                                    otomatis & personal.</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Problem 2 -->
+                    <div
+                        style="background: #fff; padding: 30px; border-radius: 20px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);">
+                        <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 20px;">
+                            <div
+                                style="background: #fee2e2; color: #dc2626; width: 40px; height: 40px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 20px;">
+                                ❌</div>
+                            <h3 style="font-size: 1.2rem; margin: 0;">Tagihan SPP Sering Nunggak</h3>
+                        </div>
+                        <p style="color: #666; margin-bottom: 20px;">
+                            Penagihan manual via WA sering lupa, wali santri tidak tahu tagihan, dan rekap pembayaran
+                            memusingkan.
+                        </p>
+                        <hr style="border: 0; border-top: 1px solid #eee; margin-bottom: 20px;">
+                        <div style="display: flex; align-items: center; gap: 15px;">
+                            <div
+                                style="background: #dcfce7; color: #16a34a; width: 40px; height: 40px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 20px;">
+                                ✅</div>
+                            <div>
+                                <h4 style="font-size: 1rem; margin: 0; color: #16a34a;">Solusi: Portal & Reminder</h4>
+                                <p style="font-size: 0.9rem; color: #666; margin: 0;">Portal Wali Santri untuk cek
+                                    tagihan & reminder WA otomatis.</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Problem 3 -->
+                    <div
+                        style="background: #fff; padding: 30px; border-radius: 20px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);">
+                        <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 20px;">
+                            <div
+                                style="background: #fee2e2; color: #dc2626; width: 40px; height: 40px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 20px;">
+                                ❌</div>
+                            <h3 style="font-size: 1.2rem; margin: 0;">Kinerja Pengurus Tidak Terukur</h3>
+                        </div>
+                        <p style="color: #666; margin-bottom: 20px;">
+                            Sulit memantau kinerja asatidz/staff, absensi tidak akurat, dan target pencapaian pesantren
+                            tidak jelas.
+                        </p>
+                        <hr style="border: 0; border-top: 1px solid #eee; margin-bottom: 20px;">
+                        <div style="display: flex; align-items: center; gap: 15px;">
+                            <div
+                                style="background: #dcfce7; color: #16a34a; width: 40px; height: 40px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 20px;">
+                                ✅</div>
+                            <div>
+                                <h4 style="font-size: 1rem; margin: 0; color: #16a34a;">Solusi: HRM & KPI System</h4>
+                                <p style="font-size: 0.9rem; color: #666; margin: 0;">Sistem absensi GPS, KPI otomatis,
+                                    dan OKR terintegrasi.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Feature Grid -->
+        <section class="section-padding">
+            <div class="container">
+                <div style="text-align: center; margin-bottom: 60px;">
+                    <h2 style="font-size: 2.5rem;">Eksplorasi <span class="gradient-text">Fitur Unggulan</span></h2>
+                </div>
+
+                <!-- 1. CRM & Kesiswaan -->
+                <div style="display: flex; gap: 40px; margin-bottom: 80px; align-items: center; flex-wrap: wrap;">
+                    <div style="flex: 1; min-width: 300px;">
+                        <div
+                            style="background: #e0e7ff; color: #4338ca; display: inline-block; padding: 5px 15px; border-radius: 20px; font-weight: 600; font-size: 0.9rem; margin-bottom: 20px;">
+                            CRM & KESISWAAN
+                        </div>
+                        <h3 style="font-size: 2rem; margin-bottom: 20px;">Database Santri Terpusat & Pendaftaran Online
+                        </h3>
+                        <p style="color: #666; line-height: 1.6; margin-bottom: 20px;">
+                            Kelola seluruh data santri mulai dari biodata, data wali, dokumen, hingga riwayat kesehatan
+                            dalam satu database aman yang terintegrasi.
+                        </p>
+                        <ul style="list-style: none; padding: 0; color: #555;">
+                            <li style="margin-bottom: 10px;">✅ <strong>Lead Management:</strong> Tangkap data calon
+                                santri otomatis dari WhatsApp.</li>
+                            <li style="margin-bottom: 10px;">✅ <strong>Digital Archive:</strong> Simpan ijazah, KK, dan
+                                dokumen penting secara digital.</li>
+                            <li style="margin-bottom: 10px;">✅ <strong>Mutasi Data:</strong> Kelola status aktif, cuti,
+                                boyong, hingga alumni dengan mudah.</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- 2. Keuangan -->
+                <div
+                    style="display: flex; gap: 40px; margin-bottom: 80px; align-items: center; flex-wrap: wrap; flex-direction: row-reverse;">
+                    <div style="flex: 1; min-width: 300px;">
+                        <div
+                            style="background: #dcfce7; color: #166534; display: inline-block; padding: 5px 15px; border-radius: 20px; font-weight: 600; font-size: 0.9rem; margin-bottom: 20px;">
+                            KEUANGAN & DONASI
+                        </div>
+                        <h3 style="font-size: 2rem; margin-bottom: 20px;">Tagihan SPP & Manajemen Donasi Transparan</h3>
+                        <p style="color: #666; line-height: 1.6; margin-bottom: 20px;">
+                            Otomatisasi tagihan bulanan dan kelola donasi dari muhsinin dengan laporan keuangan
+                            real-time yang akuntabel.
+                        </p>
+                        <ul style="list-style: none; padding: 0; color: #555;">
+                            <li style="margin-bottom: 10px;">✅ <strong>Auto-Invoice:</strong> Tagihan SPP terkirim
+                                otomatis via WhatsApp setiap bulan.</li>
+                            <li style="margin-bottom: 10px;">✅ <strong>Payment Gateway:</strong> Terima pembayaran via
+                                QRIS dan Virtual Account (iPaymu).</li>
+                            <li style="margin-bottom: 10px;">✅ <strong>Donation Tracking:</strong> Pantau riwayat donasi
+                                per donatur untuk maintain hubungan.</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- 3. HR & SDM -->
+                <div style="display: flex; gap: 40px; margin-bottom: 80px; align-items: center; flex-wrap: wrap;">
+                    <div style="flex: 1; min-width: 300px;">
+                        <div
+                            style="background: #fae8ff; color: #86198f; display: inline-block; padding: 5px 15px; border-radius: 20px; font-weight: 600; font-size: 0.9rem; margin-bottom: 20px;">
+                            HR & PERFORMA
+                        </div>
+                        <h3 style="font-size: 2rem; margin-bottom: 20px;">Manajemen SDM Berbasis Kinerja (KPI)</h3>
+                        <p style="color: #666; line-height: 1.6; margin-bottom: 20px;">
+                            Pantau kedisiplinan dan kinerja asatidz/pengurus dengan sistem HR modern yang disesuaikan
+                            dengan kultur pesantren.
+                        </p>
+                        <ul style="list-style: none; padding: 0; color: #555;">
+                            <li style="margin-bottom: 10px;">✅ <strong>Absensi GPS & Selfie:</strong> Pastikan kehadiran
+                                staff akurat dengan lokasi & foto.</li>
+                            <li style="margin-bottom: 10px;">✅ <strong>KPI & OKR System:</strong> Ukur kinerja
+                                berdasarkan target (Objective Key Results).</li>
+                            <li style="margin-bottom: 10px;">✅ <strong>Amalan Tracker:</strong> Pantau ibadah harian
+                                pengurus sebagai bagian dari penilaian KPI.</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- 4. Portal Publik -->
+                <div
+                    style="display: flex; gap: 40px; margin-bottom: 80px; align-items: center; flex-wrap: wrap; flex-direction: row-reverse;">
+                    <div style="flex: 1; min-width: 300px;">
+                        <div
+                            style="background: #ffedd5; color: #9a3412; display: inline-block; padding: 5px 15px; border-radius: 20px; font-weight: 600; font-size: 0.9rem; margin-bottom: 20px;">
+                            PORTAL WALI SANTRI
+                        </div>
+                        <h3 style="font-size: 2rem; margin-bottom: 20px;">Layanan Prima untuk Wali Santri</h3>
+                        <p style="color: #666; line-height: 1.6; margin-bottom: 20px;">
+                            Berikan akses mandiri kepada wali santri untuk memantau tagihan dan perkembangan
+                            putra-putrinya melalui portal khusus.
+                        </p>
+                        <ul style="list-style: none; padding: 0; color: #555;">
+                            <li style="margin-bottom: 10px;">✅ <strong>Login Simpel:</strong> Cukup gunakan nomor
+                                WhatsApp & OTP (Tanpa Password).</li>
+                            <li style="margin-bottom: 10px;">✅ <strong>Cek Tagihan:</strong> Lihat status pembayaran SPP
+                                secara real-time.</li>
+                            <li style="margin-bottom: 10px;">✅ <strong>Multi-Peran:</strong> Satu akun bisa untuk peran
+                                Wali, Donatur, dan Lead sekaligus.</li>
+                        </ul>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- CTA -->
+        <section class="section-padding" style="background: var(--text-dark); color: white; text-align: center;">
+            <div class="container">
+                <h2 style="font-size: 2.5rem; margin-bottom: 20px;">Siap Mengelola Pesantren Lebih Profesional?</h2>
+                <p style="color: #aaa; margin-bottom: 40px; font-size: 1.2rem;">Bergabunglah dengan pesantren-pesantren
+                    modern yang telah beralih ke digital management.</p>
+                <a href="/admin" class="btn btn-primary" style="font-size: 1.2rem; padding: 15px 40px;">Mulai
+                    Sekarang</a>
+            </div>
+        </section>
+
+    </main>
+
+    <footer class="section-padding" style="background: #111; color: white; padding: 60px 0;">
+        <div class="container" style="text-align: center;">
+            <p>&copy; 2026 Pondok Indonesia. Semua hak cipta dilindungi.</p>
+        </div>
+    </footer>
+</body>
+
+</html>

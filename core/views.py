@@ -28,6 +28,10 @@ def homepage(request):
     pricing_plans = PricingPlan.objects.filter(is_active=True).order_by('order')
     return render(request, 'core/homepage.html', {'tenants': tenants, 'pricing_plans': pricing_plans})
 
+def features(request):
+    """Features & Solutions Page"""
+    return render(request, 'core/features.html')
+
 def process_ai_reply(message, tenant, sender, sender_name):
     """
     Background worker to get AI completion and send WA reply.
