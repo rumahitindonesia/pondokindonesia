@@ -91,8 +91,8 @@ class AbsensiAdmin(BaseTenantAdmin, ModelAdmin):
         })
 
     def add_view(self, request, form_url='', extra_context=None):
+        # Cek apakah user ini Pengurus dan sudah absen hari ini
         try:
-            # Cek apakah user ini Pengurus dan sudah absen hari ini
             if hasattr(request.user, 'pengurus_profile'):
                 pengurus = request.user.pengurus_profile
                 today = timezone.localdate()
@@ -101,37 +101,30 @@ class AbsensiAdmin(BaseTenantAdmin, ModelAdmin):
                     # Redirect ke Change View (Mode Pulang)
                     url = reverse('admin:hr_absensi_change', args=[existing.pk])
                     return redirect(url)
-
-            from django.conf import settings
-            extra_context = extra_context or {}
-            extra_context['office_json'] = self.get_office_context(request)
-            extra_context['attendance_mode'] = 'MASUK'
-            extra_context['google_maps_api_key'] = getattr(settings, 'GOOGLE_MAPS_API_KEY', '')
-            return super().add_view(request, form_url, extra_context=extra_context)
         except Exception:
-            import traceback
-            from django.http import HttpResponse
-            return HttpResponse(f"<pre>{traceback.format_exc()}</pre>", status=500)
+            pass # User might not have a Pengurus profile
+
+        from django.conf import settings
+        extra_context = extra_context or {}
+        extra_context['office_json'] = self.get_office_context(request)
+        extra_context['attendance_mode'] = 'MASUK'
+        extra_context['google_maps_api_key'] = getattr(settings, 'GOOGLE_MAPS_API_KEY', '')
+        return super().add_view(request, form_url, extra_context=extra_context)
 
     def change_view(self, request, object_id, form_url='', extra_context=None):
-        try:
-            from django.conf import settings
-            extra_context = extra_context or {}
-            extra_context['office_json'] = self.get_office_context(request)
+        from django.conf import settings
+        extra_context = extra_context or {}
+        extra_context['office_json'] = self.get_office_context(request)
+        
+        # Determine Mode: If waktu_keluar is empty, it's PULANG mode. If full, it's just viewing.
+        obj = self.get_object(request, object_id)
+        if obj and not obj.waktu_keluar:
+            extra_context['attendance_mode'] = 'PULANG'
+        else:
+            extra_context['attendance_mode'] = 'VIEW'
             
-            # Determine Mode: If waktu_keluar is empty, it's PULANG mode. If full, it's just viewing.
-            obj = self.get_object(request, object_id)
-            if obj and not obj.waktu_keluar:
-                extra_context['attendance_mode'] = 'PULANG'
-            else:
-                extra_context['attendance_mode'] = 'VIEW'
-                
-            extra_context['google_maps_api_key'] = getattr(settings, 'GOOGLE_MAPS_API_KEY', '')
-            return super().change_view(request, object_id, form_url, extra_context=extra_context)
-        except Exception:
-            import traceback
-            from django.http import HttpResponse
-            return HttpResponse(f"<pre>{traceback.format_exc()}</pre>", status=500)
+        extra_context['google_maps_api_key'] = getattr(settings, 'GOOGLE_MAPS_API_KEY', '')
+        return super().change_view(request, object_id, form_url, extra_context=extra_context)
 
     def save_model(self, request, obj, form, change):
         # 1. Set Pengurus (jika buat baru)
