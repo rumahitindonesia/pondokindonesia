@@ -1,6 +1,7 @@
 from import_export import resources, fields
 from import_export.widgets import ForeignKeyWidget
 from .models import Santri, Donatur, Program, Tagihan, TransaksiDonasi
+from users.models import User
 
 class BaseTenantResource(resources.ModelResource):
     def __init__(self, request=None, **kwargs):
@@ -25,9 +26,15 @@ class SantriResource(BaseTenantResource):
         import_id_fields = ('nis',)
         
 class DonaturResource(BaseTenantResource):
+    pic_fundraiser = fields.Field(
+        column_name='pic_username',
+        attribute='pic_fundraiser',
+        widget=ForeignKeyWidget(User, 'username')
+    )
+
     class Meta:
         model = Donatur
-        fields = ('kode_donatur', 'nama_donatur', 'no_hp', 'kategori', 'alamat')
+        fields = ('kode_donatur', 'nama_donatur', 'no_hp', 'kategori', 'alamat', 'pic_fundraiser')
         import_id_fields = ('kode_donatur',)
 
 class ProgramResource(BaseTenantResource):
