@@ -56,13 +56,14 @@ Jangan bagikan kode ini kepada siapapun.
 
 Terima kasih! 🙏"""
             
-            wa_result = StarSenderService.send_message(phone_number, message)
+            # StarSenderService.send_message returns (success: bool, data: dict/str)
+            success, data = StarSenderService.send_message(phone_number, message)
             
-            if wa_result.get('status') == 'success':
+            if success:
                 logger.info(f"OTP sent successfully to {phone_number}")
                 return True, "Kode OTP telah dikirim ke WhatsApp Anda.", otp.id
             else:
-                logger.error(f"Failed to send OTP to {phone_number}: {wa_result}")
+                logger.error(f"Failed to send OTP to {phone_number}: {data}")
                 return False, "Gagal mengirim OTP. Silakan coba lagi.", None
                 
         except Exception as e:
