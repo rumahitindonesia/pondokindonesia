@@ -86,14 +86,28 @@ def webhook_whatsapp(request, tenant_slug=None):
                     from core.models import set_current_tenant
                     set_current_tenant(current_tenant)
 
-            # Ignore outgoing messages or echoes from the device itself
-            # Ghost leads usually come from the gateway number itself
-            if is_me or clean_num(sender) == clean_num(device):
+            # --- GHOST LEAD / ECHO FILTER ---
+            c_sender = clean_num(sender)
+            c_device = clean_num(device)
+            c_tenant_phone = clean_num(current_tenant.phone_number) if current_tenant and current_tenant.phone_number else ""
+
+            # 1. Simple Echo Check
+            if is_me or (c_sender == c_device and c_device != ""):
                 return HttpResponse('OK', status=200)
             
-            if current_tenant and current_tenant.phone_number:
-                if clean_num(sender) == clean_num(current_tenant.phone_number):
-                    return HttpResponse('OK', status=200)
+            if c_tenant_phone and c_sender == c_tenant_phone:
+                return HttpResponse('OK', status=200)
+
+            # 2. Deduplication (Prevent retries/bursts from creating duplicates)
+            from django.utils import timezone
+            from datetime import timedelta
+            recent_exists = WhatsAppMessage.objects.filter(
+                sender=sender,
+                message=message,
+                created_at__gte=timezone.now() - timedelta(seconds=10)
+            ).exists()
+            if recent_exists:
+                return HttpResponse('OK', status=200)
 
             # 3. Log Message
             WhatsAppMessage.objects.create(
@@ -186,10 +200,10 @@ def webhook_whatsapp(request, tenant_slug=None):
                             from core.services.ai_service import AIService
                             # Strict prompt to prevent AI from explaining itself or adding meta-talk
                             strict_prompt = (
-                                "You are a friendly staff member of a Pondok Pesantren. "
-                                "Reply DIRECTLY to the lead using the style and instructions provided. "
-                                "IMPORTANT: DO NOT say 'Here is your message' or 'Certainly'. "
-                                "Output ONLY the message content itself. No quotes, no preamble."
+                                "Role: Friendly Admin of Pondok Pesantren.\n"
+                                "Task: Generate a response message based on the input instruction.\n"
+                                "Constraint: Output ONLY the final message content. NO preamble, NO meta-talk, NO 'Here is the message'.\n"
+                                "Your output will be sent directly to the requester on WhatsApp."
                             )
                             ai_resp = AIService.get_completion(
                                 resp, 
