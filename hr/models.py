@@ -214,3 +214,118 @@ class Absensi(TenantAwareModel):
 
     def __str__(self):
         return f"{self.pengurus.nama} - {self.tanggal}"
+
+# --- MANAJEMEN KINERJA (KPI & AMALAN) ---
+
+class PeriodePenilaian(TenantAwareModel):
+    nama = models.CharField(_("Nama Periode"), max_length=100, help_text="Contoh: Q1 2025, Semester 1 2025")
+    start_date = models.DateField(_("Tanggal Mulai"))
+    end_date = models.DateField(_("Tanggal Selesai"))
+    is_active = models.BooleanField(_("Aktif"), default=True)
+
+    class Meta:
+        verbose_name = _("Periode Penilaian")
+        verbose_name_plural = _("Periode Penilaian")
+        ordering = ['-start_date']
+
+    def __str__(self):
+        return f"{self.nama} ({self.start_date} - {self.end_date})"
+
+class KamusKPI(TenantAwareModel):
+    class Satuan(models.TextChoices):
+        PERCENT = 'PERCENT', 'Persentase (%)'
+        NUMBER = 'NUMBER', 'Angka (Nominal/Jumlah)'
+        CURRENCY = 'CURRENCY', 'Mata Uang (Rp)'
+    
+    class Sumber(models.TextChoices):
+        MANUAL = 'MANUAL', 'Input Manual'
+        AUTO_ABSENSI = 'AUTO_ABSENSI', 'Otomatis: Absensi (Kehadiran)'
+        AUTO_TUGAS = 'AUTO_TUGAS', 'Otomatis: Penyelesaian Tugas'
+        AUTO_IBADAH = 'AUTO_IBADAH', 'Otomatis: Skor Ibadah (Amalan)'
+        AUTO_SALES_LEAD = 'AUTO_SALES_LEAD', 'Otomatis: CRM (Leads Conversion)'
+        AUTO_FINANCE_SPP = 'AUTO_FINANCE_SPP', 'Otomatis: Keuangan (Collection Rate)'
+        AUTO_FUNDRAISING = 'AUTO_FUNDRAISING', 'Otomatis: Fundraising (Total Donasi)'
+
+    nama = models.CharField(_("Nama Indikator"), max_length=200)
+    deskripsi = models.TextField(_("Deskripsi & Cara Hitung"))
+    satuan = models.CharField(_("Satuan"), max_length=20, choices=Satuan.choices)
+    sumber_data = models.CharField(_("Sumber Data"), max_length=30, choices=Sumber.choices, default=Sumber.MANUAL)
+    
+    class Meta:
+        verbose_name = _("Kamus KPI")
+        verbose_name_plural = _("Kamus KPI")
+        ordering = ['nama']
+
+    def __str__(self):
+        return f"{self.nama} [{self.get_sumber_data_display()}]"
+
+# --- AMALAN YAUMIAH ---
+class JenisAmalan(TenantAwareModel):
+    nama = models.CharField(_("Nama Amalan"), max_length=150)
+    poin = models.IntegerField(_("Bobot Poin"), default=1, help_text="Poin yang didapat jika dikerjakan.")
+    is_wajib = models.BooleanField(_("Wajib?"), default=False, help_text="Jika wajib, tidak dikerjakan bisa mengurangi nilai.")
+    kategori = models.CharField(_("Kategori"), max_length=50, blank=True, null=True, help_text="Contoh: Harian, Mingguan")
+
+    class Meta:
+        verbose_name = _("Jenis Amalan")
+        verbose_name_plural = _("Jenis Amalan")
+        ordering = ['nama']
+
+    def __str__(self):
+        return f"{self.nama} ({self.poin} Poin)"
+
+class LogAmalan(TenantAwareModel):
+    pengurus = models.ForeignKey(Pengurus, on_delete=models.CASCADE, related_name='log_amalan')
+    tanggal = models.DateField(_("Tanggal"), auto_now_add=True)
+    amalan = models.ForeignKey(JenisAmalan, on_delete=models.CASCADE)
+    is_done = models.BooleanField(_("Dikerjakan"), default=False)
+    keterangan = models.CharField(_("Keterangan"), max_length=255, blank=True, null=True)
+
+    class Meta:
+        verbose_name = _("Log Amalan")
+        verbose_name_plural = _("Log Amalan")
+        unique_together = ['pengurus', 'tanggal', 'amalan', 'tenant']
+        ordering = ['-tanggal']
+
+    def __str__(self):
+        return f"{self.pengurus.nama} - {self.amalan.nama} ({self.tanggal})"
+
+# --- TARGET & REALISASI KPI ---
+class TargetKPI(TenantAwareModel):
+    pengurus = models.ForeignKey(Pengurus, on_delete=models.CASCADE, related_name='target_kpi')
+    periode = models.ForeignKey(PeriodePenilaian, on_delete=models.CASCADE)
+    indikator = models.ForeignKey(KamusKPI, on_delete=models.CASCADE)
+    target = models.DecimalField(_("Target"), max_digits=12, decimal_places=2)
+    bobot = models.IntegerField(_("Bobot (%)"), help_text="Persentase kontribusi nilai ini terhadap total.")
+
+    class Meta:
+        verbose_name = _("Target KPI")
+        verbose_name_plural = _("Target KPI")
+        unique_together = ['pengurus', 'periode', 'indikator', 'tenant']
+
+    def __str__(self):
+        return f"{self.pengurus.nama} - {self.indikator.nama} (Target: {self.target})"
+
+class RealisasiKPI(TenantAwareModel):
+    target_kpi = models.OneToOneField(TargetKPI, on_delete=models.CASCADE, related_name='realisasi')
+    realisasi = models.DecimalField(_("Realisasi"), max_digits=12, decimal_places=2)
+    nilai_akhir = models.DecimalField(_("Skor Akhir (0-100)"), max_digits=5, decimal_places=2, blank=True, null=True)
+    bukti_lampiran = models.FileField(_("Bukti Lampiran"), upload_to='bukti_kpi/', blank=True, null=True)
+    catatan = models.TextField(_("Catatan Evaluasi"), blank=True)
+    last_updated = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = _("Realisasi KPI")
+        verbose_name_plural = _("Realisasi KPI")
+
+    def __str__(self):
+        return f"Realisasi: {self.target_kpi}"
+
+    def save(self, *args, **kwargs):
+        # Simple auto-calculation logic for score
+        if self.target_kpi.target > 0:
+            achieved = float(self.realisasi)
+            target = float(self.target_kpi.target)
+            score = (achieved / target) * 100
+            self.nilai_akhir = min(score, 100.0) 
+        super().save(*args, **kwargs)

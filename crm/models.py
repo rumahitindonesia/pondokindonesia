@@ -36,6 +36,17 @@ class Santri(TenantAwareModel):
     nama_wali = models.CharField(max_length=150)
     no_hp_wali = models.CharField(max_length=50, help_text="Nomor WhatsApp Wali")
     
+    # Performance Attribution
+    pic_admin = models.ForeignKey(
+        'users.User', 
+        on_delete=models.SET_NULL, 
+        null=True, 
+        blank=True, 
+        related_name='santri_handled',
+        verbose_name="PIC Admin / Wali Asuh",
+        help_text="Staff yang bertanggung jawab atas penagihan SPP santri ini."
+    )
+    
     status = models.CharField(max_length=20, choices=Status.choices, default=Status.AKTIF)
     tgl_masuk = models.DateField(auto_now_add=True)
 
@@ -57,6 +68,18 @@ class Donatur(TenantAwareModel):
     nama_donatur = models.CharField(max_length=150)
     no_hp = models.CharField(max_length=50, help_text="Nomor WhatsApp")
     kategori = models.CharField(max_length=20, choices=Kategori.choices, default=Kategori.INSIDENTIL)
+    
+    # Performance Attribution
+    pic_fundraiser = models.ForeignKey(
+        'users.User', 
+        on_delete=models.SET_NULL, 
+        null=True, 
+        blank=True, 
+        related_name='donatur_handled',
+        verbose_name="PIC Fundraiser",
+        help_text="Staff yang bertanggung jawab atas donatur ini."
+    )
+
     alamat = models.TextField(blank=True, null=True)
     tgl_bergabung = models.DateField(auto_now_add=True)
 

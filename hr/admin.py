@@ -1,7 +1,7 @@
 from django.contrib import admin
 from unfold.admin import ModelAdmin
 from core.admin import BaseTenantAdmin
-from .models import Jabatan, Pengurus, Tugas, LokasiKantor, Absensi
+from .models import Jabatan, Pengurus, Tugas, LokasiKantor, Absensi, PeriodePenilaian, KamusKPI, JenisAmalan, LogAmalan, TargetKPI, RealisasiKPI
 
 @admin.register(LokasiKantor)
 class LokasiKantorAdmin(BaseTenantAdmin, ModelAdmin):
@@ -226,3 +226,57 @@ class TugasAdmin(BaseTenantAdmin, ModelAdmin):
         # For now, we just update type to PENUGASAN if it was PERMINTAAN
         queryset.filter(jenis=Tugas.Jenis.PERMINTAAN).update(jenis=Tugas.Jenis.PENUGASAN)
         self.message_user(request, "Tugas permintaan telah diubah menjadi penugasan langsung.")
+
+# --- MANAJEMEN KINERJA ADMIN ---
+
+@admin.register(PeriodePenilaian)
+class PeriodePenilaianAdmin(BaseTenantAdmin, ModelAdmin):
+    list_display = ['nama', 'start_date', 'end_date', 'is_active', 'tenant']
+    list_filter = ['is_active', 'tenant']
+    search_fields = ['nama']
+    ordering = ['-start_date']
+
+@admin.register(KamusKPI)
+class KamusKPIAdmin(BaseTenantAdmin, ModelAdmin):
+    list_display = ['nama', 'satuan', 'sumber_data', 'tenant']
+    list_filter = ['satuan', 'sumber_data', 'tenant']
+    search_fields = ['nama', 'deskripsi']
+
+@admin.register(JenisAmalan)
+class JenisAmalanAdmin(BaseTenantAdmin, ModelAdmin):
+    list_display = ['nama', 'poin', 'is_wajib', 'kategori', 'tenant']
+    list_filter = ['is_wajib', 'kategori', 'tenant']
+    search_fields = ['nama']
+
+@admin.register(LogAmalan)
+class LogAmalanAdmin(BaseTenantAdmin, ModelAdmin):
+    list_display = ['pengurus', 'amalan', 'tanggal', 'is_done', 'tenant']
+    list_filter = ['is_done', 'tanggal', 'amalan', 'tenant']
+    search_fields = ['pengurus__nama', 'amalan__nama']
+    date_hierarchy = 'tanggal'
+    autocomplete_fields = ['pengurus', 'amalan']
+
+class RealisasiKPIInline(admin.StackedInline):
+    model = RealisasiKPI
+    can_delete = False
+    verbose_name_plural = "Realisasi & Bukti"
+
+@admin.register(TargetKPI)
+class TargetKPIAdmin(BaseTenantAdmin, ModelAdmin):
+    list_display = ['pengurus', 'indikator', 'target', 'bobot', 'periode', 'get_realisasi', 'get_score', 'tenant']
+    list_filter = ['periode', 'tenant', 'pengurus']
+    search_fields = ['pengurus__nama', 'indikator__nama']
+    autocomplete_fields = ['pengurus', 'indikator', 'periode']
+    inlines = [RealisasiKPIInline]
+
+    def get_realisasi(self, obj):
+        if hasattr(obj, 'realisasi'):
+            return obj.realisasi.realisasi
+        return "-"
+    get_realisasi.short_description = "Realisasi"
+
+    def get_score(self, obj):
+        if hasattr(obj, 'realisasi'):
+            return obj.realisasi.nilai_akhir
+        return "-"
+    get_score.short_description = "Skor Akhir"
