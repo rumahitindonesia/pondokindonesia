@@ -213,9 +213,15 @@ class TagihanSPP(TenantAwareModel):
         return timezone.now().date() > self.jatuh_tempo
     
     def save(self, *args, **kwargs):
-        # Auto-update status to TERLAMBAT if overdue
-        if self.is_overdue() and self.status == self.Status.BELUM_LUNAS:
+        from django.utils import timezone
+        
+        # Auto-update status to LUNAS if tanggal_bayar is set
+        if self.tanggal_bayar:
+             self.status = self.Status.LUNAS
+        # Auto-update status to TERLAMBAT if overdue and not paid
+        elif self.status == self.Status.BELUM_LUNAS and self.jatuh_tempo < timezone.now().date():
             self.status = self.Status.TERLAMBAT
+            
         super().save(*args, **kwargs)
 
 
