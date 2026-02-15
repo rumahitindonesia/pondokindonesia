@@ -91,22 +91,24 @@ def webhook_whatsapp(request, tenant_slug=None):
             c_device = clean_num(device)
             c_tenant_phone = clean_num(current_tenant.phone_number) if current_tenant and current_tenant.phone_number else ""
 
-            # 1. Simple Echo Check
-            if is_me or (c_sender == c_device and c_device != ""):
+            # 1. Simple Echo Check (Filter ANY message from our own device/number)
+            if is_me:
                 return HttpResponse('OK', status=200)
             
-            if c_tenant_phone and c_sender == c_tenant_phone:
+            # Match if sender is same as device or same as tenant phone
+            is_echo = False
+            if c_device and (c_sender == c_device or c_sender.endswith(c_device) or c_device.endswith(c_sender)):
+                is_echo = True
+            if c_tenant_phone and (c_sender == c_tenant_phone or c_sender.endswith(c_tenant_phone) or c_tenant_phone.endswith(c_sender)):
+                is_echo = True
+            
+            if is_echo:
                 return HttpResponse('OK', status=200)
 
-            # 2. Deduplication (Prevent retries/bursts from creating duplicates)
+            # 2. Deduplication (10-second window for identical message from same sender)
             from django.utils import timezone
             from datetime import timedelta
-            recent_exists = WhatsAppMessage.objects.filter(
-                sender=sender,
-                message=message,
-                created_at__gte=timezone.now() - timedelta(seconds=10)
-            ).exists()
-            if recent_exists:
+            if WhatsAppMessage.objects.filter(sender=sender, message=message, created_at__gte=timezone.now() - timedelta(seconds=10)).exists():
                 return HttpResponse('OK', status=200)
 
             # 3. Log Message
