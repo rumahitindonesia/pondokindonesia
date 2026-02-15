@@ -109,6 +109,11 @@ def webhook_whatsapp(request, tenant_slug=None):
                 raw_data=data
             )
 
+            # --- SYSTEM NOTIFICATION FILTER ---
+            # Ignore messages that look like system-generated notifications
+            if message.startswith("Lead Baru Terdeteksi!"):
+                return HttpResponse('OK', status=200)
+
             # --- GHOST LEAD / ECHO FILTER ---
             # If the sender is the gateway number itself, it's an echo.
             c_tenant_phone = clean_num(current_tenant.phone_number) if current_tenant and current_tenant.phone_number else ""
@@ -124,11 +129,11 @@ def webhook_whatsapp(request, tenant_slug=None):
             if is_echo:
                 return HttpResponse('OK', status=200)
             
-            # 4. Identify Sender (Staff vs External)
+            # 4. Identify Sender (Internal User vs External Lead)
             from users.models import User
-            staff = User.all_objects.filter(
+            # Filter for ANY internal user (CS, Admin, etc.) to prevent treating them as leads
+            internal_user = User.all_objects.filter(
                 is_active=True, 
-                is_staff=True,
                 phone_number__icontains=sender[-10:]
             ).first()
             
@@ -136,13 +141,17 @@ def webhook_whatsapp(request, tenant_slug=None):
 
             # --- FLOW BRANCHING ---
 
-            if staff:
-                # 5. INTERNAL FLOW (Staff)
+            if internal_user and internal_user.is_staff:
+                # 5. INTERNAL FLOW (Staff Commands)
                 from core.services.staff_command_service import StaffCommandService
-                staff_msg = StaffCommandService.process_message_v2(current_tenant, message, staff)
+                staff_msg = StaffCommandService.process_message_v2(current_tenant, message, internal_user)
                 if staff_msg:
                     StarSenderService.send_message(to=sender, body=staff_msg, tenant=current_tenant)
                     replied = True
+            elif internal_user:
+                # Internal non-staff (e.g. CS assigned via role but not marked is_staff in Django)
+                # We skip lead creation for existing users
+                replied = True
             
             if not replied:
                 # 6. EXTERNAL FLOW (Public/Lead)
