@@ -159,7 +159,7 @@ class OTPService:
                     'santri_id': santri.id,
                     'santri_nama': santri.nama_lengkap,
                     'nis': santri.nis,
-                    'program': santri.program.nama if santri.program and hasattr(santri.program, 'nama') else '-'
+                    'program': '-'
                 }
         
         elif user.user_type == User.UserType.DONATUR:
