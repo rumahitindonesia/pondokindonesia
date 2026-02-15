@@ -56,9 +56,21 @@ def process_ai_reply(message, tenant, sender, sender_name):
 
 @csrf_exempt
 def webhook_whatsapp(request, tenant_slug=None):
+    """
+    Webhook endpoint for StarSender WhatsApp messages
+    URL: /webhook/whatsapp/ or /webhook/whatsapp/<tenant_slug>/
+    """
+    # Log every webhook call immediately
+    logger.info(f"[WEBHOOK CALLED] Method: {request.method}, Tenant Slug: {tenant_slug}")
+    
     if request.method == 'POST':
         try:
+            # Log raw request body for debugging
+            raw_body = request.body.decode('utf-8')
+            logger.debug(f"[WEBHOOK RAW BODY] {raw_body[:200]}")
+            
             data = json.loads(request.body)
+            logger.info(f"[WEBHOOK DATA] Parsed successfully: {list(data.keys())}")
             
             # 2. Basic Extraction & Normalization
             device = data.get('device', '').strip()
@@ -66,6 +78,8 @@ def webhook_whatsapp(request, tenant_slug=None):
             sender = data.get('from', '').strip()
             sender_name = data.get('push_name') or data.get('pushName') or data.get('name') or ''
             is_me = data.get('is_me', False)
+            
+            logger.info(f"[WEBHOOK EXTRACTED] From: {sender}, Device: {device}, Message: {message[:50]}, is_me: {is_me}")
 
             # Normalize for comparisons
             import re
@@ -384,12 +398,17 @@ def webhook_whatsapp(request, tenant_slug=None):
                     replied = True
 
             return HttpResponse('OK', status=200)
-        except json.JSONDecodeError:
+        
+        except json.JSONDecodeError as e:
+            logger.error(f"[WEBHOOK ERROR] JSON decode failed: {e}")
+            logger.error(f"[WEBHOOK ERROR] Raw body: {request.body}")
             return HttpResponse('Invalid JSON', status=400)
+        
         except Exception as e:
+            logger.error(f"[WEBHOOK ERROR] Unexpected error: {e}")
             import traceback
-            traceback.print_exc()
-            print(f"CRITICAL ERROR: {e}")
-            return HttpResponse(str(e), status=500)
+            logger.error(f"[WEBHOOK ERROR] Traceback: {traceback.format_exc()}")
+            return HttpResponse('Internal Error', status=500)
             
     return HttpResponse('Method Not Allowed', status=405)
+
