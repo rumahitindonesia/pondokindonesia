@@ -119,6 +119,15 @@ class DonaturAdmin(ImportExportMixin, BaseTenantAdmin, ModelAdmin):
                  count += 1
         self.message_user(request, f"{count} solicitation messages sent.")
 
+    def formfield_for_foreignkey(self, db_field, request, **kwargs):
+        if db_field.name == "pic_fundraiser":
+            # Filter dropdown to show only STAFF users in the current tenant
+            kwargs["queryset"] = User.objects.filter(
+                tenant=request.tenant, 
+                is_staff=True
+            )
+        return super().formfield_for_foreignkey(db_field, request, **kwargs)
+
     def scope(self, obj):
         return "Global" if not obj.tenant else f"Tenant: {obj.tenant}"
     scope.short_description = 'Scope'
