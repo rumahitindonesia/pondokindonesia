@@ -1,7 +1,7 @@
 from django.contrib import admin
 from unfold.admin import ModelAdmin
 from core.admin import BaseTenantAdmin
-from .models import Jabatan, Pengurus, Tugas, LokasiKantor, Absensi, PeriodePenilaian, KamusKPI, JenisAmalan, LogAmalan, TargetKPI, RealisasiKPI, Objective, KeyResult
+from .models import Jabatan, Pengurus, Tugas, LokasiKantor, Absensi, PeriodePenilaian, KamusKPI, JenisAmalan, LogAmalan, TargetKPI, RealisasiKPI, Objective, KeyResult, JadwalKerja
 
 @admin.register(LokasiKantor)
 class LokasiKantorAdmin(BaseTenantAdmin, ModelAdmin):
@@ -164,6 +164,36 @@ class JabatanAdmin(BaseTenantAdmin, ModelAdmin):
     list_filter = ['tenant']
     autocomplete_fields = ['atasan']
 
+@admin.register(JadwalKerja)
+class JadwalKerjaAdmin(BaseTenantAdmin, ModelAdmin):
+    list_display = ['nama', 'jam_masuk', 'jam_pulang', 'toleransi_telat', 'working_days_display', 'is_active', 'tenant']
+    list_filter = ['is_active', 'tenant']
+    search_fields = ['nama']
+    
+    fieldsets = (
+        (None, {
+            'fields': ('nama', 'is_active')
+        }),
+        ('Hari Kerja', {
+            'fields': ('senin', 'selasa', 'rabu', 'kamis', 'jumat', 'sabtu', 'minggu')
+        }),
+        ('Jam Kerja', {
+            'fields': ('jam_masuk', 'jam_pulang', 'toleransi_telat')
+        }),
+    )
+    
+    def working_days_display(self, obj):
+        days = []
+        if obj.senin: days.append('Sen')
+        if obj.selasa: days.append('Sel')
+        if obj.rabu: days.append('Rab')
+        if obj.kamis: days.append('Kam')
+        if obj.jumat: days.append('Jum')
+        if obj.sabtu: days.append('Sab')
+        if obj.minggu: days.append('Min')
+        return ', '.join(days) if days else '-'
+    working_days_display.short_description = "Hari Kerja"
+
 @admin.register(Pengurus)
 class PengurusAdmin(BaseTenantAdmin, ModelAdmin):
     list_display = ['nama', 'jabatan', 'user', 'telepon', 'is_active', 'tenant']
@@ -179,7 +209,7 @@ class PengurusAdmin(BaseTenantAdmin, ModelAdmin):
             'fields': ('telepon', 'alamat')
         }),
         ('Sistem & Akses', {
-            'fields': ('user', 'is_active')
+            'fields': ('user', 'jadwal_kerja', 'is_active')
         }),
     )
 

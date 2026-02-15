@@ -256,6 +256,12 @@ UNFOLD = {
                         "link": "/admin/hr/lokasikantor/",
                         "permission": "core.permissions.can_view_lokasikantor",
                     },
+                    {
+                        "title": "Jadwal Kerja",
+                        "icon": "schedule",
+                        "link": "/admin/hr/jadwalkerja/",
+                        "permission": "core.permissions.can_view_pengurus",
+                    },
                 ],
             },
             {

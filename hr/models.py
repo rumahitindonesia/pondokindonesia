@@ -26,6 +26,45 @@ class Jabatan(TenantAwareModel):
     def __str__(self):
         return self.nama
 
+class JadwalKerja(TenantAwareModel):
+    """Work Schedule: Define working days and hours"""
+    nama = models.CharField(_("Nama Jadwal"), max_length=100, help_text="Contoh: Senin-Jumat, Shift Pagi")
+    
+    # Working Days
+    senin = models.BooleanField(_("Senin"), default=True)
+    selasa = models.BooleanField(_("Selasa"), default=True)
+    rabu = models.BooleanField(_("Rabu"), default=True)
+    kamis = models.BooleanField(_("Kamis"), default=True)
+    jumat = models.BooleanField(_("Jumat"), default=True)
+    sabtu = models.BooleanField(_("Sabtu"), default=False)
+    minggu = models.BooleanField(_("Minggu"), default=False)
+    
+    # Work Hours
+    jam_masuk = models.TimeField(_("Jam Masuk"), default="08:00")
+    jam_pulang = models.TimeField(_("Jam Pulang"), default="17:00")
+    toleransi_telat = models.IntegerField(
+        _("Toleransi Terlambat (Menit)"), 
+        default=15,
+        help_text="Menit keterlambatan yang masih dianggap 'Hadir'"
+    )
+    
+    is_active = models.BooleanField(_("Aktif"), default=True)
+
+    class Meta:
+        verbose_name = _("Jadwal Kerja")
+        verbose_name_plural = _("Jadwal Kerja")
+        ordering = ['nama']
+
+    def __str__(self):
+        return self.nama
+    
+    def is_working_day(self, date):
+        """Check if given date is a working day"""
+        weekday = date.weekday()  # 0=Monday, 6=Sunday
+        days = [self.senin, self.selasa, self.rabu, self.kamis, self.jumat, self.sabtu, self.minggu]
+        return days[weekday]
+
+
 class Pengurus(TenantAwareModel):
     nama = models.CharField(_("Nama Lengkap"), max_length=255)
     nik = models.CharField(_("NIK / ID Pegawai"), max_length=50, blank=True, null=True)
@@ -47,6 +86,16 @@ class Pengurus(TenantAwareModel):
     telepon = models.CharField(_("Nomor WhatsApp"), max_length=20, blank=True, null=True)
     alamat = models.TextField(_("Alamat Tinggal"), blank=True, null=True)
     foto = models.ImageField(_("Foto Profil"), upload_to='pengurus_foto/', blank=True, null=True)
+    
+    jadwal_kerja = models.ForeignKey(
+        'JadwalKerja',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='staff_list',
+        verbose_name=_("Jadwal Kerja"),
+        help_text=_("Jadwal kerja yang berlaku untuk staff ini")
+    )
     
     is_active = models.BooleanField(_("Status Aktif"), default=True)
     join_date = models.DateField(_("Tanggal Bergabung"), auto_now_add=True)
@@ -227,6 +276,35 @@ class Absensi(TenantAwareModel):
 
     def __str__(self):
         return f"{self.pengurus.nama} - {self.tanggal}"
+    
+    def save(self, *args, **kwargs):
+        # Auto-detect late status based on work schedule
+        if self.waktu_masuk and self.pengurus.jadwal_kerja:
+            jadwal = self.pengurus.jadwal_kerja
+            
+            # Check if today is a working day
+            if not jadwal.is_working_day(self.tanggal):
+                # Optional: Set status to special value or just save as-is
+                pass
+            else:
+                # Compare clock-in time with scheduled time
+                from datetime import datetime, timedelta
+                
+                waktu_masuk_time = self.waktu_masuk.time()
+                jam_masuk_scheduled = jadwal.jam_masuk
+                
+                # Calculate late threshold
+                late_threshold = (
+                    datetime.combine(self.tanggal, jam_masuk_scheduled) + 
+                    timedelta(minutes=jadwal.toleransi_telat)
+                ).time()
+                
+                # Auto-set status if not manually overridden
+                if waktu_masuk_time > late_threshold:
+                    if self.status == self.Status.HADIR:  # Only auto-change if still default
+                        self.status = self.Status.TERLAMBAT
+        
+        super().save(*args, **kwargs)
 
 # --- MANAJEMEN KINERJA (KPI & AMALAN) ---
 
