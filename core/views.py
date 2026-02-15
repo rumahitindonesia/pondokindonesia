@@ -238,6 +238,7 @@ def webhook_whatsapp(request, tenant_slug=None):
                             lead_name_from_data = None
                         
                         lead_name = lead_name_from_data or sender_name or "Unknown"
+                        lead_location = lead_data.get('alamat') or lead_data.get('kota') or lead_data.get('asal') or ""
                         
                         # Create or Update Lead
                         # Use clean_num to ensure 6281 and 081 are the same Lead entry
@@ -251,38 +252,97 @@ def webhook_whatsapp(request, tenant_slug=None):
                                 'status': Lead.Status.NEW
                             }
                         )
+                        logger.info(f"[LEAD] {'Created' if created else 'Updated'} lead: {lead_name} ({c_sender})")
                         
                         # Auto-Assign CS
                         from core.services.lead_workflow_service import LeadWorkflowService
                         assigned_cs = LeadWorkflowService.assign_to_cs(lead)
                         
-                        # Prepare Response
-                        resp = form.response_template
+                        # === STEP 1: Generate AI Greeting for Lead ===
+                        ai_greeting = None
                         try:
-                            fmt_data = lead_data.copy()
-                            fmt_data['name'] = lead_name
-                            if assigned_cs: fmt_data['cs_name'] = assigned_cs.username
-                            resp = resp.format(**fmt_data)
-                        except: pass
-
-                        # If form is set to use AI, get completion from response_template (acting as prompt)
-                        if form.use_ai_response:
                             from core.services.ai_service import AIService
-                            # Strict prompt to prevent AI from explaining itself or adding meta-talk
+                            
+                            # Build context for AI
+                            greeting_context = f"Nama: {lead_name}"
+                            if lead_location:
+                                greeting_context += f", Asal: {lead_location}"
+                            
+                            greeting_prompt = (
+                                f"Buatkan pesan sambutan hangat untuk calon santri/donatur baru yang baru mendaftar.\n"
+                                f"Data pendaftar:\n{greeting_context}\n\n"
+                                f"Pesan harus:\n"
+                                f"- Menyapa dengan nama\n"
+                                f"- Mengucapkan terima kasih atas pendaftaran\n"
+                                f"- Menyebutkan bahwa tim CS akan segera menghubungi\n"
+                                f"- Ramah dan profesional\n"
+                                f"- Maksimal 3 kalimat"
+                            )
+                            
                             strict_prompt = (
                                 "Role: Friendly Admin of Pondok Pesantren.\n"
-                                "Task: Generate a response message based on the input instruction.\n"
-                                "Constraint: Output ONLY the final message content. NO preamble, NO meta-talk, NO 'Here is the message'.\n"
-                                "Your output will be sent directly to the requester on WhatsApp."
+                                "Task: Generate a warm greeting message for new registrant.\n"
+                                "Constraint: Output ONLY the final message content. NO preamble, NO meta-talk.\n"
+                                "Your output will be sent directly to the registrant on WhatsApp."
                             )
-                            ai_resp = AIService.get_completion(
-                                resp, 
-                                tenant=current_tenant, 
+                            
+                            ai_greeting = AIService.get_completion(
+                                greeting_prompt,
+                                tenant=current_tenant,
                                 sender_name=lead_name,
                                 system_prompt=strict_prompt
                             )
-                            if ai_resp:
-                                resp = ai_resp
+                            
+                            if ai_greeting:
+                                logger.info(f"[AI GREETING] Generated for {lead_name}")
+                            else:
+                                logger.warning(f"[AI GREETING] Failed to generate, using fallback")
+                                ai_greeting = f"Terima kasih {lead_name} atas pendaftarannya. Tim kami akan segera menghubungi Anda."
+                        
+                        except Exception as e:
+                            logger.error(f"[AI GREETING] Error: {e}")
+                            ai_greeting = f"Terima kasih {lead_name} atas pendaftarannya. Tim kami akan segera menghubungi Anda."
+                        
+                        # === STEP 2: Send AI Greeting to Lead ===
+                        if ai_greeting:
+                            StarSenderService.send_message(to=sender, body=ai_greeting, tenant=current_tenant)
+                            logger.info(f"[GREETING SENT] To lead {lead_name} ({sender})")
+                        
+                        # === STEP 3: Send Notification to CS ===
+                        try:
+                            from users.models import User, Role
+                            cs_role = Role.objects.filter(tenant=current_tenant, slug='cs').first() if current_tenant else None
+                            if not cs_role:
+                                cs_role = Role.objects.filter(tenant__isnull=True, slug='cs').first()
+                            
+                            if cs_role:
+                                cs_users = User.all_objects.filter(
+                                    tenant=current_tenant,
+                                    role=cs_role,
+                                    is_active=True
+                                )
+                                
+                                # Build CS notification message
+                                cs_notification = f"🔔 *Lead Baru Masuk!*\n\n"
+                                cs_notification += f"Nama: {lead_name}\n"
+                                cs_notification += f"Phone: {c_sender}\n"
+                                if lead_location:
+                                    cs_notification += f"Asal: {lead_location}\n"
+                                cs_notification += f"\nSilakan follow up segera."
+                                
+                                for cs in cs_users:
+                                    if cs.phone_number:
+                                        StarSenderService.send_message(
+                                            to=cs.phone_number,
+                                            body=cs_notification,
+                                            tenant=current_tenant
+                                        )
+                                        logger.info(f"[CS NOTIF] Sent to {cs.username} ({cs.phone_number})")
+                            else:
+                                logger.warning(f"[CS NOTIF] CS role not found for tenant: {current_tenant}")
+                        
+                        except Exception as e:
+                            logger.error(f"[CS NOTIF] Error: {e}")
                         
                         # Auto-Insert to CRM if configured
                         if form.auto_insert:
@@ -290,12 +350,10 @@ def webhook_whatsapp(request, tenant_slug=None):
                                 from crm.services import CRMService
                                 res_obj, auto_msg = CRMService.convert_lead(lead, form.lead_type)
                                 if res_obj:
-                                    resp = f"{resp}\n\n[Auto-Insert] {auto_msg}"
+                                    logger.info(f"[AUTO INSERT] {auto_msg}")
                             except Exception as e:
-                                print(f"CRM Conversion Error: {e}")
-
-                        StarSenderService.send_message(to=sender, body=resp, tenant=current_tenant)
-                        logger.info(f"[FORM] Response sent to {sender} (Lead: {lead_name})")
+                                logger.error(f"[AUTO INSERT] Error: {e}")
+                        
                         replied = True
                         break
 
