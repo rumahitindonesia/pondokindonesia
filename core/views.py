@@ -87,9 +87,14 @@ def webhook_whatsapp(request, tenant_slug=None):
                     set_current_tenant(current_tenant)
 
             # Ignore outgoing messages or echoes from the device itself
+            # Ghost leads usually come from the gateway number itself
             if is_me or clean_num(sender) == clean_num(device):
                 return HttpResponse('OK', status=200)
             
+            if current_tenant and current_tenant.phone_number:
+                if clean_num(sender) == clean_num(current_tenant.phone_number):
+                    return HttpResponse('OK', status=200)
+
             # 3. Log Message
             WhatsAppMessage.objects.create(
                 tenant=current_tenant,
@@ -140,15 +145,12 @@ def webhook_whatsapp(request, tenant_slug=None):
                         parts = [p.strip() for p in body.split(form.separator)] if form.separator else [body]
                         fields = [f.strip() for f in form.field_map.split(form.separator)] if form.separator else ['data']
                         
-                        # Map data (even if parts < fields, we fill what we can)
+                        # Map data
                         lead_data = {}
                         for i in range(min(len(parts), len(fields))):
                             lead_data[fields[i].lower()] = parts[i]
                         
-                        # PRIORITIZE finding the 'nama' in lead_data
                         lead_name_from_data = lead_data.get('nama') or lead_data.get('name')
-                        
-                        # Safety: avoid using keyword as name if parsing failed
                         if lead_name_from_data and lead_name_from_data.upper() == keyword.upper():
                             lead_name_from_data = None
                         
@@ -178,6 +180,13 @@ def webhook_whatsapp(request, tenant_slug=None):
                             if assigned_cs: fmt_data['cs_name'] = assigned_cs.username
                             resp = resp.format(**fmt_data)
                         except: pass
+
+                        # If form is set to use AI, get completion from response_template (acting as prompt)
+                        if form.use_ai_response:
+                            from core.services.ai_service import AIService
+                            ai_resp = AIService.get_completion(resp, tenant=current_tenant, sender_name=lead_name)
+                            if ai_resp:
+                                resp = ai_resp
                         
                         # Auto-Insert to CRM if configured
                         if form.auto_insert:
