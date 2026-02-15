@@ -80,17 +80,35 @@ def dashboard_callback(request, context):
         ).aggregate(total=Sum('nominal'))['total'] or 0
 
         # Non-Donation Earnings (LUNAS bills paid this month)
-        total_non_donasi_month = Tagihan.objects.filter(
+        # 1. Old Tagihan
+        total_tagihan_old = Tagihan.objects.filter(
             tenant=tenant,
             status='LUNAS',
             tgl_bayar__gte=first_day_of_month
         ).aggregate(total=Sum('nominal'))['total'] or 0
         
+        # 2. New TagihanSPP
+        from crm.models import TagihanSPP
+        total_tagihan_spp = TagihanSPP.objects.filter(
+            tenant=tenant,
+            status='LUNAS',
+            tanggal_bayar__gte=first_day_of_month
+        ).aggregate(total=Sum('jumlah'))['total'] or 0
+
+        total_non_donasi_month = total_tagihan_old + total_tagihan_spp
+        
         # Unpaid Bills
-        unpaid_bills_count = Tagihan.objects.filter(
+        unpaid_old = Tagihan.objects.filter(
             tenant=tenant, 
             status='BELUM'
         ).count()
+        
+        unpaid_spp = TagihanSPP.objects.filter(
+            tenant=tenant,
+            status__in=['BELUM_LUNAS', 'TERLAMBAT']
+        ).count()
+        
+        unpaid_bills_count = unpaid_old + unpaid_spp
 
         # Lead Status Distribution
         leads_new = lead_base_qs.filter(status='NEW').count()
@@ -110,7 +128,13 @@ def dashboard_callback(request, context):
         ).order_by('-interest_score', '-created_at')[:5]
 
         # 2. Overdue SPP (Top 5)
-        overdue_tagihan = Tagihan.objects.filter(
+        # Prioritize TagihanSPP over old Tagihan
+        overdue_tagihan_spp = TagihanSPP.objects.filter(
+            tenant=tenant,
+            status='TERLAMBAT'
+        ).order_by('jatuh_tempo')[:5]
+        
+        overdue_tagihan = overdue_tagihan_spp if overdue_tagihan_spp.exists() else Tagihan.objects.filter(
             tenant=tenant, 
             status='BELUM'
         ).order_by('tgl_buat')[:5]
@@ -122,7 +146,7 @@ def dashboard_callback(request, context):
 
         # --- DAILY CHART DATA ---
         import calendar
-        from django.db.models.functions import TruncDate
+        from django.db.models.functions import TruncDate, TruncDay
         
         days_in_month = calendar.monthrange(now.year, now.month)[1]
         chart_labels = [str(i) for i in range(1, days_in_month + 1)]
@@ -131,13 +155,21 @@ def dashboard_callback(request, context):
         daily_non_donasi_map = {i: 0 for i in range(1, days_in_month + 1)}
         daily_donasi_map = {i: 0 for i in range(1, days_in_month + 1)}
         
-        # Fetch data
+        # Fetch data - OLD Tagihan
         non_donasi_query = Tagihan.objects.filter(
             tenant=tenant,
             status='LUNAS',
             tgl_bayar__year=now.year,
             tgl_bayar__month=now.month
         ).annotate(day=TruncDate('tgl_bayar')).values('day').annotate(total=Sum('nominal'))
+
+        # Fetch data - NEW TagihanSPP
+        spp_query = TagihanSPP.objects.filter(
+            tenant=tenant,
+            status='LUNAS',
+            tanggal_bayar__year=now.year,
+            tanggal_bayar__month=now.month
+        ).annotate(day=TruncDay('tanggal_bayar')).values('day').annotate(total=Sum('jumlah'))
 
         donasi_query = TransaksiDonasi.objects.filter(
             tenant=tenant,
@@ -148,11 +180,15 @@ def dashboard_callback(request, context):
         # Map to days
         for entry in non_donasi_query:
             if entry['day']:
-                daily_non_donasi_map[entry['day'].day] = float(entry['total'])
+                daily_non_donasi_map[entry['day'].day] += float(entry['total'])
+        
+        for entry in spp_query:
+             if entry['day']:
+                daily_non_donasi_map[entry['day'].day] += float(entry['total'])
         
         for entry in donasi_query:
             if entry['day']:
-                daily_donasi_map[entry['day'].day] = float(entry['total'])
+                daily_donasi_map[entry['day'].day] += float(entry['total'])
 
         chart_non_donasi_data = [daily_non_donasi_map[i] for i in range(1, days_in_month + 1)]
         chart_donasi_data = [daily_donasi_map[i] for i in range(1, days_in_month + 1)]
@@ -212,5 +248,4 @@ def dashboard_callback(request, context):
             "overdue_tagihan": overdue_tagihan,
             "potential_donatur": potential_donatur,
         })
-
     return context
