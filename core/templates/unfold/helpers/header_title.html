@@ -1,0 +1,54 @@
+{% spaceless %}
+{% for part in parts %}
+{% if forloop.first and parts|length > 1 %}
+{% if parts.1.title|capfirst == "Leads / Pendaftar" or parts.1.title|capfirst == "Data santri" or parts.1.title|capfirst
+== "Data donatur" or parts.1.title|capfirst == "Master program" or parts.1.title|capfirst == "Leads" or
+parts.1.title|capfirst == "Santris" or parts.1.title|capfirst == "Donaturs" or parts.1.title|capfirst == "Programs" %}
+<{% if part.link %}a href="{{ part.link }}" {% else %}span{% endif %}
+    class="align-middle inline-block leading-5 tracking-tight">CRM & Database</{% if part.link %}a{% else %}span{% endif
+    %}>
+{% elif parts.1.title|capfirst == "Tagihan spp" or parts.1.title|capfirst == "Metode pembayaran" or
+parts.1.title|capfirst == "Pembayaran spp" or parts.1.title|capfirst == "Transaksi donasi" or parts.1.title|capfirst ==
+"Tagihan spps" or parts.1.title|capfirst == "Payment method settings" or parts.1.title|capfirst == "Pembayaran spps" or
+parts.1.title|capfirst == "Transaksi donasis" %}
+<{% if part.link %}a href="{{ part.link }}" {% else %}span{% endif %}
+    class="align-middle inline-block leading-5 tracking-tight">Keuangan & Donasi</{% if part.link %}a{% else %}span{%
+    endif %}>
+{% elif parts.1.title|capfirst == "Ai knowledge base" or parts.1.title|capfirst == "Whatsapp message" or
+parts.1.title|capfirst == "Whatsapp auto reply" or parts.1.title|capfirst == "Whatsapp form" or parts.1.title|capfirst
+== "Ai knowledge bases" or parts.1.title|capfirst == "Whatsapp messages" or parts.1.title|capfirst == "Whatsapp auto
+replies" or parts.1.title|capfirst == "Whatsapp forms" %}
+<{% if part.link %}a href="{{ part.link }}" {% else %}span{% endif %}
+    class="align-middle inline-block leading-5 tracking-tight">Integrasi WhatsApp & AI</{% if part.link %}a{% else
+    %}span{% endif %}>
+{% elif parts.1.title|capfirst == "Api setting" or parts.1.title|capfirst == "Data pengurus" or parts.1.title|capfirst
+== "Jabatan" or parts.1.title|capfirst == "Tugas staff" or parts.1.title|capfirst == "Api settings" or
+parts.1.title|capfirst == "Staffs" or parts.1.title|capfirst == "Positions" or parts.1.title|capfirst == "Staff tasks"
+%}
+<{% if part.link %}a href="{{ part.link }}" {% else %}span{% endif %}
+    class="align-middle inline-block leading-5 tracking-tight">Pengaturan & SDM</{% if part.link %}a{% else %}span{%
+    endif %}>
+{% elif parts.1.title|capfirst == "Tenant" or parts.1.title|capfirst == "User" or parts.1.title|capfirst == "Role" or
+parts.1.title|capfirst == "Pricing plan" or parts.1.title|capfirst == "Tenant subscription" or parts.1.title|capfirst ==
+"Tenants" or parts.1.title|capfirst == "Users" or parts.1.title|capfirst == "Roles" or parts.1.title|capfirst ==
+"Pricing plans" or parts.1.title|capfirst == "Tenant subscriptions" %}
+<{% if part.link %}a href="{{ part.link }}" {% else %}span{% endif %}
+    class="align-middle inline-block leading-5 tracking-tight">Manajemen Pengelola</{% if part.link %}a{% else %}span{%
+    endif %}>
+{% else %}
+<{% if part.link %}a href="{{ part.link }}" {% else %}span{% endif %}
+    class="align-middle inline-block leading-5 tracking-tight">{{ part.title|capfirst }}</{% if part.link %}a{% else
+    %}span{% endif %}>
+{% endif %}
+{% else %}
+<{% if part.link %}a href="{{ part.link }}" {% else %}span{% endif %}
+    class="align-middle inline-block leading-5 tracking-tight">{{ part.title|capfirst }}</{% if part.link %}a{% else
+    %}span{% endif %}>
+{% endif %}
+
+{% if not forloop.last %}
+<span
+    class="material-symbols-outlined inline-block align-middle leading-5 mx-2 text-base-400 dark:text-base-500">chevron_right</span>
+{% endif %}
+{% endfor %}
+{% endspaceless %}
