@@ -76,9 +76,17 @@ class SantriAdmin(ImportExportMixin, BaseTenantAdmin, ModelAdmin):
         
         super().save_model(request, obj, form, change)
 
+class TransaksiDonasiInline(TabularInline):
+    model = TransaksiDonasi
+    tab = True
+    extra = 0
+    fields = ('program', 'nominal_display', 'tgl_donasi', 'status')
+    readonly_fields = ('nominal_display', 'tgl_donasi')
+
 @admin.register(Donatur)
 class DonaturAdmin(ImportExportMixin, BaseTenantAdmin, ModelAdmin):
     resource_classes = [DonaturResource]
+    inlines = [TransaksiDonasiInline]
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)

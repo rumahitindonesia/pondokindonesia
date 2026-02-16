@@ -108,6 +108,10 @@ class TransaksiDonasi(TenantAwareModel):
     status = models.CharField(max_length=20, choices=Status.choices, default=Status.PENDING)
     keterangan = models.TextField(blank=True, null=True)
 
+    @property
+    def nominal_display(self):
+        return f"Rp {self.nominal:,.0f}"
+
     class Meta:
         verbose_name = "Transaksi Donasi"
         verbose_name_plural = "Transaksi Donasi"
