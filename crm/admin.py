@@ -38,16 +38,34 @@ class ProgramAdmin(ImportExportMixin, BaseTenantAdmin, ModelAdmin):
 class TagihanSPPInline(admin.TabularInline):
     from unfold.admin import TabularInline
     model = TagihanSPP
+    tab = True
     extra = 0
-    fields = ('bulan', 'program', 'jumlah', 'jatuh_tempo', 'status', 'tanggal_bayar')
-    readonly_fields = ('created_at',)
+    fields = ('bulan_display', 'program_display', 'jumlah_display', 'jatuh_tempo', 'status', 'tanggal_bayar')
+    readonly_fields = ('bulan_display', 'program_display', 'jumlah_display', 'created_at')
+
+    def bulan_display(self, obj):
+        return obj.bulan.strftime('%B %Y') if obj.bulan else "-"
+    bulan_display.short_description = "Bulan"
+
+    def program_display(self, obj):
+        return obj.program.nama_program if obj.program else "SPP Bulanan"
+    program_display.short_description = "Program"
+
+    def jumlah_display(self, obj):
+        return f"Rp {obj.jumlah:,.0f}"
+    jumlah_display.short_description = "Jumlah"
 
 class TagihanProgramInline(admin.TabularInline):
     from unfold.admin import TabularInline
     model = TagihanProgram
+    tab = True
     extra = 0
-    fields = ('program', 'nominal', 'jatuh_tempo', 'status', 'tanggal_bayar')
-    readonly_fields = ('created_at',)
+    fields = ('program', 'nominal_display', 'jatuh_tempo', 'status', 'tanggal_bayar')
+    readonly_fields = ('nominal_display', 'created_at')
+
+    def nominal_display(self, obj):
+        return f"Rp {obj.nominal:,.0f}"
+    nominal_display.short_description = "Nominal"
 
 @admin.register(Santri)
 class SantriAdmin(ImportExportMixin, BaseTenantAdmin, ModelAdmin):
