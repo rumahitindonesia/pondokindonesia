@@ -91,33 +91,6 @@ class Donatur(TenantAwareModel):
     def __str__(self):
         return f"{self.nama_donatur} ({self.get_kategori_display()})"
 
-class Tagihan(TenantAwareModel):
-    class Status(models.TextChoices):
-        BELUM_LUNAS = 'BELUM', 'Belum Lunas'
-        LUNAS = 'LUNAS', 'Lunas'
-
-    santri = models.ForeignKey(Santri, on_delete=models.CASCADE, related_name='tagihan')
-    program = models.ForeignKey(Program, on_delete=models.CASCADE, limit_choices_to={'jenis': Program.Jenis.TAGIHAN})
-    
-    nominal = models.DecimalField(max_digits=12, decimal_places=0)
-    bulan = models.CharField(max_length=20, blank=True, null=True, help_text="Contoh: Januari 2024")
-    
-    status = models.CharField(max_length=20, choices=Status.choices, default=Status.BELUM_LUNAS)
-    tgl_buat = models.DateTimeField(auto_now_add=True)
-    tgl_bayar = models.DateField(blank=True, null=True)
-    bukti_bayar = models.ImageField(upload_to='bukti_bayar/', blank=True, null=True)
-    external_id = models.CharField(max_length=100, blank=True, null=True, help_text="ID Transaksi iPaymu")
-    payment_url = models.URLField(blank=True, null=True, help_text="Link Pembayaran iPaymu")
-    keterangan = models.TextField(blank=True, null=True)
-
-    class Meta:
-        verbose_name = "Tagihan / SPP"
-        verbose_name_plural = "Tagihan / SPP"
-        ordering = ['-tgl_buat']
-
-    def __str__(self):
-        return f"{self.program.nama_program} - {self.santri.nama_lengkap} ({self.get_status_display()})"
-
 class TransaksiDonasi(TenantAwareModel):
     class Status(models.TextChoices):
         PENDING = 'PENDING', 'Menunggu Verifikasi'

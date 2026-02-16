@@ -3,12 +3,12 @@ from unfold.admin import ModelAdmin
 from import_export.admin import ImportExportMixin
 from django.utils import timezone
 from django.contrib import messages
-from .models import Program, Santri, Donatur, Tagihan, TransaksiDonasi, TagihanSPP, PaymentMethodSetting, PembayaranSPP
+from .models import Program, Santri, Donatur, TransaksiDonasi, TagihanSPP, PaymentMethodSetting, PembayaranSPP
 from users.models import User
 from core.services.ipaymu import IPaymuService
 from core.services.subscription import SubscriptionService
 from core.admin import BaseTenantAdmin
-from .resources import SantriResource, DonaturResource, ProgramResource, TagihanResource, TransaksiDonasiResource, TagihanSPPResource
+from .resources import SantriResource, DonaturResource, ProgramResource, TransaksiDonasiResource, TagihanSPPResource
 
 from core.services.starsender import StarSenderService
 

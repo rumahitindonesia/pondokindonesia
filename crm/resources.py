@@ -1,6 +1,6 @@
 from import_export import resources, fields
 from import_export.widgets import ForeignKeyWidget
-from .models import Santri, Donatur, Program, Tagihan, TransaksiDonasi
+from .models import Santri, Donatur, Program, TransaksiDonasi
 from users.models import User
 
 class BaseTenantResource(resources.ModelResource):
@@ -43,28 +43,7 @@ class ProgramResource(BaseTenantResource):
         fields = ('nama_program', 'jenis', 'nominal_standar', 'keterangan')
         import_id_fields = ('nama_program',)
 
-class TagihanResource(BaseTenantResource):
-    santri = fields.Field(
-        column_name='santri_nis',
-        attribute='santri',
-        widget=ForeignKeyWidget(Santri, 'nis')
-    )
-    program = fields.Field(
-        column_name='program_nama',
-        attribute='program',
-        widget=ForeignKeyWidget(Program, 'nama_program')
-    )
 
-    def __init__(self, request=None, **kwargs):
-        super().__init__(request, **kwargs)
-        tenant = self.get_tenant()
-        if tenant:
-             self.fields['santri'].widget.queryset = Santri.objects.filter(tenant=tenant)
-             self.fields['program'].widget.queryset = Program.objects.filter(tenant=tenant)
-
-    class Meta:
-        model = Tagihan
-        fields = ('santri', 'program', 'nominal', 'bulan', 'status', 'tgl_bayar', 'keterangan')
 
 class TagihanSPPResource(BaseTenantResource):
     santri = fields.Field(
