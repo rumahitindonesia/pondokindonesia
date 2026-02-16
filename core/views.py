@@ -105,6 +105,7 @@ def webhook_whatsapp(request, tenant_slug=None):
 
             # --- CHANNEL DETECTION ---
             prompt_key = 'AI_SYSTEM_PROMPT'
+            api_key_name = 'AI_PROVIDER' # Default dummy or global, but we use WHATSAPP key for sending
             channel_type = Lead.Type.SANTRI
             
             cs_santri = clean_num(AIService.get_setting('CS_SANTRI_NUMBER', current_tenant))
@@ -112,14 +113,19 @@ def webhook_whatsapp(request, tenant_slug=None):
             
             if c_device and cs_donatur and c_device == cs_donatur:
                 prompt_key = 'AI_DONATUR_PROMPT'
+                api_key_name = 'WHATSAPP_API_KEY_DONATUR'
                 channel_type = Lead.Type.DONATUR
                 logger.info("[CHANNEL] Detected: DONATUR")
             elif c_device and cs_santri and c_device == cs_santri:
                 prompt_key = 'AI_SANTRI_PROMPT'
+                api_key_name = 'WHATSAPP_API_KEY_SANTRI'
                 channel_type = Lead.Type.SANTRI
                 logger.info("[CHANNEL] Detected: SANTRI")
             else:
                 logger.info(f"[CHANNEL] Default: SANTRI (Device: {c_device})")
+
+            # Resolve actual API Key value for sending
+            active_api_key = AIService.get_setting(api_key_name, current_tenant) if api_key_name != 'AI_PROVIDER' else None
 
             # --- INITIAL LOG & DEDUPLICATION ---
             # 1. Deduplication - Block exact duplicate within 30s
@@ -233,7 +239,7 @@ def webhook_whatsapp(request, tenant_slug=None):
                 from core.services.staff_command_service import StaffCommandService
                 staff_msg = StaffCommandService.process_message_v2(current_tenant, message, internal_user)
                 if staff_msg:
-                    StarSenderService.send_message(to=sender, body=staff_msg, tenant=current_tenant)
+                    StarSenderService.send_message(to=sender, body=staff_msg, tenant=current_tenant, api_key_override=active_api_key)
                     logger.info(f"[STAFF] Response sent to {internal_user.username}")
                 else:
                     # If it's a staff but not a valid command keyword, use AI fallback
@@ -242,7 +248,7 @@ def webhook_whatsapp(request, tenant_slug=None):
                         from core.services.ai_service import AIService
                         ai_response = AIService.get_completion(message, tenant=current_tenant, sender_name=internal_user.username, sender_phone=sender)
                         if ai_response:
-                            StarSenderService.send_message(to=sender, body=ai_response, tenant=current_tenant)
+                            StarSenderService.send_message(to=sender, body=ai_response, tenant=current_tenant, api_key_override=active_api_key)
                             logger.info(f"[STAFF-AI] Response sent to {internal_user.username}")
                         else:
                             logger.warning(f"[STAFF-AI] No response generated for {internal_user.username}")
@@ -351,7 +357,7 @@ def webhook_whatsapp(request, tenant_slug=None):
                         
                         # === STEP 2: Send AI Greeting to Lead ===
                         if ai_greeting:
-                            StarSenderService.send_message(to=sender, body=ai_greeting, tenant=current_tenant)
+                            StarSenderService.send_message(to=sender, body=ai_greeting, tenant=current_tenant, api_key_override=active_api_key)
                             logger.info(f"[GREETING SENT] To lead {lead_name} ({sender})")
                         
                         # === STEP 3: Handle Notifications ===
@@ -395,7 +401,7 @@ def webhook_whatsapp(request, tenant_slug=None):
                             system_prompt=AIService.get_system_prompt(tenant=current_tenant, query=message, prompt_key=prompt_key)
                         )
                         if ai_response:
-                            StarSenderService.send_message(to=sender, body=ai_response, tenant=current_tenant)
+                            StarSenderService.send_message(to=sender, body=ai_response, tenant=current_tenant, api_key_override=active_api_key)
                             logger.info(f"[AI] Response sent to {sender}")
                         else:
                             logger.warning(f"[AI] No response generated for {sender}")

@@ -39,11 +39,11 @@ class StarSenderService:
         return None
 
     @classmethod
-    def send_message(cls, to, body, file_url=None, delay=0, schedule=0, tenant=None):
+    def send_message(cls, to, body, file_url=None, delay=0, schedule=0, tenant=None, api_key_override=None):
         """
         Sends a WhatsApp message using StarSender API.
         """
-        api_key = cls.get_api_key(tenant)
+        api_key = api_key_override or cls.get_api_key(tenant)
         
         if not api_key:
             logger.error("StarSender API Key not found for tenant: %s", tenant)
