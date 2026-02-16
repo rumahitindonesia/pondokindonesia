@@ -1,23 +1,40 @@
 {% extends "unfold/layouts/skeleton.html" %}
 {% load i18n static unfold %}
+{% block extrastyle %}
+{{ block.super }}
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+    :root { font-family: 'Plus Jakarta Sans', sans-serif; }
+    .futuristic-title { font-family: 'Plus Jakarta Sans', sans-serif; letter-spacing: -0.02em; }
+</style>
+{% endblock %}
 {% block bodyclass %}bg-slate-50 dark:bg-slate-900{% endblock %}
 {% block base %}
-<div class="min-h-screen flex flex-col md:flex-row overflow-hidden">
-    <div class="hidden md:flex md:w-3/5 lg:w-2/3 bg-cover bg-center relative group" style="background-image: url('{% static "img/login_bg.png" %}')">
-        <div class="absolute inset-0 bg-gradient-to-r from-slate-900/40 to-transparent"></div>
-        <div class="absolute bottom-10 left-10 text-white z-10 transition-transform duration-700 group-hover:translate-x-2">
-            <h1 class="text-4xl font-bold mb-2 tracking-tight">Rumah IT Indonesia</h1>
-            <p class="text-slate-200 text-lg font-light opacity-80">Pondok Indonesia System Admin Panel</p>
+<div class="min-h-screen flex flex-col md:flex-row overflow-hidden bg-slate-900">
+    <div class="hidden md:flex md:w-3/5 lg:w-2/3 bg-no-repeat bg-center relative group transition-all duration-1000" style="background-image: url('{% static "img/login_bg.png" %}'); background-size: cover; background-position: center 20%;">
+        <div class="absolute inset-0 bg-gradient-to-r from-slate-900/60 via-slate-900/20 to-transparent"></div>
+        <div class="absolute bottom-12 left-12 text-white z-10">
+            <h1 class="text-5xl font-extrabold mb-3 futuristic-title tracking-tighter decoration-primary-500/30 underline-offset-8">Pondok Indonesia</h1>
+            <p class="text-slate-300 text-xl font-medium opacity-90 tracking-tight">Enterprise Pesantren Management System</p>
+            <div class="mt-6 flex gap-2">
+                <span class="h-1 w-12 bg-primary-500 rounded-full"></span>
+                <span class="h-1 w-4 bg-slate-700 rounded-full"></span>
+                <span class="h-1 w-4 bg-slate-700 rounded-full"></span>
+            </div>
         </div>
     </div>
-    <div class="flex-1 flex flex-col justify-center bg-white dark:bg-slate-900 px-8 py-12 md:px-16 lg:px-24">
+    <div class="flex-1 flex flex-col justify-center bg-white dark:bg-slate-900 px-8 py-12 md:px-16 lg:px-20 relative shadow-2xl">
         <div class="mx-auto w-full max-w-sm">
-            <div class="mb-10">
-                <div class="flex items-center gap-3 mb-4">
-                    <span class="material-symbols-outlined text-primary-600 text-4xl">mosque</span>
-                    <h2 class="text-3xl font-extrabold text-slate-900 dark:text-white leading-none">Login</h2>
+            <div class="mb-12">
+                <div class="flex items-center gap-3 mb-6">
+                    <div class="p-2 bg-primary-50 dark:bg-primary-900/20 rounded-xl">
+                        <span class="material-symbols-outlined text-primary-600 text-4xl block">cloud_done</span>
+                    </div>
+                    <div>
+                        <h2 class="text-3xl font-bold text-slate-900 dark:text-white leading-none tracking-tight">Welcome Back</h2>
+                        <p class="text-slate-500 dark:text-slate-400 mt-2 text-sm">Please enter your details to continue.</p>
+                    </div>
                 </div>
-                <p class="text-slate-500 dark:text-slate-400">Silakan masuk untuk mengelola dashboard pesantren Anda.</p>
             </div>
             {% include "unfold/helpers/messages.html" %}
             {% if form.errors or form.non_field_errors %}
@@ -28,25 +45,32 @@
             {% endif %}
             <form action="{{ app_path }}" method="post" id="login-form" class="space-y-6">
                 {% csrf_token %}
-                <div class="space-y-4">
-                    {% include "unfold/helpers/field.html" with field=form.username %}
-                    <div class="relative">
+                <div class="space-y-5">
+                    <div class="group">
+                        {% include "unfold/helpers/field.html" with field=form.username %}
+                    </div>
+                    <div class="relative group">
                         {% include "unfold/helpers/field.html" with field=form.password %}
                     </div>
                 </div>
-                <div class="pt-2">
-                    {% component "unfold/components/button.html" with submit=1 variant="primary" class="w-full py-3 text-base shadow-lg shadow-primary-500/20 active:scale-[0.98] transition-all" %}{% translate 'Log in' %} <span class="material-symbols-outlined ml-2 text-xl">arrow_forward</span>{% endcomponent %}
+                <div class="pt-4">
+                    {% component "unfold/components/button.html" with submit=1 variant="primary" class="w-full py-4 text-base font-semibold shadow-xl shadow-primary-500/25 active:scale-[0.97] transition-all rounded-xl" %}Sign In <span class="material-symbols-outlined ml-2 text-xl">login</span>{% endcomponent %}
                 </div>
                 {% url 'admin:admin_password_reset' as unfold_password_reset_url %}
                 {% if unfold_password_reset_url %}
-                    <div class="text-center">
-                        <a href="{{ unfold_password_reset_url }}" class="text-sm font-medium text-primary-600 hover:text-primary-500 transition-colors">Lupa password?</a>
+                    <div class="text-center mt-6">
+                        <a href="{{ unfold_password_reset_url }}" class="text-sm font-semibold text-primary-600 hover:text-primary-500 transition-colors underline-offset-4 hover:underline">Forgot password?</a>
                     </div>
                 {% endif %}
             </form>
         </div>
-        <div class="mt-auto pt-8 text-center text-slate-400 text-xs">
-            &copy; {% now "Y" %} Rumah IT Indonesia. Powered by Yasmin AI.
+        <div class="mt-auto pt-10 flex flex-col items-center gap-4 text-slate-400 text-xs">
+            <p>&copy; {% now "Y" %} Pondok Indonesia. All Rights Reserved.</p>
+            <div class="flex gap-4 opacity-50">
+                <span class="hover:text-slate-600 cursor-help">Terms</span>
+                <span class="hover:text-slate-600 cursor-help">Privacy</span>
+                <span class="hover:text-slate-600 cursor-help">Support</span>
+            </div>
         </div>
     </div>
 </div>
@@ -60,10 +84,10 @@
             inputWrapper.style.position = 'relative';
             const btn = document.createElement('button');
             btn.type = 'button';
-            btn.className = 'absolute right-3 bottom-[14px] text-slate-400 hover:text-primary-600 focus:outline-none z-10 p-1 transition-colors';
+            btn.className = 'absolute right-4 bottom-[12px] text-slate-400 hover:text-primary-600 focus:outline-none z-20 p-1.5 transition-all hover:scale-110';
             btn.innerHTML = '<span class="material-symbols-outlined" style="font-size: 20px;">visibility</span>';
             btn.setAttribute('aria-label', 'Show password');
-            pwd.style.paddingRight = '45px';
+            pwd.style.paddingRight = '50px';
             pwd.dataset.toggleActive = "true";
             btn.addEventListener('click', function(e) {
                 e.preventDefault();
@@ -74,7 +98,8 @@
             });
             inputWrapper.appendChild(btn);
         }
-        if (document.readyState === 'loading') { document.addEventListener('DOMContentLoaded', setupToggle); } else { setupToggle(); }
+        document.addEventListener('DOMContentLoaded', setupToggle);
+        setTimeout(setupToggle, 500);
     })();
 </script>
 {% endblock %}
