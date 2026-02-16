@@ -35,8 +35,9 @@ class ProgramAdmin(ImportExportMixin, BaseTenantAdmin, ModelAdmin):
         return "Global" if not obj.tenant else f"Tenant: {obj.tenant}"
     scope.short_description = 'Scope'
 
-class TagihanSPPInline(admin.TabularInline):
-    from unfold.admin import TabularInline
+from unfold.admin import TabularInline
+
+class TagihanSPPInline(TabularInline):
     model = TagihanSPP
     tab = True
     extra = 0
@@ -55,8 +56,7 @@ class TagihanSPPInline(admin.TabularInline):
         return f"Rp {obj.jumlah:,.0f}"
     jumlah_display.short_description = "Jumlah"
 
-class TagihanProgramInline(admin.TabularInline):
-    from unfold.admin import TabularInline
+class TagihanProgramInline(TabularInline):
     model = TagihanProgram
     tab = True
     extra = 0
