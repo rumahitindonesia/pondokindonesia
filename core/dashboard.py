@@ -5,6 +5,45 @@ from tenants.models import Tenant
 from core.models import Lead, TenantSubscription, WhatsAppMessage
 from crm.models import Santri, Donatur, TagihanSPP, TagihanProgram, TransaksiDonasi
 
+def _get_db_size():
+    """Returns database size in MB."""
+    try:
+        from django.db import connection
+        with connection.cursor() as cursor:
+            cursor.execute("SELECT SUM(data_length + index_length) / 1024 / 1024 AS size FROM information_schema.TABLES WHERE table_schema = DATABASE()")
+            row = cursor.fetchone()
+            return float(row[0]) if row and row[0] else 0
+    except Exception:
+        return 0
+
+def _get_disk_usage():
+    """Returns disk usage percentage and free space in GB."""
+    try:
+        import shutil
+        total, used, free = shutil.disk_usage("/")
+        percent = (used / total) * 100
+        return percent, free / (1024**3)
+    except Exception:
+        return 0, 0
+
+def _get_ram_usage():
+    """Returns RAM usage percentage from /proc/meminfo."""
+    try:
+        mem_info = {}
+        with open('/proc/meminfo', 'r') as f:
+            for line in f:
+                parts = line.split(':')
+                if len(parts) == 2:
+                    mem_info[parts[0].strip()] = int(parts[1].split()[0])
+        
+        total = mem_info.get('MemTotal', 0)
+        available = mem_info.get('MemAvailable', 0)
+        used = total - available
+        percent = (used / total) * 100 if total > 0 else 0
+        return percent
+    except Exception:
+        return 0
+
 def dashboard_callback(request, context):
     """
     Callback function to inject data into Unfold Admin Dashboard.
@@ -25,6 +64,11 @@ def dashboard_callback(request, context):
         # WhatsApp Stats (Total messages last 24h)
         last_24h = timezone.now() - timedelta(hours=24)
         wa_messages_count = WhatsAppMessage.objects.filter(created_at__gte=last_24h).count()
+
+        # Server Metrics
+        db_size = _get_db_size()
+        disk_percent, disk_free = _get_disk_usage()
+        ram_percent = _get_ram_usage()
 
         context.update({
             "kpi_cards": [
@@ -57,6 +101,29 @@ def dashboard_callback(request, context):
                     "footer": "Lalu lintas pesan",
                 },
             ],
+            "server_info": [
+                {
+                    "title": "Database Size",
+                    "metric": f"{db_size:.1f} MB",
+                    "icon": "database",
+                    "color": "purple",
+                    "footer": "Total MySQL Storage",
+                },
+                {
+                    "title": "Disk Usage",
+                    "metric": f"{disk_percent:.1f}%",
+                    "icon": "storage",
+                    "color": "red" if disk_percent > 85 else "blue",
+                    "footer": f"{disk_free:.1f} GB Tersedia",
+                },
+                {
+                    "title": "RAM Usage",
+                    "metric": f"{ram_percent:.1f}%",
+                    "icon": "memory",
+                    "color": "red" if ram_percent > 90 else "green",
+                    "footer": "Physical Memory Stats",
+                },
+            ]
         })
     else:
         # --- TENANT DASHBOARD ---
