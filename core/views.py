@@ -60,6 +60,21 @@ def webhook_whatsapp(request, tenant_slug=None):
     Webhook endpoint for StarSender WhatsApp messages
     URL: /webhook/whatsapp/ or /webhook/whatsapp/<tenant_slug>/
     """
+    # 0. RESOLVE SPECIFIC TENANT (Initialize early to avoid UnboundLocalError)
+    current_tenant = None
+    if tenant_slug:
+        current_tenant = Tenant.objects.filter(subdomain=tenant_slug).first()
+        logger.debug(f"Tenant resolved from slug: {current_tenant}")
+    
+    # Fallback to request context only
+    if not current_tenant and hasattr(request, 'tenant') and request.tenant:
+        current_tenant = request.tenant
+        logger.debug(f"Tenant resolved from request context: {current_tenant}")
+
+    if current_tenant:
+        from core.models import set_current_tenant
+        set_current_tenant(current_tenant)
+
     # Log every webhook call immediately
     logger.info(f"[WEBHOOK CALLED] Method: {request.method}, Tenant Slug: {tenant_slug}")
     
@@ -153,21 +168,6 @@ def webhook_whatsapp(request, tenant_slug=None):
             # if c_sender and User.all_objects.filter(phone_number__icontains=c_sender[-10:]).exists():
             #     logger.debug(f"Blocked: Sender is a known staff/user")
             #     return HttpResponse('OK', status=200)
-
-            # --- RESOLVE SPECIFIC TENANT (Prioritize subdomain) ---
-            current_tenant = None
-            if tenant_slug:
-                current_tenant = Tenant.objects.filter(subdomain=tenant_slug).first()
-                logger.debug(f"Tenant resolved from slug: {current_tenant}")
-            
-            # Fallback to request context only
-            if not current_tenant and hasattr(request, 'tenant') and request.tenant:
-                current_tenant = request.tenant
-                logger.debug(f"Tenant resolved from request context: {current_tenant}")
-
-            if current_tenant:
-                from core.models import set_current_tenant
-                set_current_tenant(current_tenant)
 
             # --- INITIAL LOG & DEDUPLICATION ---
             sender = c_sender or sender # Digits only for storage
