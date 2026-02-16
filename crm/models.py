@@ -241,6 +241,7 @@ class TagihanProgram(TenantAwareModel):
         Program, 
         on_delete=models.CASCADE, 
         related_name='tagihan_program_set',
+        limit_choices_to={'jenis': Program.Jenis.TAGIHAN},
         verbose_name="Program"
     )
     
