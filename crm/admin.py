@@ -35,20 +35,8 @@ class TagihanSPPInline(TabularInline):
     model = TagihanSPP
     tab = True
     extra = 0
-    fields = ('bulan_display', 'program_display', 'jumlah_display', 'jatuh_tempo', 'status', 'tanggal_bayar')
-    readonly_fields = ('bulan_display', 'program_display', 'jumlah_display', 'created_at')
-
-    def bulan_display(self, obj):
-        return obj.bulan.strftime('%B %Y') if obj.bulan else "-"
-    bulan_display.short_description = "Bulan"
-
-    def program_display(self, obj):
-        return obj.program.nama_program if obj.program else "SPP Bulanan"
-    program_display.short_description = "Program"
-
-    def jumlah_display(self, obj):
-        return f"Rp {obj.jumlah:,.0f}"
-    jumlah_display.short_description = "Jumlah"
+    fields = ('bulan_display', 'program', 'jumlah_display', 'jatuh_tempo', 'status', 'tanggal_bayar')
+    readonly_fields = ('bulan_display', 'jumlah_display', 'created_at')
 
 class TagihanProgramInline(TabularInline):
     model = TagihanProgram
@@ -56,10 +44,6 @@ class TagihanProgramInline(TabularInline):
     extra = 0
     fields = ('program', 'nominal_display', 'jatuh_tempo', 'status', 'tanggal_bayar')
     readonly_fields = ('nominal_display', 'created_at')
-
-    def nominal_display(self, obj):
-        return f"Rp {obj.nominal:,.0f}"
-    nominal_display.short_description = "Nominal"
 
 @admin.register(Santri)
 class SantriAdmin(ImportExportMixin, BaseTenantAdmin, ModelAdmin):
@@ -222,13 +206,8 @@ class TagihanSPPAdmin(ImportExportMixin, BaseTenantAdmin, ModelAdmin):
         }),
     )
     
-    def bulan_display(self, obj):
-        return obj.bulan.strftime('%B %Y')
-    bulan_display.short_description = 'Bulan'
-    
-    def jumlah_display(self, obj):
-        return f"Rp {obj.jumlah:,.0f}"
-    jumlah_display.short_description = 'Jumlah'
+    search_fields = ['santri__nama_lengkap', 'santri__nis']
+    date_hierarchy = 'bulan'
 
 @admin.register(TagihanProgram)
 class TagihanProgramAdmin(ImportExportMixin, BaseTenantAdmin, ModelAdmin):
@@ -253,9 +232,7 @@ class TagihanProgramAdmin(ImportExportMixin, BaseTenantAdmin, ModelAdmin):
         }),
     )
     
-    def nominal_display(self, obj):
-        return f"Rp {obj.nominal:,.0f}"
-    nominal_display.short_description = 'Nominal'
+    search_fields = ['santri__nama_lengkap', 'program__nama_program']
 
 @admin.register(PaymentMethodSetting)
 class PaymentMethodSettingAdmin(BaseTenantAdmin, ModelAdmin):

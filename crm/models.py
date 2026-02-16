@@ -141,6 +141,14 @@ class TagihanSPP(TenantAwareModel):
         verbose_name="Jumlah Tagihan",
         help_text="Nominal tagihan SPP bulan ini"
     )
+
+    @property
+    def jumlah_display(self):
+        return f"Rp {self.jumlah:,.0f}"
+
+    @property
+    def bulan_display(self):
+        return self.bulan.strftime('%B %Y') if self.bulan else "-"
     
     program = models.ForeignKey(
         Program, 
@@ -243,6 +251,10 @@ class TagihanProgram(TenantAwareModel):
     )
     
     tanggal_bayar = models.DateField(null=True, blank=True, verbose_name="Tanggal Bayar")
+
+    @property
+    def nominal_display(self):
+        return f"Rp {self.nominal:,.0f}"
     catatan = models.TextField(blank=True, verbose_name="Catatan")
     
     created_at = models.DateTimeField(auto_now_add=True)
