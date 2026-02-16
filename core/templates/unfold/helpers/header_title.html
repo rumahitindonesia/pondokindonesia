@@ -3,21 +3,22 @@
 {% with tag=part.link|yesno:"a,span" %}
 {% if forloop.first and parts|length > 1 %}
 {% with next=parts.1.title|capfirst %}
+{# Logic to determine the group label #}
 {% if "Lead" in next or "Santri" in next or "Donatur" in next or "Program" in next or "Pendaftar" in next %}
-<{{ tag }} {% if part.link %}href="{{ part.link }}" {% endif %}
-    class="align-middle inline-block leading-5 tracking-tight">CRM & Database</{{ tag }}>
+{% with label="CRM & Database" %}<a href="{% url 'admin:index' %}"
+    class="align-middle inline-block leading-5 tracking-tight">{{ label }}</a>{% endwith %}
 {% elif "Tagihan" in next or "Pembayaran" in next or "Donasi" in next or "Payment" in next %}
-<{{ tag }} {% if part.link %}href="{{ part.link }}" {% endif %}
-    class="align-middle inline-block leading-5 tracking-tight">Keuangan & Donasi</{{ tag }}>
+{% with label="Keuangan & Donasi" %}<a href="{% url 'admin:index' %}"
+    class="align-middle inline-block leading-5 tracking-tight">{{ label }}</a>{% endwith %}
 {% elif "Whatsapp" in next or "Ai" in next %}
-<{{ tag }} {% if part.link %}href="{{ part.link }}" {% endif %}
-    class="align-middle inline-block leading-5 tracking-tight">Integrasi WhatsApp & AI</{{ tag }}>
+{% with label="Integrasi WhatsApp & AI" %}<a href="{% url 'admin:index' %}"
+    class="align-middle inline-block leading-5 tracking-tight">{{ label }}</a>{% endwith %}
 {% elif "Api" in next or "Pengurus" in next or "Jabatan" in next or "Staff" in next or "Position" in next %}
-<{{ tag }} {% if part.link %}href="{{ part.link }}" {% endif %}
-    class="align-middle inline-block leading-5 tracking-tight">Pengaturan & SDM</{{ tag }}>
+{% with label="Pengaturan & SDM" %}<a href="{% url 'admin:index' %}"
+    class="align-middle inline-block leading-5 tracking-tight">{{ label }}</a>{% endwith %}
 {% elif "Tenant" in next or "User" in next or "Role" in next or "Pricing" in next %}
-<{{ tag }} {% if part.link %}href="{{ part.link }}" {% endif %}
-    class="align-middle inline-block leading-5 tracking-tight">Manajemen Pengelola</{{ tag }}>
+{% with label="Manajemen Pengelola" %}<a href="{% url 'admin:index' %}"
+    class="align-middle inline-block leading-5 tracking-tight">{{ label }}</a>{% endwith %}
 {% else %}
 <{{ tag }} {% if part.link %}href="{{ part.link }}" {% endif %}
     class="align-middle inline-block leading-5 tracking-tight">{{ part.title|capfirst }}</{{ tag }}>
