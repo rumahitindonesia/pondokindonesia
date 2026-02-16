@@ -110,6 +110,8 @@ class TransaksiDonasi(TenantAwareModel):
 
     @property
     def nominal_display(self):
+        if self.nominal is None:
+            return "-"
         return f"Rp {self.nominal:,.0f}"
 
     class Meta:
