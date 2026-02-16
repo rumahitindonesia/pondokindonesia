@@ -91,7 +91,8 @@ class OpenAIEmbeddingProvider(EmbeddingProvider):
         return response.json()['data'][0]['embedding']
 
 class GeminiEmbeddingProvider(EmbeddingProvider):
-    API_URL = "https://generativelanguage.googleapis.com/v1beta/models/text-embedding-004:embedContent"
+    # Use v1 and embedding-001 for better stability
+    API_URL = "https://generativelanguage.googleapis.com/v1/models/embedding-001:embedContent"
 
     def get_embedding(self, api_key, text):
         url = f"{self.API_URL}?key={api_key}"
