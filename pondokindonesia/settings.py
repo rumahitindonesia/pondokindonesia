@@ -174,12 +174,6 @@ UNFOLD = {
                         "permission": "core.permissions.can_view_tagihan",
                     },
                     {
-                        "title": "Tagihan Lainnya",
-                        "icon": "payments",
-                        "link": "/admin/crm/tagihan/",
-                        "permission": "core.permissions.can_view_tagihan",
-                    },
-                    {
                         "title": "Riwayat Donasi",
                         "icon": "receipt_long",
                         "link": "/admin/crm/transaksidonasi/",

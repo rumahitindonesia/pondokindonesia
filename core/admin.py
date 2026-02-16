@@ -4,35 +4,64 @@ from unfold.admin import ModelAdmin
 from .models import get_current_tenant, APISetting
 
 class BaseTenantAdmin(ModelAdmin):
+    def get_tenant(self, request):
+        """Helper to get tenant for current request/user"""
+        tenant = getattr(request, 'tenant', None)
+        if not tenant and not request.user.is_superuser and hasattr(request.user, 'tenant'):
+            tenant = request.user.tenant
+        return tenant
+
     def get_queryset(self, request):
         qs = super().get_queryset(request)
-        tenant = getattr(request, 'tenant', None)
-        
-        # Fallback to User's Tenant (crucial for admin panel access)
-        if not request.user.is_superuser and hasattr(request.user, 'tenant'):
-            tenant = request.user.tenant
-            
+        tenant = self.get_tenant(request)
         if tenant:
             return qs.filter(tenant=tenant)
         return qs
 
     def save_model(self, request, obj, form, change):
-        tenant = getattr(request, 'tenant', None)
-        # Fallback to User's Tenant
-        if not tenant and not request.user.is_superuser and hasattr(request.user, 'tenant'):
-            tenant = request.user.tenant
-
-        if tenant and hasattr(obj, 'tenant'):
+        tenant = self.get_tenant(request)
+        if tenant and hasattr(obj, 'tenant') and not obj.tenant:
             obj.tenant = tenant
-            
         super().save_model(request, obj, form, change)
 
     def get_exclude(self, request, obj=None):
         exclude = super().get_exclude(request, obj) or []
-        # Hide 'tenant' field for non-superusers
         if not request.user.is_superuser:
-            return list(exclude) + ['tenant']
+             # Force hide tenant field for non-superusers
+             if 'tenant' not in exclude:
+                 return list(exclude) + ['tenant']
         return exclude
+
+    def formfield_for_foreignkey(self, db_field, request, **kwargs):
+        """Auto-filter foreign keys to only show items from the same tenant or global"""
+        tenant = self.get_tenant(request)
+        if tenant and not request.user.is_superuser:
+            related_model = db_field.related_model
+            # Check if related model has a tenant field (is TenantAware)
+            if hasattr(related_model, 'tenant'):
+                kwargs["queryset"] = related_model.objects.filter(
+                    models.Q(tenant=tenant) | models.Q(tenant__isnull=True)
+                )
+        return super().formfield_for_foreignkey(db_field, request, **kwargs)
+
+    def formfield_for_manytomany(self, db_field, request, **kwargs):
+        """Auto-filter M2M to only show items from the same tenant or global"""
+        tenant = self.get_tenant(request)
+        if tenant and not request.user.is_superuser:
+            related_model = db_field.related_model
+            if hasattr(related_model, 'tenant'):
+                kwargs["queryset"] = related_model.objects.filter(
+                    models.Q(tenant=tenant) | models.Q(tenant__isnull=True)
+                )
+        return super().formfield_for_manytomany(db_field, request, **kwargs)
+
+    def get_search_results(self, request, queryset, search_term):
+        """Filter search results (for autocomplete) by tenant"""
+        queryset, use_distinct = super().get_search_results(request, queryset, search_term)
+        tenant = self.get_tenant(request)
+        if tenant and not request.user.is_superuser and hasattr(queryset.model, 'tenant'):
+            queryset = queryset.filter(tenant=tenant)
+        return queryset, use_distinct
 
 @admin.register(APISetting)
 class APISettingAdmin(BaseTenantAdmin, ModelAdmin):

@@ -248,4 +248,37 @@ def dashboard_callback(request, context):
             "overdue_tagihan": overdue_tagihan,
             "potential_donatur": potential_donatur,
         })
+
+    # --- Group Models by Sidebar Categories ---
+    if 'app_list' in context:
+        groups = {
+            "Manajemen Pengelola": ["Tenant", "User", "Role", "Pricing Plan", "Tenant Subscription"],
+            "CRM & Database": ["Lead / Pendaftar", "Data Santri", "Data Donatur", "Master Program"],
+            "Keuangan & Donasi": ["Tagihan SPP", "Metode Pembayaran", "Pembayaran SPP", "Transaksi Donasi"],
+            "Integrasi WhatsApp & AI": ["AI Knowledge Base", "WhatsApp Message", "WhatsApp Auto Reply", "WhatsApp Form"],
+            "Pengaturan & SDM": ["API Setting", "Data Pengurus", "Jabatan", "Tugas Staff"],
+        }
+        
+        grouped_apps = []
+        all_models = {}
+        
+        # Flatten app_list for easier mapping
+        for app in context['app_list']:
+            for model in app['models']:
+                all_models[model['name']] = model
+        
+        for group_title, model_names in groups.items():
+            group_models = []
+            for name in model_names:
+                if name in all_models:
+                    group_models.append(all_models[name])
+            
+            if group_models:
+                grouped_apps.append({
+                    "name": group_title,
+                    "models": group_models
+                })
+        
+        context['grouped_apps'] = grouped_apps
+
     return context

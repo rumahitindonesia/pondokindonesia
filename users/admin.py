@@ -184,26 +184,17 @@ class UserAdmin(BaseTenantAdmin, BaseUserAdmin, ModelAdmin):
     send_whatsapp_action.short_description = "Send WhatsApp Message"
 
     def formfield_for_foreignkey(self, db_field, request, **kwargs):
-        try:
-            if db_field.name == "role":
-                tenant = getattr(request, 'tenant', None)
-                if tenant:
-                    # Filter roles for tenant admins:
-                    # 1. Roles belonging to this specific tenant
-                    # 2. Global roles (tenant=None) but EXCLUDING critical SaaS Admin roles
-                    kwargs["queryset"] = Role.global_objects.filter(
-                        models.Q(tenant=tenant) | 
-                        models.Q(tenant__isnull=True)
-                    ).exclude(slug='saas_admin')
-            
-            # Also restrict the tenant field if present in the form (unlikely for tenant admins, but safe)
-            if db_field.name == "tenant":
-                tenant = getattr(request, 'tenant', None)
-                if tenant:
-                    kwargs["queryset"] = db_field.related_model.objects.filter(id=tenant.id)
-
-            return super().formfield_for_foreignkey(db_field, request, **kwargs)
-        except Exception as e:
-            import traceback
-            traceback.print_exc()
-            raise e
+        # 1. Use BaseTenantAdmin logic for most fields
+        output = super().formfield_for_foreignkey(db_field, request, **kwargs)
+        
+        # 2. Special security rule for Role: exclude 'saas_admin' for non-superusers
+        if db_field.name == "role" and not request.user.is_superuser:
+            tenant = self.get_tenant(request)
+            if tenant:
+                kwargs["queryset"] = Role.global_objects.filter(
+                    models.Q(tenant=tenant) | 
+                    models.Q(tenant__isnull=True)
+                ).exclude(slug='saas_admin')
+                return super().formfield_for_foreignkey(db_field, request, **kwargs)
+        
+        return output
