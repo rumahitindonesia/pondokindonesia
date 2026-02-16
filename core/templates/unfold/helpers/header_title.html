@@ -3,27 +3,19 @@
 {% with tag=part.link|yesno:"a,span" %}
 {% if forloop.first and parts|length > 1 %}
 {% with next=parts.1.title|capfirst %}
-{% if next == "Leads / Pendaftar" or next == "Data santri" or next == "Data donatur" or next == "Master program" or next
-== "Leads" or next == "Santris" or next == "Donaturs" or next == "Programs" %}
+{% if "Lead" in next or "Santri" in next or "Donatur" in next or "Program" in next or "Pendaftar" in next %}
 <{{ tag }} {% if part.link %}href="{{ part.link }}" {% endif %}
     class="align-middle inline-block leading-5 tracking-tight">CRM & Database</{{ tag }}>
-{% elif next == "Tagihan spp" or next == "Metode pembayaran" or next == "Pembayaran spp" or next == "Transaksi donasi"
-or next == "Tagihan spps" or next == "Payment method settings" or next == "Pembayaran spps" or next == "Transaksi
-donasis" %}
+{% elif "Tagihan" in next or "Pembayaran" in next or "Donasi" in next or "Payment" in next %}
 <{{ tag }} {% if part.link %}href="{{ part.link }}" {% endif %}
     class="align-middle inline-block leading-5 tracking-tight">Keuangan & Donasi</{{ tag }}>
-{% elif next == "Ai knowledge base" or next == "Whatsapp message" or next == "Whatsapp auto reply" or next == "Whatsapp
-form" or next == "Ai knowledge bases" or next == "Whatsapp messages" or next == "Whatsapp auto replies" or next ==
-"Whatsapp forms" %}
+{% elif "Whatsapp" in next or "Ai" in next %}
 <{{ tag }} {% if part.link %}href="{{ part.link }}" {% endif %}
     class="align-middle inline-block leading-5 tracking-tight">Integrasi WhatsApp & AI</{{ tag }}>
-{% elif next == "Api setting" or next == "Data pengurus" or next == "Jabatan" or next == "Tugas staff" or next == "Api
-settings" or next == "Staffs" or next == "Positions" or next == "Staff tasks" %}
+{% elif "Api" in next or "Pengurus" in next or "Jabatan" in next or "Staff" in next or "Position" in next %}
 <{{ tag }} {% if part.link %}href="{{ part.link }}" {% endif %}
     class="align-middle inline-block leading-5 tracking-tight">Pengaturan & SDM</{{ tag }}>
-{% elif next == "Tenant" or next == "User" or next == "Role" or next == "Pricing plan" or next == "Tenant subscription"
-or next == "Tenants" or next == "Users" or next == "Roles" or next == "Pricing plans" or next == "Tenant subscriptions"
-%}
+{% elif "Tenant" in next or "User" in next or "Role" in next or "Pricing" in next %}
 <{{ tag }} {% if part.link %}href="{{ part.link }}" {% endif %}
     class="align-middle inline-block leading-5 tracking-tight">Manajemen Pengelola</{{ tag }}>
 {% else %}
