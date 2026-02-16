@@ -144,11 +144,15 @@ class TagihanSPP(TenantAwareModel):
 
     @property
     def jumlah_display(self):
+        if self.jumlah is None:
+            return "-"
         return f"Rp {self.jumlah:,.0f}"
 
     @property
     def bulan_display(self):
-        return self.bulan.strftime('%B %Y') if self.bulan else "-"
+        if not self.bulan:
+            return "-"
+        return self.bulan.strftime('%B %Y')
     
     program = models.ForeignKey(
         Program, 
@@ -254,6 +258,8 @@ class TagihanProgram(TenantAwareModel):
 
     @property
     def nominal_display(self):
+        if self.nominal is None:
+            return "-"
         return f"Rp {self.nominal:,.0f}"
     catatan = models.TextField(blank=True, verbose_name="Catatan")
     
