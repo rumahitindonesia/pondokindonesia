@@ -147,10 +147,11 @@ def webhook_whatsapp(request, tenant_slug=None):
                 return HttpResponse('OK', status=200)
             
             # 4. Global User Phone Block (Sender is ANY known staff/user)
-            from users.models import User
-            if c_sender and User.all_objects.filter(phone_number__icontains=c_sender[-10:]).exists():
-                logger.debug(f"Blocked: Sender is a known staff/user")
-                return HttpResponse('OK', status=200)
+            # DISABLED: Allow registered users to also be processed as leads
+            # from users.models import User
+            # if c_sender and User.all_objects.filter(phone_number__icontains=c_sender[-10:]).exists():
+            #     logger.debug(f"Blocked: Sender is a known staff/user")
+            #     return HttpResponse('OK', status=200)
 
             # --- RESOLVE SPECIFIC TENANT (Prioritize subdomain) ---
             current_tenant = None
