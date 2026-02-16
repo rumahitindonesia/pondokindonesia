@@ -74,11 +74,43 @@ class GeminiProvider(AIProvider):
         data = response.json()
         return data['candidates'][0]['content']['parts'][0]['text']
 
+class EmbeddingProvider:
+    """Base class for Embedding Providers"""
+    def get_embedding(self, api_key, text):
+        raise NotImplementedError
+
+class OpenAIEmbeddingProvider(EmbeddingProvider):
+    API_URL = "https://api.openai.com/v1/embeddings"
+    DEFAULT_MODEL = "text-embedding-3-small"
+
+    def get_embedding(self, api_key, text):
+        headers = {"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"}
+        payload = {"input": text, "model": self.DEFAULT_MODEL}
+        response = requests.post(self.API_URL, headers=headers, json=payload, timeout=30)
+        response.raise_for_status()
+        return response.json()['data'][0]['embedding']
+
+class GeminiEmbeddingProvider(EmbeddingProvider):
+    API_URL = "https://generativelanguage.googleapis.com/v1beta/models/text-embedding-004:embedContent"
+
+    def get_embedding(self, api_key, text):
+        url = f"{self.API_URL}?key={api_key}"
+        payload = {"content": {"parts": [{"text": text}]}}
+        response = requests.post(url, json=payload, timeout=30)
+        response.raise_for_status()
+        return response.json()['embedding']['values']
+
 class AIService:
     PROVIDERS = {
         'GROQ': GroqProvider,
         'OPENAI': OpenAIProvider,
         'GEMINI': GeminiProvider
+    }
+    
+    EMBEDDING_PROVIDERS = {
+        'OPENAI': OpenAIEmbeddingProvider,
+        'GEMINI': GeminiEmbeddingProvider,
+        'GROQ': OpenAIEmbeddingProvider # Fallback Groq to OpenAI/Gemini as Groq lacks embeddings
     }
     
     @staticmethod
@@ -103,7 +135,61 @@ class AIService:
         return setting.value if setting else None
 
     @classmethod
-    def get_system_prompt(cls, tenant=None):
+    def generate_embedding(cls, text, tenant=None):
+        provider_name = (cls.get_setting('AI_PROVIDER', tenant) or 'GEMINI').upper()
+        # Ensure we have a provider that supports embeddings
+        if provider_name == 'GROQ':
+             provider_name = 'GEMINI' if cls.get_setting('GEMINI_API_KEY', tenant) else 'OPENAI'
+             
+        ProviderClass = cls.EMBEDDING_PROVIDERS.get(provider_name, GeminiEmbeddingProvider)
+        api_key = cls.get_setting(f"{provider_name}_API_KEY", tenant)
+        
+        if not api_key: return None
+        try:
+            return ProviderClass().get_embedding(api_key, text)
+        except Exception as e:
+            logger.error(f"Embedding Error ({provider_name}): {str(e)}")
+            return None
+
+    @classmethod
+    def find_relevant_knowledge(cls, query, tenant=None, top_k=3):
+        from core.models import AIKnowledgeBase
+        from django.db.models import Q
+        import math
+
+        query_vector = cls.generate_embedding(query, tenant)
+        if not query_vector:
+            return ""
+
+        kb_items = AIKnowledgeBase.objects.filter(is_active=True, embedding__isnull=False)
+        if tenant:
+             kb_items = kb_items.filter(Q(tenant=tenant) | Q(tenant__isnull=True))
+        else:
+             kb_items = kb_items.filter(tenant__isnull=True)
+        
+        if not kb_items.exists(): return ""
+
+        def cosine_similarity(v1, v2):
+            dot_product = sum(a * b for a, b in zip(v1, v2))
+            magnitude = math.sqrt(sum(a * a for a in v1)) * math.sqrt(sum(b * b for b in v2))
+            return dot_product / magnitude if magnitude > 0 else 0
+
+        scored_items = []
+        for item in kb_items:
+            score = cosine_similarity(query_vector, item.embedding)
+            if score > 0.4: # Minimal threshold
+                scored_items.append((score, item))
+        
+        scored_items.sort(key=lambda x: x[0], reverse=True)
+        
+        context = "\n\n=== RELEVANT KNOWLEDGE ===\n"
+        for score, item in scored_items[:top_k]:
+            context += f"Topic: {item.topic}\n{item.content}\n\n"
+        
+        return context
+
+    @classmethod
+    def get_system_prompt(cls, tenant=None, query=None):
         default_prompt = (
             "You are Yasmin, a friendly Admin Virtual of a Pondok Pesantren. "
             "Your task is to help potential registrants (leads) and parents. "
@@ -113,23 +199,13 @@ class AIService:
         )
         base_prompt = cls.get_setting('AI_SYSTEM_PROMPT', tenant) or default_prompt
         
-        # Append Knowledge Base
-        from core.models import AIKnowledgeBase
-        from django.db.models import Q
-        
-        kb_items = AIKnowledgeBase.objects.filter(is_active=True)
-        if tenant:
-             kb_items = kb_items.filter(Q(tenant=tenant) | Q(tenant__isnull=True))
-        else:
-             kb_items = kb_items.filter(tenant__isnull=True)
-             
-        if kb_items.exists():
-            kb_text = "\n\n=== KNOWLEDGE BASE (Use this to answer) ===\n"
-            for item in kb_items:
-                kb_text += f"Topic: {item.topic}\n{item.content}\n\n"
-            return base_prompt + kb_text
-            
-        return base_prompt
+        # If no query, we can't do RAG, return base prompt
+        if not query:
+             return base_prompt
+
+        # Use Semantic Search
+        relevant_context = cls.find_relevant_knowledge(query, tenant)
+        return base_prompt + relevant_context
 
     @classmethod
     def get_history_context(cls, phone_number):
@@ -171,7 +247,7 @@ class AIService:
         # 3. Construct Messages List
         messages = []
         if not system_prompt:
-             system_prompt = cls.get_system_prompt(tenant)
+             system_prompt = cls.get_system_prompt(tenant, query=message)
         messages.append({"role": "system", "content": system_prompt})
         
         # Fetch Memory
