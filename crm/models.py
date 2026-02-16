@@ -142,6 +142,16 @@ class TagihanSPP(TenantAwareModel):
         help_text="Nominal tagihan SPP bulan ini"
     )
     
+    program = models.ForeignKey(
+        Program, 
+        on_delete=models.SET_NULL, 
+        null=True, 
+        blank=True,
+        limit_choices_to={'jenis': Program.Jenis.TAGIHAN},
+        related_name='tagihan_spp',
+        verbose_name="Program"
+    )
+    
     jatuh_tempo = models.DateField(
         verbose_name="Jatuh Tempo",
         help_text="Batas waktu pembayaran"
@@ -203,6 +213,53 @@ class TagihanSPP(TenantAwareModel):
             
         super().save(*args, **kwargs)
 
+
+
+class TagihanProgram(TenantAwareModel):
+    """
+    Tagihan untuk program non-bulanan (Pendaftaran, Wakaf, Pre-program, dll)
+    """
+    class Status(models.TextChoices):
+        BELUM_LUNAS = 'BELUM', 'Belum Lunas'
+        LUNAS = 'LUNAS', 'Lunas'
+        TERLAMBAT = 'TERLAMBAT', 'Terlambat'
+
+    santri = models.ForeignKey(Santri, on_delete=models.CASCADE, related_name='tagihan_program', verbose_name="Santri")
+    program = models.ForeignKey(
+        Program, 
+        on_delete=models.CASCADE, 
+        related_name='tagihan_program_set',
+        verbose_name="Program"
+    )
+    
+    nominal = models.DecimalField(max_digits=12, decimal_places=0, verbose_name="Nominal")
+    jatuh_tempo = models.DateField(verbose_name="Jatuh Tempo")
+    
+    status = models.CharField(
+        max_length=20,
+        choices=Status.choices,
+        default=Status.BELUM_LUNAS,
+        verbose_name="Status"
+    )
+    
+    tanggal_bayar = models.DateField(null=True, blank=True, verbose_name="Tanggal Bayar")
+    catatan = models.TextField(blank=True, verbose_name="Catatan")
+    
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = "Tagihan Program"
+        verbose_name_plural = "Tagihan Program"
+        ordering = ['-jatuh_tempo']
+
+    def __str__(self):
+        return f"{self.program.nama_program} - {self.santri.nama_lengkap}"
+
+    def save(self, *args, **kwargs):
+        if self.tanggal_bayar:
+            self.status = self.Status.LUNAS
+        super().save(*args, **kwargs)
 
 class PaymentMethodSetting(TenantAwareModel):
     """Payment method settings for manual payments (Bank Transfer & QRIS)"""

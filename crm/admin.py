@@ -3,12 +3,12 @@ from unfold.admin import ModelAdmin
 from import_export.admin import ImportExportMixin
 from django.utils import timezone
 from django.contrib import messages
-from .models import Program, Santri, Donatur, TransaksiDonasi, TagihanSPP, PaymentMethodSetting, PembayaranSPP
+from .models import Program, Santri, Donatur, TransaksiDonasi, TagihanSPP, TagihanProgram, PaymentMethodSetting, PembayaranSPP
 from users.models import User
 from core.services.ipaymu import IPaymuService
 from core.services.subscription import SubscriptionService
 from core.admin import BaseTenantAdmin
-from .resources import SantriResource, DonaturResource, ProgramResource, TransaksiDonasiResource, TagihanSPPResource
+from .resources import SantriResource, DonaturResource, ProgramResource, TransaksiDonasiResource, TagihanSPPResource, TagihanProgramResource
 
 from core.services.starsender import StarSenderService
 
@@ -35,9 +35,24 @@ class ProgramAdmin(ImportExportMixin, BaseTenantAdmin, ModelAdmin):
         return "Global" if not obj.tenant else f"Tenant: {obj.tenant}"
     scope.short_description = 'Scope'
 
+class TagihanSPPInline(admin.TabularInline):
+    from unfold.admin import TabularInline
+    model = TagihanSPP
+    extra = 0
+    fields = ('bulan', 'program', 'jumlah', 'jatuh_tempo', 'status', 'tanggal_bayar')
+    readonly_fields = ('created_at',)
+
+class TagihanProgramInline(admin.TabularInline):
+    from unfold.admin import TabularInline
+    model = TagihanProgram
+    extra = 0
+    fields = ('program', 'nominal', 'jatuh_tempo', 'status', 'tanggal_bayar')
+    readonly_fields = ('created_at',)
+
 @admin.register(Santri)
 class SantriAdmin(ImportExportMixin, BaseTenantAdmin, ModelAdmin):
     resource_classes = [SantriResource]
+    inlines = [TagihanSPPInline, TagihanProgramInline]
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -187,14 +202,14 @@ class TagihanSPPAdmin(ImportExportMixin, BaseTenantAdmin, ModelAdmin):
         self.import_template_name = "admin/import_export/import.html"
         self.export_template_name = "admin/import_export/export.html"
     
-    list_display = ['santri', 'bulan_display', 'jumlah_display', 'jatuh_tempo', 'status', 'tanggal_bayar', 'tenant']
-    list_filter = ['status', 'bulan', 'jatuh_tempo', 'tenant']
+    list_display = ['santri', 'program', 'bulan_display', 'jumlah_display', 'jatuh_tempo', 'status', 'tanggal_bayar', 'tenant']
+    list_filter = ['status', 'program', 'bulan', 'jatuh_tempo', 'tenant']
     search_fields = ['santri__nama_lengkap', 'santri__nis']
     date_hierarchy = 'bulan'
     
     fieldsets = (
         (None, {
-            'fields': ('santri', 'bulan', 'jumlah', 'jatuh_tempo')
+            'fields': ('santri', 'program', 'bulan', 'jumlah', 'jatuh_tempo')
         }),
         ('Status Pembayaran', {
             'fields': ('status', 'tanggal_bayar', 'catatan')
@@ -208,6 +223,33 @@ class TagihanSPPAdmin(ImportExportMixin, BaseTenantAdmin, ModelAdmin):
     def jumlah_display(self, obj):
         return f"Rp {obj.jumlah:,.0f}"
     jumlah_display.short_description = 'Jumlah'
+
+@admin.register(TagihanProgram)
+class TagihanProgramAdmin(ImportExportMixin, BaseTenantAdmin, ModelAdmin):
+    resource_classes = [TagihanProgramResource]
+    
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.change_list_template = "admin/import_export/change_list_custom.html"
+        self.import_template_name = "admin/import_export/import.html"
+        self.export_template_name = "admin/import_export/export.html"
+    
+    list_display = ['santri', 'program', 'nominal_display', 'jatuh_tempo', 'status', 'tanggal_bayar', 'tenant']
+    list_filter = ['status', 'program', 'jatuh_tempo', 'tenant']
+    search_fields = ['santri__nama_lengkap', 'program__nama_program']
+    
+    fieldsets = (
+        (None, {
+            'fields': ('santri', 'program', 'nominal', 'jatuh_tempo')
+        }),
+        ('Status Pembayaran', {
+            'fields': ('status', 'tanggal_bayar', 'catatan')
+        }),
+    )
+    
+    def nominal_display(self, obj):
+        return f"Rp {obj.nominal:,.0f}"
+    nominal_display.short_description = 'Nominal'
 
 @admin.register(PaymentMethodSetting)
 class PaymentMethodSettingAdmin(BaseTenantAdmin, ModelAdmin):

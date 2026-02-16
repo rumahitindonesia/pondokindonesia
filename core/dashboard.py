@@ -3,7 +3,7 @@ from django.utils import timezone
 from datetime import timedelta
 from tenants.models import Tenant
 from core.models import Lead, TenantSubscription, WhatsAppMessage
-from crm.models import Santri, Donatur, Tagihan, TransaksiDonasi
+from crm.models import Santri, Donatur, TagihanSPP, TagihanProgram, TransaksiDonasi
 
 def dashboard_callback(request, context):
     """
@@ -79,28 +79,26 @@ def dashboard_callback(request, context):
             tgl_donasi__gte=first_day_of_month
         ).aggregate(total=Sum('nominal'))['total'] or 0
 
-        # Non-Donation Earnings (LUNAS bills paid this month)
-        # 1. Old Tagihan
-        total_tagihan_old = Tagihan.objects.filter(
+        # 1. New TagihanProgram (Registration, Program fees, etc)
+        total_tagihan_program = TagihanProgram.objects.filter(
             tenant=tenant,
             status='LUNAS',
-            tgl_bayar__gte=first_day_of_month
+            tanggal_bayar__gte=first_day_of_month
         ).aggregate(total=Sum('nominal'))['total'] or 0
         
-        # 2. New TagihanSPP
-        from crm.models import TagihanSPP
+        # 2. New TagihanSPP (Monthly tuition)
         total_tagihan_spp = TagihanSPP.objects.filter(
             tenant=tenant,
             status='LUNAS',
             tanggal_bayar__gte=first_day_of_month
         ).aggregate(total=Sum('jumlah'))['total'] or 0
 
-        total_non_donasi_month = total_tagihan_old + total_tagihan_spp
+        total_non_donasi_month = total_tagihan_program + total_tagihan_spp
         
         # Unpaid Bills
-        unpaid_old = Tagihan.objects.filter(
+        unpaid_program = TagihanProgram.objects.filter(
             tenant=tenant, 
-            status='BELUM'
+            status__in=['BELUM', 'TERLAMBAT']
         ).count()
         
         unpaid_spp = TagihanSPP.objects.filter(
@@ -108,7 +106,7 @@ def dashboard_callback(request, context):
             status__in=['BELUM_LUNAS', 'TERLAMBAT']
         ).count()
         
-        unpaid_bills_count = unpaid_old + unpaid_spp
+        unpaid_bills_count = unpaid_program + unpaid_spp
 
         # Lead Status Distribution
         leads_new = lead_base_qs.filter(status='NEW').count()
@@ -127,17 +125,18 @@ def dashboard_callback(request, context):
             )
         ).order_by('-interest_score', '-created_at')[:5]
 
-        # 2. Overdue SPP (Top 5)
-        # Prioritize TagihanSPP over old Tagihan
-        overdue_tagihan_spp = TagihanSPP.objects.filter(
+        # 2. Overdue Fees (Top 5)
+        # Combine SPP and Program fees
+        overdue_tagihan = TagihanSPP.objects.filter(
             tenant=tenant,
             status='TERLAMBAT'
         ).order_by('jatuh_tempo')[:5]
         
-        overdue_tagihan = overdue_tagihan_spp if overdue_tagihan_spp.exists() else Tagihan.objects.filter(
-            tenant=tenant, 
-            status='BELUM'
-        ).order_by('tgl_buat')[:5]
+        if not overdue_tagihan.exists():
+            overdue_tagihan = TagihanProgram.objects.filter(
+                tenant=tenant, 
+                status='TERLAMBAT'
+            ).order_by('jatuh_tempo')[:5]
 
         # 3. Potential Donors (Top 5 - Insidentil or newest)
         potential_donatur = Donatur.objects.filter(tenant=tenant).order_by('-tgl_bergabung')[:5]
@@ -155,13 +154,13 @@ def dashboard_callback(request, context):
         daily_non_donasi_map = {i: 0 for i in range(1, days_in_month + 1)}
         daily_donasi_map = {i: 0 for i in range(1, days_in_month + 1)}
         
-        # Fetch data - OLD Tagihan
-        non_donasi_query = Tagihan.objects.filter(
+        # Fetch data - TagihanProgram
+        program_query = TagihanProgram.objects.filter(
             tenant=tenant,
             status='LUNAS',
-            tgl_bayar__year=now.year,
-            tgl_bayar__month=now.month
-        ).annotate(day=TruncDate('tgl_bayar')).values('day').annotate(total=Sum('nominal'))
+            tanggal_bayar__year=now.year,
+            tanggal_bayar__month=now.month
+        ).annotate(day=TruncDate('tanggal_bayar')).values('day').annotate(total=Sum('nominal'))
 
         # Fetch data - NEW TagihanSPP
         spp_query = TagihanSPP.objects.filter(
@@ -178,7 +177,7 @@ def dashboard_callback(request, context):
         ).annotate(day=TruncDate('tgl_donasi')).values('day').annotate(total=Sum('nominal'))
 
         # Map to days
-        for entry in non_donasi_query:
+        for entry in program_query:
             if entry['day']:
                 daily_non_donasi_map[entry['day'].day] += float(entry['total'])
         
@@ -254,7 +253,7 @@ def dashboard_callback(request, context):
         groups = {
             "Manajemen Pengelola": ["Tenants", "Users", "Roles", "Pricing Plans", "Tenant Subscriptions"],
             "CRM & Database": ["Leads / Pendaftar", "Data Santri", "Data Donatur", "Master Program"],
-            "Keuangan & Donasi": ["Tagihan SPP", "Metode Pembayaran", "Pembayaran SPP", "Transaksi Donasi"],
+            "Keuangan & Donasi": ["Tagihan SPP", "Tagihan Program", "Metode Pembayaran", "Pembayaran SPP", "Transaksi Donasi"],
             "Integrasi WhatsApp & AI": ["AI Knowledge Base", "WhatsApp Messages", "WhatsApp Auto Replies", "WhatsApp Forms"],
             "Pengaturan & SDM": [
                 "API Settings", "Daftar Pengurus", "Daftar Jabatan", "Daftar Tugas", 

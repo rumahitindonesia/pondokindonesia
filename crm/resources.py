@@ -86,3 +86,28 @@ class TransaksiDonasiResource(BaseTenantResource):
     class Meta:
         model = TransaksiDonasi
         fields = ('donatur', 'program', 'nominal', 'tgl_donasi', 'keterangan')
+
+class TagihanProgramResource(BaseTenantResource):
+    santri = fields.Field(
+        column_name='santri_nis',
+        attribute='santri',
+        widget=ForeignKeyWidget(Santri, 'nis')
+    )
+    program = fields.Field(
+        column_name='program_nama',
+        attribute='program',
+        widget=ForeignKeyWidget(Program, 'nama_program')
+    )
+
+    def __init__(self, request=None, **kwargs):
+        super().__init__(request, **kwargs)
+        tenant = self.get_tenant()
+        if tenant:
+             self.fields['santri'].widget.queryset = Santri.objects.filter(tenant=tenant)
+             self.fields['program'].widget.queryset = Program.objects.filter(tenant=tenant)
+
+    class Meta:
+        from .models import TagihanProgram
+        model = TagihanProgram
+        fields = ('santri', 'program', 'nominal', 'jatuh_tempo', 'status', 'tanggal_bayar', 'catatan')
+        import_id_fields = ('santri', 'program', 'jatuh_tempo')
