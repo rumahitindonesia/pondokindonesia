@@ -44,7 +44,7 @@ def process_ai_reply(message, tenant, sender, sender_name):
         from core.services.ai_service import AIService
         from core.services.starsender import StarSenderService
         
-        ai_response = AIService.get_completion(message, tenant=tenant, sender_name=sender_name)
+        ai_response = AIService.get_completion(message, tenant=tenant, sender_name=sender_name, sender_phone=sender)
         if ai_response:
             StarSenderService.send_message(
                 to=sender,
@@ -253,7 +253,7 @@ def webhook_whatsapp(request, tenant_slug=None):
                     logger.info(f"[STAFF] Message from {internal_user.username} - No command matched, using AI fallback")
                     try:
                         from core.services.ai_service import AIService
-                        ai_response = AIService.get_completion(message, tenant=current_tenant, sender_name=internal_user.username)
+                        ai_response = AIService.get_completion(message, tenant=current_tenant, sender_name=internal_user.username, sender_phone=sender)
                         if ai_response:
                             StarSenderService.send_message(to=sender, body=ai_response, tenant=current_tenant)
                             logger.info(f"[STAFF-AI] Response sent to {internal_user.username}")
@@ -348,7 +348,8 @@ def webhook_whatsapp(request, tenant_slug=None):
                                 greeting_prompt,
                                 tenant=current_tenant,
                                 sender_name=lead_name,
-                                system_prompt=strict_prompt
+                                system_prompt=strict_prompt,
+                                sender_phone=sender
                             )
                             
                             if ai_greeting:
@@ -399,7 +400,7 @@ def webhook_whatsapp(request, tenant_slug=None):
                     # Synchronous AI response (no threading)
                     try:
                         from core.services.ai_service import AIService
-                        ai_response = AIService.get_completion(message, tenant=current_tenant, sender_name=sender_name)
+                        ai_response = AIService.get_completion(message, tenant=current_tenant, sender_name=sender_name, sender_phone=sender)
                         if ai_response:
                             StarSenderService.send_message(to=sender, body=ai_response, tenant=current_tenant)
                             logger.info(f"[AI] Response sent to {sender}")
