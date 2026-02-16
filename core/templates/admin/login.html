@@ -1,0 +1,34 @@
+{% extends 'unfold/templates/admin/login.html' %}
+{% load i18n static unfold %}
+
+{% block login_after %}
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        // Find the password container
+        const passwordField = document.querySelector('input[type="password"]');
+        if (!passwordField) return;
+
+        const container = passwordField.parentElement;
+        container.style.position = 'relative';
+
+        // Create toggle button
+        const toggleBtn = document.createElement('button');
+        toggleBtn.type = 'button';
+        toggleBtn.className = 'absolute right-3 top-1/2 -translate-y-1/2 text-base-400 hover:text-base-600 transition-colors focus:outline-none';
+        toggleBtn.innerHTML = '<span class="material-symbols-outlined block text-lg">visibility</span>';
+        toggleBtn.setAttribute('aria-label', 'Show password');
+
+        // Adjust padding to accommodate the icon
+        passwordField.style.paddingRight = '2.5rem';
+
+        toggleBtn.addEventListener('click', function () {
+            const isPassword = passwordField.type === 'password';
+            passwordField.type = isPassword ? 'text' : 'password';
+            toggleBtn.querySelector('span').textContent = isPassword ? 'visibility_off' : 'visibility';
+            toggleBtn.setAttribute('aria-label', isPassword ? 'Hide password' : 'Show password');
+        });
+
+        container.appendChild(toggleBtn);
+    });
+</script>
+{% endblock %}
