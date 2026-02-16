@@ -91,8 +91,8 @@ class OpenAIEmbeddingProvider(EmbeddingProvider):
         return response.json()['data'][0]['embedding']
 
 class GeminiEmbeddingProvider(EmbeddingProvider):
-    # Try models/embedding-001 or models/text-embedding-004
-    API_URL = "https://generativelanguage.googleapis.com/v1beta/models/embedding-001:embedContent"
+    # Verified model name from ListModels: models/gemini-embedding-001
+    API_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-embedding-001:embedContent"
 
     def get_embedding(self, api_key, text):
         url = f"{self.API_URL}?key={api_key}"
@@ -101,15 +101,7 @@ class GeminiEmbeddingProvider(EmbeddingProvider):
         
         if response.status_code != 200:
             logger.error(f"Gemini Embedding Error Details: {response.text}")
-            # Try fallback model if 404
-            if response.status_code == 404:
-                url_fallback = url.replace("embedding-001", "text-embedding-004")
-                response = requests.post(url_fallback, json=payload, timeout=30)
-                if response.status_code != 200:
-                    logger.error(f"Gemini Fallback Embedding Error Details: {response.text}")
-                    response.raise_for_status()
-            else:
-                response.raise_for_status()
+            response.raise_for_status()
                 
         return response.json()['embedding']['values']
 
