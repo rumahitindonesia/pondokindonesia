@@ -16,6 +16,12 @@ from core.services.starsender import StarSenderService
 class ProgramAdmin(ImportExportMixin, BaseTenantAdmin, ModelAdmin):
     resource_classes = [ProgramResource]
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.change_list_template = "admin/import_export/change_list_custom.html"
+        self.import_template_name = "admin/import_export/import.html"
+        self.export_template_name = "admin/import_export/export.html"
+
     list_display = ('nama_program', 'jenis', 'nominal_standar', 'scope', 'is_active')
     list_filter = ('jenis', 'is_active', 'tenant')
     search_fields = ('nama_program',)
@@ -49,6 +55,12 @@ class TagihanProgramInline(TabularInline):
 class SantriAdmin(ImportExportMixin, BaseTenantAdmin, ModelAdmin):
     resource_classes = [SantriResource]
     inlines = [TagihanSPPInline, TagihanProgramInline]
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.change_list_template = "admin/import_export/change_list_custom.html"
+        self.import_template_name = "admin/import_export/import.html"
+        self.export_template_name = "admin/import_export/export.html"
 
     list_display = ('nis', 'nama_lengkap', 'status', 'nama_wali', 'scope')
     list_filter = ('status', 'tenant')

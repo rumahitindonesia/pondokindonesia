@@ -162,6 +162,13 @@ class AbsensiAdmin(BaseTenantAdmin, ModelAdmin):
 @admin.register(Jabatan)
 class JabatanAdmin(ImportExportMixin, BaseTenantAdmin, ModelAdmin):
     resource_classes = [JabatanResource]
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.change_list_template = "admin/import_export/change_list_custom.html"
+        self.import_template_name = "admin/import_export/import.html"
+        self.export_template_name = "admin/import_export/export.html"
+
     list_display = ['nama', 'atasan', 'tenant']
     search_fields = ['nama']
     list_filter = ['tenant']
@@ -200,6 +207,13 @@ class JadwalKerjaAdmin(BaseTenantAdmin, ModelAdmin):
 @admin.register(Pengurus)
 class PengurusAdmin(ImportExportMixin, BaseTenantAdmin, ModelAdmin):
     resource_classes = [PengurusResource]
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.change_list_template = "admin/import_export/change_list_custom.html"
+        self.import_template_name = "admin/import_export/import.html"
+        self.export_template_name = "admin/import_export/export.html"
+
     list_display = ['nama', 'jabatan', 'user', 'telepon', 'is_active', 'tenant']
     search_fields = ['nama', 'nik', 'telepon']
     list_filter = ['jabatan', 'is_active', 'tenant']
