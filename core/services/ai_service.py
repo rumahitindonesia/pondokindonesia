@@ -194,7 +194,10 @@ class AIService:
         return context
 
     @classmethod
-    def get_system_prompt(cls, tenant=None, query=None):
+    def get_system_prompt(cls, tenant=None, query=None, prompt_key='AI_SYSTEM_PROMPT'):
+        """
+        Retrieves the system prompt, supports specialized keys (e.g., AI_SANTRI_PROMPT).
+        """
         default_prompt = (
             "You are Yasmin, a friendly Admin Virtual of a Pondok Pesantren. "
             "Your task is to help potential registrants (leads) and parents. "
@@ -202,7 +205,7 @@ class AIService:
             "DO NOT repeat the full greeting/salam unless the conversation just started after a long break. "
             "Keep the flow natural, informative and persuasive for closing/registration."
         )
-        base_prompt = cls.get_setting('AI_SYSTEM_PROMPT', tenant) or default_prompt
+        base_prompt = cls.get_setting(prompt_key, tenant) or cls.get_setting('AI_SYSTEM_PROMPT', tenant) or default_prompt
         
         # If no query, we can't do RAG, return base prompt
         if not query:

@@ -103,6 +103,24 @@ def webhook_whatsapp(request, tenant_slug=None):
             c_device = clean_num(device)
             db_sender = c_sender or sender
 
+            # --- CHANNEL DETECTION ---
+            prompt_key = 'AI_SYSTEM_PROMPT'
+            channel_type = Lead.Type.SANTRI
+            
+            cs_santri = clean_num(AIService.get_setting('CS_SANTRI_NUMBER', current_tenant))
+            cs_donatur = clean_num(AIService.get_setting('CS_DONATUR_NUMBER', current_tenant))
+            
+            if c_device and cs_donatur and c_device == cs_donatur:
+                prompt_key = 'AI_DONATUR_PROMPT'
+                channel_type = Lead.Type.DONATUR
+                logger.info("[CHANNEL] Detected: DONATUR")
+            elif c_device and cs_santri and c_device == cs_santri:
+                prompt_key = 'AI_SANTRI_PROMPT'
+                channel_type = Lead.Type.SANTRI
+                logger.info("[CHANNEL] Detected: SANTRI")
+            else:
+                logger.info(f"[CHANNEL] Default: SANTRI (Device: {c_device})")
+
             # --- INITIAL LOG & DEDUPLICATION ---
             # 1. Deduplication - Block exact duplicate within 30s
             from django.utils import timezone
@@ -274,7 +292,7 @@ def webhook_whatsapp(request, tenant_slug=None):
                             phone_number=c_sender,
                             defaults={
                                 'name': lead_name,
-                                'type': form.lead_type,
+                                'type': channel_type if created else lead.type, # Use detected channel for new leads
                                 'data': lead_data,
                                 'status': Lead.Status.NEW
                             }
@@ -317,7 +335,7 @@ def webhook_whatsapp(request, tenant_slug=None):
                                 greeting_prompt,
                                 tenant=current_tenant,
                                 sender_name=lead_name,
-                                system_prompt=strict_prompt,
+                                system_prompt=AIService.get_system_prompt(tenant=current_tenant, query=greeting_prompt, prompt_key=prompt_key),
                                 sender_phone=sender
                             )
                             
@@ -369,7 +387,13 @@ def webhook_whatsapp(request, tenant_slug=None):
                     # Synchronous AI response (no threading)
                     try:
                         from core.services.ai_service import AIService
-                        ai_response = AIService.get_completion(message, tenant=current_tenant, sender_name=sender_name, sender_phone=sender)
+                        ai_response = AIService.get_completion(
+                            message, 
+                            tenant=current_tenant, 
+                            sender_name=sender_name, 
+                            sender_phone=sender,
+                            system_prompt=AIService.get_system_prompt(tenant=current_tenant, query=message, prompt_key=prompt_key)
+                        )
                         if ai_response:
                             StarSenderService.send_message(to=sender, body=ai_response, tenant=current_tenant)
                             logger.info(f"[AI] Response sent to {sender}")
