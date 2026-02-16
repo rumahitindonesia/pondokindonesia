@@ -108,16 +108,38 @@ def webhook_whatsapp(request, tenant_slug=None):
             if is_me:
                 logger.info(f"[is_me=True] Gateway notification received: {message[:100]}")
                 
+                # Check for recursion/loop (Messages we sent as notifications)
+                # 🔔 *Lead Baru Masuk!* (From broadcast)
+                # Lead Baru Terdeteksi! (From LeadWorkflowService)
+                if message.startswith("🔔") or message.startswith("Lead Baru Terdeteksi!"):
+                    logger.info("[is_me=Blocked] Ignoring our own notification to avoid loop.")
+                    return HttpResponse('OK', status=200)
+
                 # Parse lead info from message
-                # Expected format: "Lead Baru Terdeteksi! Nama: John, Phone: 081234567890"
-                import re
-                lead_name_match = re.search(r'Nama:\s*([^,]+)', message)
-                lead_phone_match = re.search(r'Phone:\s*(\d+)', message)
+                # Format A: "🔔 *Lead Baru Masuk!* Nama: John, Phone: 081234567890" (Echo from our broadcast)
+                # Format B: "Lead Baru Terdeteksi! nama#kota#sekolah#phone" (From LeadWorkflowService)
                 
-                if lead_name_match and lead_phone_match:
-                    lead_name = lead_name_match.group(1).strip()
-                    lead_phone = lead_phone_match.group(1).strip()
-                    
+                lead_name = None
+                lead_phone = None
+                
+                if "Lead Baru Terdeteksi!" in message:
+                    # Parse Format B: Lead Baru Terdeteksi!\n\nnama#kota#sekolah#phone
+                    parts = message.split('\n\n')
+                    if len(parts) >= 2:
+                        data_parts = parts[1].split('#')
+                        if len(data_parts) >= 4:
+                            lead_name = data_parts[0].strip()
+                            lead_phone = data_parts[3].strip()
+                
+                if not lead_name or not lead_phone:
+                    # Try Format A (Regex)
+                    lead_name_match = re.search(r'Nama:\s*([^,\n]+)', message)
+                    lead_phone_match = re.search(r'Phone:\s*(\d+)', message)
+                    if lead_name_match and lead_phone_match:
+                        lead_name = lead_name_match.group(1).strip()
+                        lead_phone = lead_phone_match.group(1).strip()
+
+                if lead_name and lead_phone:
                     # Find CS users for this tenant
                     from users.models import User, Role
                     cs_role = Role.objects.filter(tenant=current_tenant, slug='cs').first() if current_tenant else None
@@ -135,7 +157,8 @@ def webhook_whatsapp(request, tenant_slug=None):
                         notification_msg = f"🔔 *Lead Baru Masuk!*\n\nNama: {lead_name}\nPhone: {lead_phone}\n\nSilakan follow up segera."
                         
                         for cs in cs_users:
-                            if cs.phone_number:
+                            # Avoid sending to lead themselves if they are CS (unlikely but safe)
+                            if cs.phone_number and clean_num(cs.phone_number) != lead_phone:
                                 StarSenderService.send_message(
                                     to=cs.phone_number,
                                     body=notification_msg,
@@ -147,7 +170,7 @@ def webhook_whatsapp(request, tenant_slug=None):
                     else:
                         logger.warning(f"CS role not found for tenant: {current_tenant}")
                 else:
-                    logger.warning(f"Could not parse lead info from is_me message: {message}")
+                    logger.warning(f"Could not parse lead info from is_me message: {message[:100]}")
                 
                 return HttpResponse('OK', status=200)
 
@@ -326,41 +349,11 @@ def webhook_whatsapp(request, tenant_slug=None):
                             StarSenderService.send_message(to=sender, body=ai_greeting, tenant=current_tenant)
                             logger.info(f"[GREETING SENT] To lead {lead_name} ({sender})")
                         
-                        # === STEP 3: Send Notification to CS ===
-                        try:
-                            from users.models import User, Role
-                            cs_role = Role.objects.filter(tenant=current_tenant, slug='cs').first() if current_tenant else None
-                            if not cs_role:
-                                cs_role = Role.objects.filter(tenant__isnull=True, slug='cs').first()
-                            
-                            if cs_role:
-                                cs_users = User.all_objects.filter(
-                                    tenant=current_tenant,
-                                    role=cs_role,
-                                    is_active=True
-                                )
-                                
-                                # Build CS notification message
-                                cs_notification = f"🔔 *Lead Baru Masuk!*\n\n"
-                                cs_notification += f"Nama: {lead_name}\n"
-                                cs_notification += f"Phone: {c_sender}\n"
-                                if lead_location:
-                                    cs_notification += f"Asal: {lead_location}\n"
-                                cs_notification += f"\nSilakan follow up segera."
-                                
-                                for cs in cs_users:
-                                    if cs.phone_number:
-                                        StarSenderService.send_message(
-                                            to=cs.phone_number,
-                                            body=cs_notification,
-                                            tenant=current_tenant
-                                        )
-                                        logger.info(f"[CS NOTIF] Sent to {cs.username} ({cs.phone_number})")
-                            else:
-                                logger.warning(f"[CS NOTIF] CS role not found for tenant: {current_tenant}")
-                        
-                        except Exception as e:
-                            logger.error(f"[CS NOTIF] Error: {e}")
+                        # === STEP 3: Handle Notifications ===
+                        # Redundant manual CS notification removed.
+                        # Notification is handled by LeadWorkflowService.assign_to_cs(lead)
+                        # and the is_me block in this webhook (for broadcast to all CS).
+                        pass
                         
                         # Auto-Insert to CRM if configured
                         if form.auto_insert:
