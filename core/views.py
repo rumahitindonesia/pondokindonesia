@@ -87,7 +87,7 @@ def webhook_whatsapp(request, tenant_slug=None):
             data = json.loads(request.body)
             logger.info(f"[WEBHOOK DATA] Parsed successfully: {list(data.keys())}")
             
-            # 2. Basic Extraction & Normalization
+            # 2. Extraction & Normalization
             device = data.get('device', '').strip()
             message = data.get('message', '').strip()
             sender = data.get('from', '').strip()
@@ -96,34 +96,61 @@ def webhook_whatsapp(request, tenant_slug=None):
             
             logger.info(f"[WEBHOOK EXTRACTED] From: {sender}, Device: {device}, Message: {message[:50]}, is_me: {is_me}")
 
-            # Normalize for comparisons
+            # Normalize for comparisons and storage
             import re
             def clean_num(n): return re.sub(r'\D', '', str(n)) if n else ""
             c_sender = clean_num(sender)
             c_device = clean_num(device)
+            db_sender = c_sender or sender
+
+            # --- INITIAL LOG & DEDUPLICATION ---
+            # 1. Deduplication - Block exact duplicate within 30s
+            from django.utils import timezone
+            from datetime import timedelta
+            
+            duplicate_exists = WhatsAppMessage.objects.filter(
+                sender=db_sender, 
+                message=message, 
+                created_at__gte=timezone.now() - timedelta(seconds=30)
+            ).exists()
+            
+            if duplicate_exists:
+                logger.info(f"[DUPLICATE BLOCKED] Same message from {db_sender} within 30s")
+                return HttpResponse('OK', status=200)
+
+            # 2. Log Message (Unified for Inbound & Outbound)
+            try:
+                WhatsAppMessage.objects.create(
+                    tenant=current_tenant,
+                    device=device,
+                    message=message,
+                    sender=db_sender,
+                    sender_name=sender_name,
+                    is_outbound=is_me,
+                    recipient=data.get('to') if is_me else None,
+                    raw_data=data
+                )
+                logger.info(f"Message logged ({'OUT' if is_me else 'IN'}): {db_sender} | {message[:50]}")
+            except Exception as e:
+                logger.error(f"Failed to log message: {e}")
 
             # --- SYSTEM & ECHO FILTERS ---
             
             # 1. Handle is_me flag (Gateway notification about new lead)
+            # 1. Handle is_me flag (Gateway notification / Outbound Echo)
             if is_me:
-                logger.info(f"[is_me=True] Gateway notification received: {message[:100]}")
+                logger.info(f"[is_me=True] Processing outbound message: {message[:100]}")
                 
                 # Check for recursion/loop (Messages we sent as notifications)
-                # 🔔 *Lead Baru Masuk!* (From broadcast)
-                # Lead Baru Terdeteksi! (From LeadWorkflowService)
                 if message.startswith("🔔") or message.startswith("Lead Baru Terdeteksi!"):
-                    logger.info("[is_me=Blocked] Ignoring our own notification to avoid loop.")
+                    logger.info("[is_me=Blocked] Blocking notification loop.")
                     return HttpResponse('OK', status=200)
 
                 # Parse lead info from message
-                # Format A: "🔔 *Lead Baru Masuk!* Nama: John, Phone: 081234567890" (Echo from our broadcast)
-                # Format B: "Lead Baru Terdeteksi! nama#kota#sekolah#phone" (From LeadWorkflowService)
-                
                 lead_name = None
                 lead_phone = None
                 
                 if "Lead Baru Terdeteksi!" in message:
-                    # Parse Format B: Lead Baru Terdeteksi!\n\nnama#kota#sekolah#phone
                     parts = message.split('\n\n')
                     if len(parts) >= 2:
                         data_parts = parts[1].split('#')
@@ -132,7 +159,7 @@ def webhook_whatsapp(request, tenant_slug=None):
                             lead_phone = data_parts[3].strip()
                 
                 if not lead_name or not lead_phone:
-                    # Try Format A (Regex)
+                    # Regex Match
                     lead_name_match = re.search(r'Nama:\s*([^,\n]+)', message)
                     lead_phone_match = re.search(r'Phone:\s*(\d+)', message)
                     if lead_name_match and lead_phone_match:
@@ -140,38 +167,17 @@ def webhook_whatsapp(request, tenant_slug=None):
                         lead_phone = lead_phone_match.group(1).strip()
 
                 if lead_name and lead_phone:
-                    # Find CS users for this tenant
                     from users.models import User, Role
-                    cs_role = Role.objects.filter(tenant=current_tenant, slug='cs').first() if current_tenant else None
-                    if not cs_role:
-                        cs_role = Role.objects.filter(tenant__isnull=True, slug='cs').first()
+                    cs_role = Role.objects.filter(tenant=current_tenant, slug='cs').first() if current_tenant else Role.objects.filter(tenant__isnull=True, slug='cs').first()
                     
                     if cs_role:
-                        cs_users = User.all_objects.filter(
-                            tenant=current_tenant,
-                            role=cs_role,
-                            is_active=True
-                        )
-                        
-                        # Send notification to each CS
+                        cs_users = User.all_objects.filter(tenant=current_tenant, role=cs_role, is_active=True)
                         notification_msg = f"🔔 *Lead Baru Masuk!*\n\nNama: {lead_name}\nPhone: {lead_phone}\n\nSilakan follow up segera."
-                        
                         for cs in cs_users:
-                            # Avoid sending to lead themselves if they are CS (unlikely but safe)
                             if cs.phone_number and clean_num(cs.phone_number) != lead_phone:
-                                StarSenderService.send_message(
-                                    to=cs.phone_number,
-                                    body=notification_msg,
-                                    tenant=current_tenant
-                                )
-                                logger.info(f"CS notification sent to {cs.username} ({cs.phone_number})")
-                        
-                        logger.info(f"CS notification completed for lead: {lead_name} ({lead_phone})")
-                    else:
-                        logger.warning(f"CS role not found for tenant: {current_tenant}")
-                else:
-                    logger.warning(f"Could not parse lead info from is_me message: {message[:100]}")
+                                StarSenderService.send_message(to=cs.phone_number, body=notification_msg, tenant=current_tenant)
                 
+                # Finished with is_me logic
                 return HttpResponse('OK', status=200)
 
             # 2. Block if Sender matches Device (Gateway sending to itself)
@@ -192,45 +198,8 @@ def webhook_whatsapp(request, tenant_slug=None):
             #     logger.debug(f"Blocked: Sender is a known staff/user")
             #     return HttpResponse('OK', status=200)
 
-            # --- INITIAL LOG & DEDUPLICATION ---
-            sender = c_sender or sender # Digits only for storage
-
-            # 1. STRONG Deduplication - Block ALL duplicate messages within 30s
-            # This prevents double insert when StarSender sends webhook twice:
-            # - First: user -> gateway (actual message)
-            # - Second: gateway -> user (echo/confirmation)
-            from django.utils import timezone
-            from datetime import timedelta
-            
-            # Check for exact duplicate (same sender, same message, within 30s)
-            duplicate_exists = WhatsAppMessage.objects.filter(
-                sender=sender, 
-                message=message, 
-                created_at__gte=timezone.now() - timedelta(seconds=30)
-            ).exists()
-            
-            if duplicate_exists:
-                logger.info(f"[DUPLICATE BLOCKED] Same message from {sender} within 30s: {message[:50]}")
-                return HttpResponse('OK', status=200)
-
-            # 2. Log Message ONLY after passing duplicate check
-            try:
-                WhatsAppMessage.objects.create(
-                    tenant=current_tenant,
-                    device=device,
-                    message=message,
-                    sender=sender,
-                    sender_name=sender_name,
-                    is_outbound=is_me,
-                    recipient=data.get('to') if is_me else None,
-                    raw_data=data
-                )
-                logger.info(f"Message logged: {sender} -> {device} | {message[:50]}")
-            except Exception as e:
-                logger.error(f"Failed to log message: {e}")
-            
-            # 4. Identify Sender (Internal User vs External Lead)
-            # Filter for ANY internal user (CS, Admin, etc.) to prevent treating them as leads
+            # Identify Sender
+            sender = db_sender 
             internal_user = User.all_objects.filter(
                 is_active=True, 
                 phone_number__icontains=sender[-10:]
