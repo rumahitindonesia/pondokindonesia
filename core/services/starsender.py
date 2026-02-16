@@ -16,9 +16,13 @@ class StarSenderService:
         Retrieves the StarSender API Key from APISetting.
         Prioritizes tenant-specific key, falls back to global key.
         """
+        # Default key name expected for general usage
+        default_key = 'WHATSAPP_API_KEY'
+
         # Try to find a setting for this tenant (if provided)
         if tenant:
             api_setting = APISetting.objects.filter(
+                key_name=default_key,
                 category=APISetting.Category.WHATSAPP,
                 is_active=True,
                 tenant=tenant
@@ -28,6 +32,7 @@ class StarSenderService:
 
         # Fallback to Global setting (tenant=None) - SaaS Admin's key
         global_setting = APISetting.global_objects.filter(
+            key_name=default_key,
             category=APISetting.Category.WHATSAPP,
             is_active=True,
             tenant__isnull=True
