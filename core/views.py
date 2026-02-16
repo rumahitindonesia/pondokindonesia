@@ -246,7 +246,13 @@ def webhook_whatsapp(request, tenant_slug=None):
                 if staff_msg:
                     StarSenderService.send_message(to=sender, body=staff_msg, tenant=current_tenant)
                     logger.info(f"[STAFF] Response sent to {internal_user.username}")
-                    replied = True
+                else:
+                    # If it's a staff but not a valid command keyword (like LEAD/, CARI, etc.)
+                    # we ignore it and do NOT process as lead.
+                    logger.info(f"[STAFF] Message from {internal_user.username} ignored (not a staff command)")
+                
+                # IMPORTANT: Set replied=True so it doesn't fall through to public lead flow
+                replied = True
             
             if not replied:
                 # 6. EXTERNAL FLOW (Public/Lead)
