@@ -141,10 +141,11 @@ def webhook_whatsapp(request, tenant_slug=None):
                 logger.debug(f"Blocked: Sender matches device (gateway self-message)")
                 return HttpResponse('OK', status=200)
 
-            # 3. Global Tenant Phone Block (Sender is ANY known gateway)
-            if c_sender and Tenant.objects.filter(phone_number__icontains=c_sender[-10:]).exists():
-                logger.debug(f"Blocked: Sender is a known tenant gateway")
-                return HttpResponse('OK', status=200)
+            # 3. Tenant Gateway Phone Block (Sender is the gateway itself)
+            # DISABLED: Allow gateway numbers to also be processed as leads (for testing)
+            # if c_sender and Tenant.objects.filter(phone_number__icontains=c_sender[-10:]).exists():
+            #     logger.debug(f"Blocked: Sender is a known tenant gateway")
+            #     return HttpResponse('OK', status=200)
             
             # 4. Global User Phone Block (Sender is ANY known staff/user)
             # DISABLED: Allow registered users to also be processed as leads
