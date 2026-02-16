@@ -221,6 +221,8 @@ def webhook_whatsapp(request, tenant_slug=None):
                     message=message,
                     sender=sender,
                     sender_name=sender_name,
+                    is_outbound=is_me,
+                    recipient=data.get('to') if is_me else None,
                     raw_data=data
                 )
                 logger.info(f"Message logged: {sender} -> {device} | {message[:50]}")

@@ -63,6 +63,8 @@ class WhatsAppMessage(TenantAwareModel):
     sender = models.CharField(max_length=50, help_text="From Number (Sender)")
     sender_name = models.CharField(max_length=100, blank=True, null=True, help_text="Sender Name (PushName)")
     timestamp = models.CharField(max_length=50, blank=True, null=True, help_text="Original timestamp from payload")
+    is_outbound = models.BooleanField(default=False, help_text="True if message is sent from system/staff to lead")
+    recipient = models.CharField(max_length=50, blank=True, null=True, help_text="Destination Number (for outbound)")
     created_at = models.DateTimeField(auto_now_add=True)
     raw_data = models.JSONField(blank=True, null=True)
 
