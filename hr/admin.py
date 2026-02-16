@@ -1,7 +1,9 @@
 from django.contrib import admin
 from unfold.admin import ModelAdmin
 from core.admin import BaseTenantAdmin
+from import_export.admin import ImportExportMixin
 from .models import Jabatan, Pengurus, Tugas, LokasiKantor, Absensi, PeriodePenilaian, KamusKPI, JenisAmalan, LogAmalan, TargetKPI, RealisasiKPI, Objective, KeyResult, JadwalKerja
+from .resources import JabatanResource, PengurusResource
 
 @admin.register(LokasiKantor)
 class LokasiKantorAdmin(BaseTenantAdmin, ModelAdmin):
@@ -158,7 +160,8 @@ class AbsensiAdmin(BaseTenantAdmin, ModelAdmin):
 
 
 @admin.register(Jabatan)
-class JabatanAdmin(BaseTenantAdmin, ModelAdmin):
+class JabatanAdmin(ImportExportMixin, BaseTenantAdmin, ModelAdmin):
+    resource_classes = [JabatanResource]
     list_display = ['nama', 'atasan', 'tenant']
     search_fields = ['nama']
     list_filter = ['tenant']
@@ -195,7 +198,8 @@ class JadwalKerjaAdmin(BaseTenantAdmin, ModelAdmin):
     working_days_display.short_description = "Hari Kerja"
 
 @admin.register(Pengurus)
-class PengurusAdmin(BaseTenantAdmin, ModelAdmin):
+class PengurusAdmin(ImportExportMixin, BaseTenantAdmin, ModelAdmin):
+    resource_classes = [PengurusResource]
     list_display = ['nama', 'jabatan', 'user', 'telepon', 'is_active', 'tenant']
     search_fields = ['nama', 'nik', 'telepon']
     list_filter = ['jabatan', 'is_active', 'tenant']
