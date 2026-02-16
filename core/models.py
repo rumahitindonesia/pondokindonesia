@@ -94,6 +94,7 @@ class WhatsAppAutoReply(TenantAwareModel):
 class AIKnowledgeBase(TenantAwareModel):
     topic = models.CharField(max_length=200, help_text="Topic e.g., 'Biaya Pendaftaran', 'Jadwal'")
     content = models.TextField(help_text="Detailed information about the topic")
+    embedding = models.JSONField(null=True, blank=True, help_text="Vector representation of the content for semantic search")
     is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
