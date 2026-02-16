@@ -247,9 +247,18 @@ def webhook_whatsapp(request, tenant_slug=None):
                     StarSenderService.send_message(to=sender, body=staff_msg, tenant=current_tenant)
                     logger.info(f"[STAFF] Response sent to {internal_user.username}")
                 else:
-                    # If it's a staff but not a valid command keyword (like LEAD/, CARI, etc.)
-                    # we ignore it and do NOT process as lead.
-                    logger.info(f"[STAFF] Message from {internal_user.username} ignored (not a staff command)")
+                    # If it's a staff but not a valid command keyword, use AI fallback
+                    logger.info(f"[STAFF] Message from {internal_user.username} - No command matched, using AI fallback")
+                    try:
+                        from core.services.ai_service import AIService
+                        ai_response = AIService.get_completion(message, tenant=current_tenant, sender_name=internal_user.username)
+                        if ai_response:
+                            StarSenderService.send_message(to=sender, body=ai_response, tenant=current_tenant)
+                            logger.info(f"[STAFF-AI] Response sent to {internal_user.username}")
+                        else:
+                            logger.warning(f"[STAFF-AI] No response generated for {internal_user.username}")
+                    except Exception as e:
+                        logger.error(f"[STAFF-AI] Error: {e}")
                 
                 # IMPORTANT: Set replied=True so it doesn't fall through to public lead flow
                 replied = True
