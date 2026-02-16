@@ -46,3 +46,30 @@ def can_view_tugas(request):
 
 def can_view_lokasikantor(request):
     return request.user.is_active and (request.user.is_superuser or request.user.has_perm('hr.view_lokasikantor'))
+
+def can_view_absensi(request):
+    return request.user.is_active and (request.user.is_superuser or request.user.has_perm('hr.view_absensi'))
+
+def can_view_jadwalkerja(request):
+    return request.user.is_active and (request.user.is_superuser or request.user.has_perm('hr.view_jadwalkerja'))
+
+def can_view_periodepenilaian(request):
+    return request.user.is_active and (request.user.is_superuser or request.user.has_perm('hr.view_periodepenilaian'))
+
+def can_view_kamuskpi(request):
+    return request.user.is_active and (request.user.is_superuser or request.user.has_perm('hr.view_kamuskpi'))
+
+def can_view_targetkpi(request):
+    return request.user.is_active and (request.user.is_superuser or request.user.has_perm('hr.view_targetkpi'))
+
+def can_view_jenisamalan(request):
+    return request.user.is_active and (request.user.is_superuser or request.user.has_perm('hr.view_jenisamalan'))
+
+def can_view_logamalan(request):
+    return request.user.is_active and (request.user.is_superuser or request.user.has_perm('hr.view_logamalan'))
+
+def can_view_objective(request):
+    return request.user.is_active and (request.user.is_superuser or request.user.has_perm('hr.view_objective'))
+
+def can_view_keyresult(request):
+    return request.user.is_active and (request.user.is_superuser or request.user.has_perm('hr.view_keyresult'))

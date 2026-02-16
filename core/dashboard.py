@@ -252,13 +252,19 @@ def dashboard_callback(request, context):
     # --- Group Models by Sidebar Categories ---
     if 'app_list' in context:
         groups = {
-            "Manajemen Pengelola": ["Tenant", "User", "Role", "Pricing Plan", "Tenant Subscription"],
-            "CRM & Database": ["Lead / Pendaftar", "Data Santri", "Data Donatur", "Master Program"],
+            "Manajemen Pengelola": ["Tenants", "Users", "Roles", "Pricing Plans", "Tenant Subscriptions"],
+            "CRM & Database": ["Leads / Pendaftar", "Data Santri", "Data Donatur", "Master Program"],
             "Keuangan & Donasi": ["Tagihan SPP", "Metode Pembayaran", "Pembayaran SPP", "Transaksi Donasi"],
-            "Integrasi WhatsApp & AI": ["AI Knowledge Base", "WhatsApp Message", "WhatsApp Auto Reply", "WhatsApp Form"],
-            "Pengaturan & SDM": ["API Setting", "Data Pengurus", "Jabatan", "Tugas Staff"],
+            "Integrasi WhatsApp & AI": ["AI Knowledge Base", "WhatsApp Messages", "WhatsApp Auto Replies", "WhatsApp Forms"],
+            "Pengaturan & SDM": [
+                "API Settings", "Daftar Pengurus", "Daftar Jabatan", "Daftar Tugas", 
+                "Jadwal Kerja", "Lokasi Kantor", "Data Absensi", "Log Amalan", 
+                "Target KPI", "Periode Penilaian", "Kamus KPI", "Jenis Amalan",
+                "Objectives", "Key Results"
+            ],
         }
         
+        mapped_model_names = set()
         grouped_apps = []
         all_models = {}
         
@@ -271,13 +277,20 @@ def dashboard_callback(request, context):
             group_models = []
             for name in model_names:
                 if name in all_models:
-                    group_models.append(all_models[name])
+                    group_models.append(all_models.pop(name))
             
             if group_models:
                 grouped_apps.append({
                     "name": group_title,
                     "models": group_models
                 })
+        
+        # Fallback for models not in explicit groups (prevents missing menus)
+        if all_models:
+            grouped_apps.append({
+                "name": "Fitur Lainnya",
+                "models": list(all_models.values())
+            })
         
         context['grouped_apps'] = grouped_apps
 
