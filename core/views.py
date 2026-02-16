@@ -344,7 +344,7 @@ def webhook_whatsapp(request, tenant_slug=None):
                                 greeting_prompt,
                                 tenant=current_tenant,
                                 sender_name=lead_name,
-                                system_prompt=AIService.get_system_prompt(tenant=current_tenant, query=greeting_prompt, prompt_key=prompt_key),
+                                system_prompt=AIService.get_system_prompt(tenant=current_tenant, query=greeting_prompt, prompt_key=prompt_key) + "\n\n" + strict_prompt,
                                 sender_phone=sender
                             )
                             
