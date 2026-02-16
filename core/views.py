@@ -396,6 +396,7 @@ def webhook_whatsapp(request, tenant_slug=None):
                     
                     # Synchronous AI response (no threading)
                     try:
+                        from core.services.ai_service import AIService
                         ai_response = AIService.get_completion(message, tenant=current_tenant, sender_name=sender_name)
                         if ai_response:
                             StarSenderService.send_message(to=sender, body=ai_response, tenant=current_tenant)
