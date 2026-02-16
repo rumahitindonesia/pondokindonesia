@@ -6,6 +6,8 @@
 <style>
     :root { font-family: 'Plus Jakarta Sans', sans-serif; }
     .futuristic-title { font-family: 'Plus Jakarta Sans', sans-serif; letter-spacing: -0.02em; }
+    /* Override unfold default field margin/padding if needed for tighter look */
+    .unfold-field { margin-bottom: 0 !important; }
 </style>
 {% endblock %}
 {% block bodyclass %}bg-slate-50 dark:bg-slate-900{% endblock %}
@@ -39,13 +41,11 @@
             {% endif %}
             <form action="{{ app_path }}" method="post" id="login-form" class="space-y-6">
                 {% csrf_token %}
-                <div class="space-y-5">
+                <div class="space-y-1">
                     <div class="group">
-                        <label class="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2 ml-1">Username</label>
                         {% include "unfold/helpers/field.html" with field=form.username %}
                     </div>
                     <div class="relative group">
-                        <label class="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2 ml-1">Password</label>
                         {% include "unfold/helpers/field.html" with field=form.password %}
                     </div>
                 </div>
