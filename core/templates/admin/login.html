@@ -1,5 +1,4 @@
 {% extends 'unfold/layouts/unauthenticated.html' %}
-
 {% load i18n static unfold %}
 
 {% block extrastyle %}
@@ -20,7 +19,6 @@ subtitle=_('Welcome back to') %}
 {% if form.errors or form.non_field_errors %}
 <div class="flex flex-col gap-4 mb-8 *:mb-0">
     {% include "unfold/helpers/messages/errornote.html" with errors=form.errors %}
-
     {% include "unfold/helpers/messages/error.html" with errors=form.non_field_errors %}
 
     {% if user.is_authenticated %}
@@ -28,7 +26,6 @@ subtitle=_('Welcome back to') %}
     You are authenticated as {{ username }}, but are not authorized to
     access this page. Would you like to login to a different account?
     {% endblocktranslate %}
-
     {% include "unfold/helpers/messages/error.html" with error=message %}
     {% endif %}
 </div>
@@ -40,7 +37,6 @@ subtitle=_('Welcome back to') %}
     {% csrf_token %}
 
     {% include "unfold/helpers/field.html" with field=form.username %}
-
     {% include "unfold/helpers/field.html" with field=form.password %}
 
     <div class="flex flex-col gap-3 mt-6">
@@ -64,21 +60,18 @@ subtitle=_('Welcome back to') %}
 {% block login_after %}
 <script>
     document.addEventListener('DOMContentLoaded', function () {
-        // Find the password container
         const passwordField = document.querySelector('input[type="password"]');
         if (!passwordField) return;
 
         const container = passwordField.parentElement;
         container.style.position = 'relative';
 
-        // Create toggle button
         const toggleBtn = document.createElement('button');
         toggleBtn.type = 'button';
         toggleBtn.className = 'absolute right-3 top-1/2 -translate-y-1/2 text-base-400 hover:text-base-600 transition-colors focus:outline-none';
         toggleBtn.innerHTML = '<span class="material-symbols-outlined block text-lg">visibility</span>';
         toggleBtn.setAttribute('aria-label', 'Show password');
 
-        // Adjust padding to accommodate the icon
         passwordField.style.paddingRight = '2.5rem';
 
         toggleBtn.addEventListener('click', function () {
