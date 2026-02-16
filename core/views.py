@@ -293,16 +293,21 @@ def webhook_whatsapp(request, tenant_slug=None):
                         
                         # Create or Update Lead
                         # Use clean_num to ensure 6281 and 081 are the same Lead entry
-                        lead, created = Lead.objects.update_or_create(
+                        lead, created = Lead.objects.get_or_create(
                             tenant=current_tenant,
                             phone_number=c_sender,
                             defaults={
                                 'name': lead_name,
-                                'type': channel_type if created else lead.type, # Use detected channel for new leads
+                                'type': channel_type,
                                 'data': lead_data,
                                 'status': Lead.Status.NEW
                             }
                         )
+                        if not created:
+                            lead.name = lead_name
+                            lead.data = lead_data
+                            lead.status = Lead.Status.NEW
+                            lead.save()
                         logger.info(f"[LEAD] {'Created' if created else 'Updated'} lead: {lead_name} ({c_sender})")
                         
                         # Auto-Assign CS
