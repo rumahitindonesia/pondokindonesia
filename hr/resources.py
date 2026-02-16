@@ -46,5 +46,5 @@ class PengurusResource(BaseTenantResource):
 
     class Meta:
         model = Pengurus
-        fields = ('id', 'nama', 'nik', 'jabatan', 'telepon', 'alamat', 'is_active')
+        fields = ('id', 'nama', 'nik', 'jabatan', 'user', 'telepon', 'alamat', 'is_active')
         import_id_fields = ('id',)
