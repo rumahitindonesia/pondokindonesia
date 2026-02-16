@@ -108,6 +108,33 @@ class AIKnowledgeBase(TenantAwareModel):
         scope = "Global" if not self.tenant else f"Tenant: {self.tenant}"
         return f"{self.topic} ({scope})"
 
+    def save(self, *args, **kwargs):
+        # Generate embedding if content changed or missing
+        # We check content/topic change by comparing with DB if needed, 
+        # but for simplicity/reliability we'll re-generate if no embedding or if forced.
+        # To avoid circular imports, import AIService here
+        from core.services.ai_service import AIService
+        
+        # Check if we need to update embedding
+        # (A more advanced check would compare old content, but this suffices for now)
+        is_new = self.pk is None
+        old_content = ""
+        if not is_new:
+            try:
+                old_instance = AIKnowledgeBase.objects.get(pk=self.pk)
+                old_content = f"{old_instance.topic}\n{old_instance.content}"
+            except AIKnowledgeBase.DoesNotExist:
+                pass
+        
+        new_content = f"{self.topic}\n{self.content}"
+        
+        if is_new or old_content != new_content or not self.embedding:
+            emb = AIService.generate_embedding(new_content, tenant=self.tenant)
+            if emb:
+                self.embedding = emb
+                
+        super().save(*args, **kwargs)
+
 class Lead(TenantAwareModel):
     class Type(models.TextChoices):
         SANTRI = 'SANTRI', 'Calon Santri'
