@@ -61,6 +61,7 @@ def webhook_whatsapp(request, tenant_slug=None):
     URL: /webhook/whatsapp/ or /webhook/whatsapp/<tenant_slug>/
     """
     # 0. RESOLVE SPECIFIC TENANT (Initialize early to avoid UnboundLocalError)
+    from core.services.ai_service import AIService
     current_tenant = None
     if tenant_slug:
         current_tenant = Tenant.objects.filter(subdomain=tenant_slug).first()
@@ -245,7 +246,6 @@ def webhook_whatsapp(request, tenant_slug=None):
                     # If it's a staff but not a valid command keyword, use AI fallback
                     logger.info(f"[STAFF] Message from {internal_user.username} - No command matched, using AI fallback")
                     try:
-                        from core.services.ai_service import AIService
                         ai_response = AIService.get_completion(message, tenant=current_tenant, sender_name=internal_user.username, sender_phone=sender)
                         if ai_response:
                             StarSenderService.send_message(to=sender, body=ai_response, tenant=current_tenant, api_key_override=active_api_key)
@@ -312,8 +312,6 @@ def webhook_whatsapp(request, tenant_slug=None):
                         # === STEP 1: Generate AI Greeting for Lead ===
                         ai_greeting = None
                         try:
-                            from core.services.ai_service import AIService
-                            
                             # Build context for AI
                             greeting_context = f"Nama: {lead_name}"
                             if lead_location:
@@ -392,7 +390,6 @@ def webhook_whatsapp(request, tenant_slug=None):
                     
                     # Synchronous AI response (no threading)
                     try:
-                        from core.services.ai_service import AIService
                         ai_response = AIService.get_completion(
                             message, 
                             tenant=current_tenant, 
