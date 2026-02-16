@@ -6,7 +6,7 @@
     {% include "unfold/helpers/unauthenticated_title.html" with title=site_title|default:_('Django site admin') subtitle=_('Welcome back to') %}
     {% include "unfold/helpers/messages.html" %}
     {% if form.errors or form.non_field_errors %}
-        <div class="flex flex-col gap-4 mb-8 *:mb-0">
+        <div class="flex flex-col gap-4 mb-8">
             {% include "unfold/helpers/messages/errornote.html" with errors=form.errors %}
             {% include "unfold/helpers/messages/error.html" with errors=form.non_field_errors %}
             {% if user.is_authenticated %}
@@ -21,39 +21,45 @@
         {% include "unfold/helpers/field.html" with field=form.username %}
         {% include "unfold/helpers/field.html" with field=form.password %}
         <div class="flex flex-col gap-3 mt-6">
-            {% component "unfold/components/button.html" with submit=1 variant="primary" class="submit-row w-full" %}
-                {% translate 'Log in' %} <span class="material-symbols-outlined relative right-0 transition-all group-hover:-right-1 text-sm">arrow_forward</span>
-            {% endcomponent %}
+            {% component "unfold/components/button.html" with submit=1 variant="primary" class="submit-row w-full" %}{% translate 'Log in' %} <span class="material-symbols-outlined relative right-0 transition-all group-hover:-right-1 text-sm">arrow_forward</span>{% endcomponent %}
             {% url 'admin_password_reset' as password_reset_url %}
             {% url 'admin:admin_password_reset' as unfold_password_reset_url %}
             {% if password_reset_url or unfold_password_reset_url %}
-                {% component "unfold/components/button.html" with href=password_reset_url|default:unfold_password_reset_url variant="secondary" class="password-reset-link w-full" %}
-                    {% translate 'Forgotten your password or username?' %}
-                {% endcomponent %}
+                {% component "unfold/components/button.html" with href=password_reset_url|default:unfold_password_reset_url variant="secondary" class="password-reset-link w-full" %}{% translate 'Forgotten your password or username?' %}{% endcomponent %}
             {% endif %}
         </div>
     </form>
     {% block login_after %}
     <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            const passwordField = document.querySelector('input[type="password"]');
-            if (!passwordField) return;
-            const container = passwordField.parentElement;
-            container.style.position = 'relative';
-            const toggleBtn = document.createElement('button');
-            toggleBtn.type = 'button';
-            toggleBtn.className = 'absolute right-3 top-1/2 -translate-y-1/2 text-base-400 hover:text-base-600 transition-colors focus:outline-none';
-            toggleBtn.innerHTML = '<span class="material-symbols-outlined block text-lg">visibility</span>';
-            toggleBtn.setAttribute('aria-label', 'Show password');
-            passwordField.style.paddingRight = '2.5rem';
-            toggleBtn.addEventListener('click', function() {
-                const isPassword = passwordField.type === 'password';
-                passwordField.type = isPassword ? 'text' : 'password';
-                toggleBtn.querySelector('span').textContent = isPassword ? 'visibility_off' : 'visibility';
-                toggleBtn.setAttribute('aria-label', isPassword ? 'Hide password' : 'Show password');
-            });
-            container.appendChild(toggleBtn);
-        });
+        (function() {
+            function setupToggle() {
+                const pwd = document.querySelector('input[type="password"]');
+                if (!pwd) return;
+                if (pwd.dataset.toggleActive) return;
+                const parent = pwd.parentElement;
+                parent.style.position = 'relative';
+                const btn = document.createElement('button');
+                btn.type = 'button';
+                btn.className = 'absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 focus:outline-none z-10';
+                btn.innerHTML = '<span class="material-symbols-outlined" style="font-size: 20px; vertical-align: middle;">visibility</span>';
+                btn.setAttribute('aria-label', 'Show password');
+                pwd.style.paddingRight = '45px';
+                pwd.dataset.toggleActive = "true";
+                btn.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    const isPwd = pwd.type === 'password';
+                    pwd.type = isPwd ? 'text' : 'password';
+                    btn.innerHTML = `<span class="material-symbols-outlined" style="font-size: 20px; vertical-align: middle;">${isPwd ? 'visibility_off' : 'visibility'}</span>`;
+                    btn.setAttribute('aria-label', isPwd ? 'Hide password' : 'Show password');
+                });
+                parent.appendChild(btn);
+            }
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', setupToggle);
+            } else {
+                setupToggle();
+            }
+        })();
     </script>
     {% endblock %}
 {% endblock %}
