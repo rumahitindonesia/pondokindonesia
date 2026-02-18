@@ -151,18 +151,18 @@ def dashboard_callback(request, context):
             
         total_santri_month = Santri.objects.filter(
             tenant=tenant,
-            created_at__gte=first_day_of_month
+            tgl_masuk__gte=first_day_of_month
         ).count()
         
-        # Calculate Progress
-        donasi_progress = (total_donasi_month / target_donasi * 100) if target_donasi > 0 else 0
-        santri_progress = (total_santri_month / target_santri * 100) if target_santri > 0 else 0
-
         total_donasi_month = TransaksiDonasi.objects.filter(
             tenant=tenant, 
             status=TransaksiDonasi.Status.VERIFIED,  # Only count verified donations
             tgl_donasi__gte=first_day_of_month
         ).aggregate(total=Sum('nominal'))['total'] or 0
+        
+        # Calculate Progress
+        donasi_progress = (total_donasi_month / target_donasi * 100) if target_donasi > 0 else 0
+        santri_progress = (total_santri_month / target_santri * 100) if target_santri > 0 else 0
 
         # 1. New TagihanProgram (Registration, Program fees, etc)
         total_tagihan_program = TagihanProgram.objects.filter(
