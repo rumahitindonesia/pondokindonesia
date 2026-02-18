@@ -39,7 +39,7 @@ def create_or_update_user_for_santri(sender, instance, created, **kwargs):
         return
     
     try:
-        user, user_created = User.objects.get_or_create(
+        user, user_created = User.all_objects.get_or_create(
             phone_number=phone_normalized,
             defaults={
                 'username': f'wali_{phone_normalized}',
@@ -83,7 +83,7 @@ def create_or_update_user_for_donatur(sender, instance, created, **kwargs):
         return
     
     try:
-        user, user_created = User.objects.get_or_create(
+        user, user_created = User.all_objects.get_or_create(
             phone_number=phone_normalized,
             defaults={
                 'username': f'donatur_{phone_normalized}',
@@ -127,7 +127,7 @@ def create_or_update_user_for_lead(sender, instance, created, **kwargs):
         return
     
     try:
-        user, user_created = User.objects.get_or_create(
+        user, user_created = User.all_objects.get_or_create(
             phone_number=phone_normalized,
             defaults={
                 'username': f'lead_{phone_normalized}',

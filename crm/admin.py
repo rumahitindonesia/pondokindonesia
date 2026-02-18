@@ -9,6 +9,7 @@ from core.services.ipaymu import IPaymuService
 from core.services.subscription import SubscriptionService
 from core.admin import BaseTenantAdmin
 from .resources import SantriResource, DonaturResource, ProgramResource, TransaksiDonasiResource, TagihanSPPResource, TagihanProgramResource
+from .admin_actions import generate_ipaymu_link, send_invoice_whatsapp
 
 from core.services.starsender import StarSenderService
 
@@ -41,15 +42,15 @@ class TagihanSPPInline(TabularInline):
     model = TagihanSPP
     tab = True
     extra = 0
-    fields = ('bulan_display', 'program', 'jumlah_display', 'jatuh_tempo', 'status', 'tanggal_bayar')
-    readonly_fields = ('bulan_display', 'jumlah_display', 'created_at')
+    fields = ('bulan', 'program', 'jumlah', 'jatuh_tempo', 'status', 'tanggal_bayar')
+    readonly_fields = ('created_at',)
 
 class TagihanProgramInline(TabularInline):
     model = TagihanProgram
     tab = True
     extra = 0
-    fields = ('program', 'nominal_display', 'jatuh_tempo', 'status', 'tanggal_bayar')
-    readonly_fields = ('nominal_display', 'created_at')
+    fields = ('program', 'nominal', 'jatuh_tempo', 'status', 'tanggal_bayar')
+    readonly_fields = ('created_at',)
 
 @admin.register(Santri)
 class SantriAdmin(ImportExportMixin, BaseTenantAdmin, ModelAdmin):
@@ -62,8 +63,8 @@ class SantriAdmin(ImportExportMixin, BaseTenantAdmin, ModelAdmin):
         self.import_template_name = "admin/import_export/import.html"
         self.export_template_name = "admin/import_export/export.html"
 
-    list_display = ('nis', 'nama_lengkap', 'status', 'nama_wali', 'scope')
-    list_filter = ('status', 'tenant')
+    list_display = ('nis', 'nama_lengkap', 'status', 'status_seleksi', 'nama_wali', 'scope')
+    list_filter = ('status', 'status_seleksi', 'tenant')
     search_fields = ('nis', 'nama_lengkap', 'nama_wali', 'no_hp_wali')
 
     def get_import_resource_kwargs(self, request, *args, **kwargs):
@@ -229,6 +230,8 @@ class TagihanSPPAdmin(ImportExportMixin, BaseTenantAdmin, ModelAdmin):
     search_fields = ['santri__nama_lengkap', 'santri__nis']
     date_hierarchy = 'bulan'
 
+    actions = [generate_ipaymu_link, send_invoice_whatsapp]
+
 @admin.register(TagihanProgram)
 class TagihanProgramAdmin(ImportExportMixin, BaseTenantAdmin, ModelAdmin):
     resource_classes = [TagihanProgramResource]
@@ -253,6 +256,8 @@ class TagihanProgramAdmin(ImportExportMixin, BaseTenantAdmin, ModelAdmin):
     )
     
     search_fields = ['santri__nama_lengkap', 'program__nama_program']
+
+    actions = [generate_ipaymu_link, send_invoice_whatsapp]
 
 @admin.register(PaymentMethodSetting)
 class PaymentMethodSettingAdmin(BaseTenantAdmin, ModelAdmin):

@@ -1,0 +1,546 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="id">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MUSAFA - Bersama Cetak Generasi Qur'ani | Pondok IT</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+        }
+
+        h1,
+        h2,
+        h3,
+        h4,
+        h5,
+        h6 {
+            font-family: 'Outfit', sans-serif;
+        }
+
+        .clip-hero {
+            clip-path: polygon(0 0, 100% 0, 100% 85%, 0 100%);
+        }
+
+        .gradient-text {
+            background: linear-gradient(135deg, #059669 0%, #10b981 100%);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .pattern-bg {
+            background-color: #f0fdf4;
+            background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%2310b981' fill-opacity='0.05'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+        }
+
+        .card-hover {
+            transition: all 0.3s ease;
+        }
+
+        .card-hover:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+        }
+    </style>
+</head>
+
+<body class="bg-gray-50 text-gray-800 antialiased">
+
+    <!-- Navbar -->
+    <nav class="fixed w-full z-50 bg-white/90 backdrop-blur-md shadow-sm transition-all duration-300" id="navbar">
+        <div class="container mx-auto px-6 py-4 flex justify-between items-center">
+            <a href="#" class="text-2xl font-bold text-emerald-700 flex items-center gap-2">
+                <i class="fa-solid fa-quran"></i> MUSAFA
+            </a>
+            <div class="hidden md:flex gap-8 font-medium text-gray-600">
+                <a href="#about" class="hover:text-emerald-600 transition">Tentang</a>
+                <a href="#prosedur" class="hover:text-emerald-600 transition">Keunggulan</a>
+                <a href="#paket" class="hover:text-emerald-600 transition">Pilihan Wakaf</a>
+                <a href="#alur" class="hover:text-emerald-600 transition">Alur & Laporan</a>
+            </div>
+            <a href="#donasi"
+                class="hidden md:inline-block px-6 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-full font-medium transition shadow-lg shadow-emerald-200">
+                Wakaf Sekarang
+            </a>
+            <!-- Mobile Menu Button -->
+            <button class="md:hidden text-gray-600 font-bold"
+                onclick="document.getElementById('mobile-menu').classList.toggle('hidden')">
+                <i class="fa-solid fa-bars text-xl"></i>
+            </button>
+        </div>
+        <!-- Mobile Menu -->
+        <div id="mobile-menu" class="hidden bg-white border-t md:hidden">
+            <div class="flex flex-col p-4 gap-4">
+                <a href="#about" class="text-gray-600">Tentang</a>
+                <a href="#paket" class="text-gray-600">Pilihan Wakaf</a>
+                <a href="#donasi" class="text-emerald-600 font-bold">Wakaf Sekarang</a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <header class="relative pt-32 pb-20 lg:pt-48 lg:pb-32 overflow-hidden bg-emerald-900 clip-hero">
+        <div
+            class="absolute inset-0 opacity-20 bg-[url('https://images.unsplash.com/photo-1609599006353-e629aaabfeae?q=80&w=2070&auto=format&fit=crop')] bg-cover bg-center mix-blend-overlay">
+        </div>
+        <div class="absolute inset-0 bg-gradient-to-br from-emerald-900 via-teal-900 to-green-900 opacity-90"></div>
+
+        <div class="container mx-auto px-6 relative z-10 text-center text-white">
+            <span
+                class="inline-block py-1 px-3 rounded-full bg-emerald-800/50 border border-emerald-400/30 text-emerald-300 text-sm font-semibold mb-6 tracking-wide animate-fade-in-up">
+                ✨ Mushaf untuk Santri Penghafal Al-Qur’an
+            </span>
+            <h1 class="text-4xl md:text-6xl lg:text-7xl font-bold mb-6 leading-tight">
+                Satu Mushaf, <br>
+                <span class="text-transparent bg-clip-text bg-gradient-to-r from-emerald-200 to-teal-100">Sejuta Pahala
+                    Abadi</span>
+            </h1>
+            <p class="text-lg md:text-xl text-emerald-100 max-w-2xl mx-auto mb-10 font-light leading-relaxed">
+                Wujudkan amal jariyah dengan mewakafkan Al-Qur'an untuk santri penghafal, pondok pesantren, dan
+                masyarakat pelosok yang membutuhkan.
+            </p>
+            <div class="flex flex-col sm:flex-row gap-4 justify-center">
+                <a href="#donasi"
+                    class="px-8 py-4 bg-white text-emerald-800 rounded-full font-bold shadow-xl hover:bg-gray-100 transform hover:scale-105 transition duration-300 flex items-center justify-center gap-2">
+                    <i class="fa-solid fa-hand-holding-heart"></i> Wakaf Sekarang
+                </a>
+                <a href="#about"
+                    class="px-8 py-4 bg-transparent border-2 border-emerald-400/50 text-emerald-100 rounded-full font-semibold hover:bg-emerald-800/50 transition flex items-center justify-center gap-2">
+                    <i class="fa-regular fa-circle-play"></i> Pelajari Program
+                </a>
+            </div>
+        </div>
+    </header>
+
+    <!-- About / Big Why Section -->
+    <section id="about" class="py-20 bg-white">
+        <div class="container mx-auto px-6">
+            <div class="grid md:grid-cols-2 gap-12 items-center">
+                <div class="relative">
+                    <div class="absolute -top-4 -left-4 w-24 h-24 bg-emerald-100 rounded-full opacity-50 blur-xl"></div>
+                    <img src="{% static 'core/img/musafa_santri.jpg' %}" alt="Santri Mengaji"
+                        class="rounded-2xl shadow-2xl relative z-10 w-full object-cover h-[500px]">
+                    <div
+                        class="absolute -bottom-6 -right-6 bg-white p-6 rounded-xl shadow-lg z-20 max-w-xs border-l-4 border-emerald-500">
+                        <p class="text-gray-600 italic text-sm">
+                            "Setiap huruf yang dibaca santri adalah aliran pahala tanpa henti bagi pewakafnya."
+                        </p>
+                    </div>
+                </div>
+                <div>
+                    <h2 class="text-3xl md:text-4xl font-bold mb-6 text-gray-900">
+                        Mengapa Program <span class="text-emerald-600">MUSAFA</span> Ada?
+                    </h2>
+                    <div class="space-y-6 text-gray-600 leading-relaxed">
+                        <p class="flex gap-4">
+                            <span
+                                class="flex-shrink-0 w-10 h-10 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-600 font-bold">1</span>
+                            <span>
+                                <strong>Pusat Peradaban.</strong> Al-Qur'an adalah sumber segala kebaikan. Santri Pondok
+                                IT disiapkan menjadi generasi Qur'ani yang melek teknologi.
+                            </span>
+                        </p>
+                        <p class="flex gap-4">
+                            <span
+                                class="flex-shrink-0 w-10 h-10 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-600 font-bold">2</span>
+                            <span>
+                                <strong>Investasi Abadi.</strong> Bayangkan satu mushaf dibaca setiap hari oleh
+                                penghafal Qur'an. Pahalanya mengalir deras meski kita sedang tidur atau kelak tiada.
+                            </span>
+                        </p>
+                        <p class="flex gap-4">
+                            <span
+                                class="flex-shrink-0 w-10 h-10 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-600 font-bold">3</span>
+                            <span>
+                                <strong>Solusi Konkret.</strong> Banyak santri berjuang dengan keterbatasan mushaf
+                                layak. MUSAFA hadir sebagai jembatan amanah Anda.
+                            </span>
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Keunggulan Section -->
+    <section id="prosedur" class="py-20 pattern-bg">
+        <div class="container mx-auto px-6">
+            <div class="text-center max-w-2xl mx-auto mb-16">
+                <span class="text-emerald-600 font-semibold tracking-wide uppercase text-sm">Kenapa Harus MUSAFA?</span>
+                <h2 class="text-3xl md:text-4xl font-bold mt-2 mb-4">Keunggulan Program Kami</h2>
+                <div class="w-20 h-1 bg-emerald-500 mx-auto rounded-full"></div>
+            </div>
+
+            <div class="grid md:grid-cols-3 gap-8">
+                <!-- Card 1 -->
+                <div class="bg-white p-8 rounded-2xl shadow-sm border border-gray-100 card-hover">
+                    <div
+                        class="w-14 h-14 bg-emerald-50 rounded-xl flex items-center justify-center text-emerald-600 text-2xl mb-6">
+                        <i class="fa-solid fa-bullseye"></i>
+                    </div>
+                    <h3 class="text-xl font-bold mb-3">Tepat Sasaran</h3>
+                    <p class="text-gray-600 text-sm leading-relaxed">Mushaf disalurkan langsung ke penerima
+                        terverifikasi: Santri, Pesantren, Masjid, dan pelosok.</p>
+                </div>
+                <!-- Card 2 -->
+                <div class="bg-white p-8 rounded-2xl shadow-sm border border-gray-100 card-hover">
+                    <div
+                        class="w-14 h-14 bg-emerald-50 rounded-xl flex items-center justify-center text-emerald-600 text-2xl mb-6">
+                        <i class="fa-solid fa-file-invoice"></i>
+                    </div>
+                    <h3 class="text-xl font-bold mb-3">Transparan</h3>
+                    <p class="text-gray-600 text-sm leading-relaxed">Laporan penyaluran lengkap dengan foto/video lokasi
+                        distribusi di media sosial & website.</p>
+                </div>
+                <!-- Card 3 -->
+                <div class="bg-white p-8 rounded-2xl shadow-sm border border-gray-100 card-hover">
+                    <div
+                        class="w-14 h-14 bg-emerald-50 rounded-xl flex items-center justify-center text-emerald-600 text-2xl mb-6">
+                        <i class="fa-solid fa-heart"></i>
+                    </div>
+                    <h3 class="text-xl font-bold mb-3">Bisa Atas Nama</h3>
+                    <p class="text-gray-600 text-sm leading-relaxed">Wewakafkan atas nama Orang Tua, Pasangan, atau Diri
+                        Sendiri sebagai hadiah terbaik.</p>
+                </div>
+                <!-- Card 4 -->
+                <div class="bg-white p-8 rounded-2xl shadow-sm border border-gray-100 card-hover">
+                    <div
+                        class="w-14 h-14 bg-emerald-50 rounded-xl flex items-center justify-center text-emerald-600 text-2xl mb-6">
+                        <i class="fa-solid fa-hands-praying"></i>
+                    </div>
+                    <h3 class="text-xl font-bold mb-3">Disertai Doa</h3>
+                    <p class="text-gray-600 text-sm leading-relaxed">Setiap mushaf berlabel nama donatur & didoakan
+                        khusus oleh para santri penerima.</p>
+                </div>
+                <!-- Card 5 -->
+                <div
+                    class="bg-white p-8 rounded-2xl shadow-sm border border-gray-100 card-hover col-span-1 md:col-span-2 relative overflow-hidden group">
+                    <div
+                        class="absolute right-0 top-0 w-32 h-32 bg-emerald-50 rounded-bl-full -mr-8 -mt-8 transition group-hover:scale-110">
+                    </div>
+                    <div class="relative z-10">
+                        <div
+                            class="w-14 h-14 bg-emerald-600 rounded-xl flex items-center justify-center text-white text-2xl mb-6 shadow-lg shadow-emerald-200">
+                            <i class="fa-solid fa-hand-holding-dollar"></i>
+                        </div>
+                        <h3 class="text-xl font-bold mb-3">Terjangkau & Berdampak</h3>
+                        <p class="text-gray-600 text-sm leading-relaxed">Cukup <strong>Rp100.000</strong>, Anda sudah
+                            menghadirkan satu mushaf baru untuk generasi Qur'ani masa depan.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Packages Section -->
+    <section id="paket" class="py-24 bg-emerald-900 text-white relative overflow-hidden">
+        <!-- Background Ornaments -->
+        <div
+            class="absolute top-0 left-0 w-64 h-64 bg-emerald-800 rounded-full blur-3xl opacity-30 -translate-x-1/2 -translate-y-1/2">
+        </div>
+        <div
+            class="absolute bottom-0 right-0 w-96 h-96 bg-teal-800 rounded-full blur-3xl opacity-30 translate-x-1/3 translate-y-1/3">
+        </div>
+
+        <div class="container mx-auto px-6 relative z-10">
+            <div class="text-center max-w-3xl mx-auto mb-16">
+                <h2 class="text-3xl md:text-5xl font-bold mb-6">Pilihan Paket Wakaf</h2>
+                <p class="text-emerald-100 text-lg">Pilih paket terbaik untuk tabungan akhirat Anda dan keluarga
+                    tercinta.</p>
+            </div>
+
+            <div class="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+                <!-- Paket 1 -->
+                <div class="bg-white/10 backdrop-blur-sm border border-white/10 rounded-2xl p-6 hover:bg-white/20 transition cursor-pointer"
+                    onclick="selectPackage(100000, 'Wakaf 1 Mushaf')">
+                    <div class="text-emerald-300 text-4xl mb-4"><i class="fa-solid fa-book-quran"></i></div>
+                    <h3 class="text-xl font-bold mb-2">1 Mushaf</h3>
+                    <div class="text-3xl font-bold mb-4">Rp 100rb</div>
+                    <p class="text-sm text-emerald-100 mb-6">Pahala untuk 1 Santri / Jamaah.</p>
+                    <button
+                        class="w-full py-3 bg-emerald-500 hover:bg-emerald-400 rounded-xl font-semibold transition">Pilih
+                        Ini</button>
+                </div>
+
+                <!-- Paket 2 -->
+                <div class="bg-white/10 backdrop-blur-sm border border-white/10 rounded-2xl p-6 hover:bg-white/20 transition cursor-pointer"
+                    onclick="selectPackage(500000, 'Wakaf Keluarga (5 Mushaf)')">
+                    <div class="text-emerald-300 text-4xl mb-4"><i class="fa-solid fa-users"></i></div>
+                    <h3 class="text-xl font-bold mb-2">Wakaf Keluarga</h3>
+                    <div class="text-3xl font-bold mb-4">Rp 500rb</div>
+                    <p class="text-sm text-emerald-100 mb-6">5 Mushaf atas nama Kelurga.</p>
+                    <div
+                        class="absolute top-4 right-4 bg-yellow-400 text-yellow-900 text-xs font-bold px-2 py-1 rounded">
+                        POPULER</div>
+                    <button
+                        class="w-full py-3 bg-emerald-500 hover:bg-emerald-400 rounded-xl font-semibold transition">Pilih
+                        Ini</button>
+                </div>
+
+                <!-- Paket 3 -->
+                <div class="bg-white/10 backdrop-blur-sm border border-white/10 rounded-2xl p-6 hover:bg-white/20 transition cursor-pointer"
+                    onclick="selectPackage(1000000, 'Wakaf Lembaga (10 Mushaf)')">
+                    <div class="text-emerald-300 text-4xl mb-4"><i class="fa-solid fa-school"></i></div>
+                    <h3 class="text-xl font-bold mb-2">Wakaf Lembaga</h3>
+                    <div class="text-3xl font-bold mb-4">Rp 1 Juta</div>
+                    <p class="text-sm text-emerald-100 mb-6">10 Mushaf untuk Pesantren/Masjid.</p>
+                    <button
+                        class="w-full py-3 bg-emerald-500 hover:bg-emerald-400 rounded-xl font-semibold transition">Pilih
+                        Ini</button>
+                </div>
+
+                <!-- Paket Custom -->
+                <div class="bg-gradient-to-br from-yellow-500 to-orange-500 rounded-2xl p-6 text-white shadow-xl transform scale-105 border-2 border-white/20 cursor-pointer text-center flex flex-col justify-center"
+                    onclick="selectPackage(0, 'Wakaf Suka-suka')">
+                    <h3 class="text-2xl font-bold mb-2">Wakaf Suka-suka</h3>
+                    <p class="mb-6 opacity-90">Tolak Balak / Syukur Nikmat</p>
+                    <div class="text-5xl mb-6"><i class="fa-solid fa-hand-holding-heart"></i></div>
+                    <button
+                        class="w-full py-3 bg-white text-orange-600 rounded-xl font-bold hover:bg-gray-100 transition">Input
+                        Nominal</button>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Donation Flow & Form -->
+    <section id="donasi" class="py-20 bg-gray-50">
+        <div class="container mx-auto px-6">
+            <div class="grid lg:grid-cols-2 gap-16">
+                <!-- Left: Flow Info -->
+                <div>
+                    <h2 class="text-3xl font-bold mb-8 text-gray-900">Alur Donasi Mudah</h2>
+                    <div class="space-y-8 relative pl-8 border-l-2 border-emerald-200">
+                        <!-- Step 1 -->
+                        <div class="relative">
+                            <div
+                                class="absolute -left-[41px] top-0 w-8 h-8 rounded-full bg-emerald-600 text-white flex items-center justify-center font-bold text-sm">
+                                1</div>
+                            <h4 class="font-bold text-lg mb-1">Isi Form Wakaf</h4>
+                            <p class="text-gray-600 text-sm">Lengkapi data diri dan pilih paket wakaf yang diinginkan di
+                                form samping ini.</p>
+                        </div>
+                        <!-- Step 2 -->
+                        <div class="relative">
+                            <div
+                                class="absolute -left-[41px] top-0 w-8 h-8 rounded-full bg-emerald-600 text-white flex items-center justify-center font-bold text-sm">
+                                2</div>
+                            <h4 class="font-bold text-lg mb-1">Terhubung ke CS</h4>
+                            <p class="text-gray-600 text-sm">Anda akan dialihkan ke WhatsApp Admin MUSAFA untuk
+                                konfirmasi.</p>
+                        </div>
+                        <!-- Step 3 -->
+                        <div class="relative">
+                            <div
+                                class="absolute -left-[41px] top-0 w-8 h-8 rounded-full bg-emerald-600 text-white flex items-center justify-center font-bold text-sm">
+                                3</div>
+                            <h4 class="font-bold text-lg mb-1">Transfer Donasi</h4>
+                            <p class="text-gray-600 text-sm">Lakukan transfer sesuai nominal. Admin akan memverifikasi.
+                            </p>
+                        </div>
+                        <!-- Step 4 -->
+                        <div class="relative">
+                            <div
+                                class="absolute -left-[41px] top-0 w-8 h-8 rounded-full bg-emerald-600 text-white flex items-center justify-center font-bold text-sm">
+                                4</div>
+                            <h4 class="font-bold text-lg mb-1">Akad & Doa</h4>
+                            <p class="text-gray-600 text-sm">Anda menerima ucapan terima kasih, doa khusus, dan
+                                E-Sertifikat (opsional).</p>
+                        </div>
+                        <!-- Step 5 -->
+                        <div class="relative">
+                            <div
+                                class="absolute -left-[41px] top-0 w-8 h-8 rounded-full bg-emerald-600 text-white flex items-center justify-center font-bold text-sm">
+                                5</div>
+                            <h4 class="font-bold text-lg mb-1">Laporan Penyaluran</h4>
+                            <p class="text-gray-600 text-sm">Kami akan mengupdate dokumentasi penyaluran secara berkala.
+                            </p>
+                        </div>
+                    </div>
+
+                    <div class="mt-12 p-6 bg-emerald-50 rounded-2xl border border-emerald-100">
+                        <h4 class="font-bold text-emerald-800 mb-2"><i class="fa-regular fa-copyright"></i> Transparansi
+                            MUSAFA</h4>
+                        <p class="text-sm text-emerald-700">
+                            Setiap donasi dicatat detail. Anda akan mendapat laporan penyaluran rutin via Media Sosial
+                            @musafa.id.
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Right: Form -->
+                <div class="bg-white p-8 rounded-3xl shadow-xl border border-gray-100 relative">
+                    <div class="absolute top-0 right-0 p-4 opacity-10 pointer-events-none">
+                        <i class="fa-solid fa-hands-holding-circle text-8xl text-emerald-600"></i>
+                    </div>
+                    <h3 class="text-2xl font-bold mb-6 text-gray-900 border-b pb-4">
+                        Formulir Wakaf
+                    </h3>
+
+                    <form id="wakafForm" onsubmit="submitWakaf(event)" class="space-y-5">
+                        <!-- Package Hidden Input -->
+                        <input type="hidden" id="package_name" name="package_name" value="Wakaf 1 Mushaf">
+
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Nama Pewakaf (Donatur)</label>
+                            <input type="text" id="name" required
+                                class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition"
+                                placeholder="Contoh: Hamba Allah / Budi Santoso">
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Nomor WhatsApp</label>
+                            <input type="tel" id="whatsapp" required
+                                class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition"
+                                placeholder="08xxxxxxxxxx">
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Pilihan Paket / Nominal</label>
+                            <div class="relative">
+                                <span class="absolute left-4 top-3 text-gray-500 font-semibold">Rp</span>
+                                <input type="number" id="nominal" required
+                                    class="w-full pl-12 pr-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition font-semibold text-lg"
+                                    value="100000">
+                            </div>
+                            <p class="text-xs text-gray-500 mt-1" id="package-label">Paket: Wakaf 1 Mushaf</p>
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Niat Wakaf / Doa Khusus</label>
+                            <textarea id="doa" rows="3"
+                                class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition"
+                                placeholder="Contoh: Atas nama Almarhum Bapak Fulan, semoga kuburnya dilapangkan..."></textarea>
+                        </div>
+
+                        <button type="submit"
+                            class="w-full py-4 bg-gradient-to-r from-emerald-600 to-teal-600 text-white rounded-xl font-bold text-lg shadow-lg hover:shadow-emerald-500/30 hover:-translate-y-1 transition transform flex justify-center items-center gap-2">
+                            <span>Lanjut ke WhatsApp</span> <i class="fa-brands fa-whatsapp text-xl"></i>
+                        </button>
+
+                        <p class="text-xs text-center text-gray-400 mt-4">
+                            Sistem akan otomatis mengarahkan ke WhatsApp Admin Resmi MUSAFA.
+                        </p>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="bg-gray-900 text-white pt-16 pb-8">
+        <div class="container mx-auto px-6">
+            <div class="grid md:grid-cols-4 gap-12 mb-12">
+                <div class="col-span-1 md:col-span-2">
+                    <h2 class="text-2xl font-bold text-emerald-400 mb-4 flex items-center gap-2">
+                        <i class="fa-solid fa-quran"></i> MUSAFA
+                    </h2>
+                    <p class="text-gray-400 leading-relaxed mb-6 max-w-sm">
+                        Program wakaf Al-Qur'an dari Pondok IT untuk mencetak generasi penghafal Qur'an yang melek
+                        teknologi. Jembatan amal jariyah Anda yang amanah dan transparan.
+                    </p>
+                    <div class="flex gap-4">
+                        <a href="#"
+                            class="w-10 h-10 rounded-full bg-gray-800 flex items-center justify-center hover:bg-emerald-600 transition"><i
+                                class="fa-brands fa-instagram"></i></a>
+                        <a href="#"
+                            class="w-10 h-10 rounded-full bg-gray-800 flex items-center justify-center hover:bg-emerald-600 transition"><i
+                                class="fa-brands fa-tiktok"></i></a>
+                        <a href="#"
+                            class="w-10 h-10 rounded-full bg-gray-800 flex items-center justify-center hover:bg-emerald-600 transition"><i
+                                class="fa-brands fa-facebook-f"></i></a>
+                    </div>
+                </div>
+                <div>
+                    <h4 class="font-bold text-lg mb-4">Program</h4>
+                    <ul class="space-y-2 text-gray-400">
+                        <li><a href="#" class="hover:text-emerald-400 transition">Wakaf Personal</a></li>
+                        <li><a href="#" class="hover:text-emerald-400 transition">Wakaf Keluarga</a></li>
+                        <li><a href="#" class="hover:text-emerald-400 transition">Wakaf Lembaga</a></li>
+                        <li><a href="#" class="hover:text-emerald-400 transition">Laporan Penyaluran</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h4 class="font-bold text-lg mb-4">Kontak</h4>
+                    <ul class="space-y-2 text-gray-400">
+                        <li class="flex items-start gap-3">
+                            <i class="fa-solid fa-location-dot mt-1 text-emerald-500"></i>
+                            <span>Pondok IT, Yogyakarta, Indonesia.</span>
+                        </li>
+                        <li class="flex items-center gap-3">
+                            <i class="fa-solid fa-phone text-emerald-500"></i>
+                            <span>+{{ cs_number }}</span>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+            <div class="border-t border-gray-800 pt-8 text-center text-gray-500 text-sm">
+                &copy; 2024 MUSAFA - Pondok IT. All Rights Reserved.
+            </div>
+        </div>
+    </footer>
+
+    <!-- Script for Interaction -->
+    <script>
+        function selectPackage(amount, label) {
+            document.getElementById('nominal').value = amount > 0 ? amount : '';
+            document.getElementById('package_name').value = label;
+            document.getElementById('package-label').innerText = "Paket: " + label;
+            document.getElementById('donasi').scrollIntoView({ behavior: 'smooth' });
+            if (amount === 0) document.getElementById('nominal').focus();
+        }
+
+        function submitWakaf(e) {
+            e.preventDefault();
+
+            const name = document.getElementById('name').value;
+            const wa = document.getElementById('whatsapp').value;
+            const nominal = document.getElementById('nominal').value;
+            const package = document.getElementById('package_name').value;
+            const doa = document.getElementById('doa').value;
+
+            // Format Currency
+            const formattedNominal = new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(nominal);
+
+            // Construct WhatsApp Message
+            const message = `Halo Admin MUSAFA, saya ingin berwakaf.%0A%0A` +
+                `📋 *Data Donatur*%0A` +
+                `Nama : ${name}%0A` +
+                `No WA : ${wa}%0A` +
+                `Paket : ${package}%0A` +
+                `Nominal : ${formattedNominal}%0A%0A` +
+                `🤲 *Niat/Doa Khusus* :%0A` +
+                `${doa ? doa : '-'}`;
+
+            // Replace with actual CS Number
+            const csNumber = "{{ cs_number|default:'62811223344' }}"; // Default or Dynamic from View
+
+            const url = `https://wa.me/${csNumber}?text=${message}`;
+
+            window.location.href = url;
+        }
+
+        // Navbar Scroll Effect
+        window.addEventListener('scroll', function () {
+            if (window.scrollY > 50) {
+                document.getElementById('navbar').classList.add('shadow-md', 'bg-white/95');
+                document.getElementById('navbar').classList.remove('py-4');
+                document.getElementById('navbar').classList.add('py-2');
+            } else {
+                document.getElementById('navbar').classList.remove('shadow-md', 'bg-white/95');
+                document.getElementById('navbar').classList.add('py-4');
+                document.getElementById('navbar').classList.remove('py-2');
+            }
+        });
+    </script>
+</body>
+
+</html>

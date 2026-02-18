@@ -98,6 +98,24 @@ UNFOLD = {
                 ],
             },
             {
+                "title": "Bantuan & Tutorial",
+                "collapsible": True,
+                "items": [
+                    {
+                        "title": "Manajemen Tutorial",
+                        "icon": "edit_note",
+                        "link": "/admin/core/tutorial/",
+                        "permission": "core.permissions.is_superuser",
+                    },
+                    {
+                        "title": "Pusat Bantuan",
+                        "icon": "help_center",
+                        "link": "/admin/core/tutorial/",
+                        "permission": "core.permissions.can_view_tutorial",
+                    },
+                ],
+            },
+            {
                 "title": "Manajemen Pengelola",
                 "collapsible": True,
                 "items": [
@@ -172,6 +190,12 @@ UNFOLD = {
                         "icon": "event_repeat",
                         "link": "/admin/crm/tagihanspp/",
                         "permission": "core.permissions.can_view_tagihan",
+                    },
+                    {
+                        "title": "Tagihan Program",
+                        "icon": "receipt",
+                        "link": "/admin/crm/tagihanprogram/",
+                        "permission": "core.permissions.can_view_tagihanprogram",
                     },
                     {
                         "title": "Riwayat Donasi",
@@ -286,6 +310,12 @@ UNFOLD = {
                         "icon": "track_changes",
                         "link": "/admin/hr/targetkpi/",
                         "permission": "core.permissions.can_view_targetkpi",
+                    },
+                    {
+                        "title": "Target Bulanan",
+                        "icon": "ads_click",
+                        "link": "/admin/core/monthlytarget/",
+                        "permission": "core.permissions.can_view_monthlytarget",
                     },
                     {
                         "title": "Master Amalan",

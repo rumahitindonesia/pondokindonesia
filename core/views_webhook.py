@@ -43,8 +43,8 @@ def ipaymu_webhook(request):
             donation_id = reference_id.replace('DON-', '')
             obj = TransaksiDonasi.objects.get(id=donation_id)
             if status in ['berhasil', 'paid']:
-                # Update something if needed
-                pass
+                obj.status = TransaksiDonasi.Status.VERIFIED
+                obj.save()
         except TransaksiDonasi.DoesNotExist:
             return HttpResponse("Donation Not Found", status=404)
 

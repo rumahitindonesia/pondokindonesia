@@ -1,4 +1,6 @@
 from django.contrib import admin, messages
+from django.shortcuts import render
+from django.http import HttpResponseRedirect
 from django.db import models
 from unfold.admin import ModelAdmin
 from .models import get_current_tenant, APISetting
@@ -24,6 +26,16 @@ class BaseTenantAdmin(ModelAdmin):
             obj.tenant = tenant
         super().save_model(request, obj, form, change)
 
+    def save_formset(self, request, form, formset, change):
+        """Ensure objects in formset (inlines) also get the tenant_id"""
+        instances = formset.save(commit=False)
+        tenant = self.get_tenant(request)
+        for instance in instances:
+            if tenant and hasattr(instance, 'tenant') and not instance.tenant:
+                instance.tenant = tenant
+            instance.save()
+        formset.save_m2m()
+
     def get_exclude(self, request, obj=None):
         exclude = super().get_exclude(request, obj) or []
         if not request.user.is_superuser:
@@ -35,24 +47,42 @@ class BaseTenantAdmin(ModelAdmin):
     def formfield_for_foreignkey(self, db_field, request, **kwargs):
         """Auto-filter foreign keys to only show items from the same tenant or global"""
         tenant = self.get_tenant(request)
-        if tenant and not request.user.is_superuser:
-            related_model = db_field.related_model
+        related_model = db_field.related_model
+        
+        # Build logic:
+        # 1. If Superuser: Show ALL (ignore tenant filtering) to avoid "hidden" values
+        # 2. If Tenant User: Show Tenant + Global
+        
+        if request.user.is_superuser:
+            if hasattr(related_model, 'all_objects'):
+                kwargs["queryset"] = related_model.all_objects.all()
+        elif tenant:
             # Check if related model has a tenant field (is TenantAware)
             if hasattr(related_model, 'tenant'):
-                kwargs["queryset"] = related_model.objects.filter(
+                # Use all_objects to bypass TenantManager's thread-local filtering
+                # This ensures we query based on the explicit 'tenant' variable we resolved
+                manager = getattr(related_model, 'all_objects', related_model.objects)
+                kwargs["queryset"] = manager.filter(
                     models.Q(tenant=tenant) | models.Q(tenant__isnull=True)
                 )
+        
         return super().formfield_for_foreignkey(db_field, request, **kwargs)
 
     def formfield_for_manytomany(self, db_field, request, **kwargs):
         """Auto-filter M2M to only show items from the same tenant or global"""
         tenant = self.get_tenant(request)
-        if tenant and not request.user.is_superuser:
-            related_model = db_field.related_model
+        related_model = db_field.related_model
+        
+        if request.user.is_superuser:
+            if hasattr(related_model, 'all_objects'):
+                 kwargs["queryset"] = related_model.all_objects.all()
+        elif tenant:
             if hasattr(related_model, 'tenant'):
-                kwargs["queryset"] = related_model.objects.filter(
+                manager = getattr(related_model, 'all_objects', related_model.objects)
+                kwargs["queryset"] = manager.filter(
                     models.Q(tenant=tenant) | models.Q(tenant__isnull=True)
                 )
+        
         return super().formfield_for_manytomany(db_field, request, **kwargs)
 
     def get_search_results(self, request, queryset, search_term):
@@ -117,7 +147,32 @@ class LeadAdmin(BaseTenantAdmin, ModelAdmin):
     list_display = ('name', 'type', 'phone_number', 'interest_badge', 'has_draft', 'status', 'scope', 'created_at')
     list_filter = ('type', 'status', 'tenant', 'cs')
     search_fields = ('name', 'phone_number', 'notes')
-    readonly_fields = ('created_at', 'chat_history', 'ai_insights', 'last_afu_at', 'afu_count')
+    
+    fieldsets = (
+        (None, {
+            'fields': ('name', 'type', 'phone_number', 'status', 'cs')
+        }),
+        ('Data Pendaftaran', {
+            'fields': ('photo_preview', 'data'),
+            'description': 'Data dinamis dari form pendaftaran (termasuk Pas Foto)'
+        }),
+        ('AI Analysis', {
+             'fields': ('interest_badge', 'ai_insights', 'chat_history'),
+        }),
+        ('Tracking', {
+            'fields': ('created_at', 'last_afu_at', 'afu_count'),
+            'classes': ('collapse',)
+        }),
+    )
+    
+    readonly_fields = ('created_at', 'chat_history', 'ai_insights', 'last_afu_at', 'afu_count', 'photo_preview', 'interest_badge')
+    
+    def photo_preview(self, obj):
+        if obj.data and 'foto_santri' in obj.data:
+            from django.utils.html import mark_safe
+            return mark_safe(f'<img src="{obj.data["foto_santri"]}" style="max-height: 300px; max-width: 100%; border-radius: 8px; border: 1px solid #ddd;" />')
+        return "Tidak ada foto"
+    photo_preview.short_description = "Pas Foto Santri"
     
     def get_queryset(self, request):
         qs = super().get_queryset(request)
@@ -179,7 +234,8 @@ class LeadAdmin(BaseTenantAdmin, ModelAdmin):
     actions = [
         'analyze_leads', 'draft_followup', 'send_draft', 
         'mark_interview', 'mark_accepted',
-        'convert_to_santri', 'convert_to_donatur'
+        'convert_to_santri', 'convert_to_donatur',
+        'send_message_as_cs'
     ]
 
     def get_actions(self, request):
@@ -188,12 +244,12 @@ class LeadAdmin(BaseTenantAdmin, ModelAdmin):
         
         # Admin-PSB only sees interview/accept conversion
         if role_slug == 'admin-psb':
-            allowed = ['mark_accepted', 'convert_to_santri', 'convert_to_donatur', 'analyze_leads']
+            allowed = ['mark_accepted', 'convert_to_santri', 'convert_to_donatur', 'analyze_leads', 'send_message_as_cs']
             return {k: v for k, v in actions.items() if k in allowed}
             
         # CS only sees common lead actions + interview trigger
         if role_slug == 'cs':
-            allowed = ['analyze_leads', 'draft_followup', 'send_draft', 'mark_interview']
+            allowed = ['analyze_leads', 'draft_followup', 'send_draft', 'mark_interview', 'send_message_as_cs']
             return {k: v for k, v in actions.items() if k in allowed}
             
         return actions
@@ -211,7 +267,7 @@ class LeadAdmin(BaseTenantAdmin, ModelAdmin):
             # 1. Notify Lead
             StarSenderService.send_message(
                 to=lead.phone_number,
-                body=f"Halo {lead.name}, pembayaran pendaftaran Anda sudah diterima. Kami sedang menjadwalkan interview. Mohon tunggu kabar selanjutnya.",
+                body=f"Halo {lead.name}, pendaftaran Anda sudah diterima. Kami sedang menjadwalkan interview. Mohon tunggu kabar selanjutnya.",
                 tenant=lead.tenant
             )
             
@@ -434,6 +490,51 @@ class LeadAdmin(BaseTenantAdmin, ModelAdmin):
             return f"Error loading chat history: {e}"
     
     chat_history.short_description = "Last 10 Messages"
+    
+    @admin.action(description='6. Send Last Draft as ME (Personal CS)')
+    def send_message_as_cs(self, request, queryset):
+        # Check if user has API key
+        if not request.user.wa_api_key:
+            self.message_user(request, "Anda belum mengatur Personal WhatsApp API Key. Silakan isi di profil User Anda.", messages.ERROR)
+            return
+
+        from core.services.starsender import StarSenderService
+        success_count = 0
+        fail_count = 0
+        skipped_count = 0
+        
+        for lead in queryset:
+            if not lead.phone_number:
+                fail_count += 1
+                continue
+            
+            if not lead.last_draft:
+                skipped_count += 1
+                continue
+            
+            # Use Personal API Key to send LAST DRAFT
+            is_sent, _ = StarSenderService.send_message(
+                to=lead.phone_number, 
+                body=lead.last_draft, 
+                tenant=lead.tenant,
+                api_key_override=request.user.wa_api_key
+            )
+            
+            if is_sent:
+                success_count += 1
+                # Auto-update status only if New
+                if lead.status == Lead.Status.NEW:
+                    lead.status = Lead.Status.FOLLOW_UP
+                    lead.save(update_fields=['status'])
+            else:
+                fail_count += 1
+        
+        msg = f"Sent: {success_count}, Failed: {fail_count} using your Personal Number."
+        if skipped_count > 0:
+            msg += f" (Skipped {skipped_count} leads with no draft)"
+            
+        self.message_user(request, msg, messages.SUCCESS if success_count > 0 else messages.WARNING)
+        return HttpResponseRedirect(request.get_full_path())
 
     def scope(self, obj):
         return "Global" if not obj.tenant else f"Tenant: {obj.tenant}"
@@ -449,7 +550,21 @@ class WhatsAppFormAdmin(BaseTenantAdmin, ModelAdmin):
         return "Global" if not obj.tenant else f"Tenant: {obj.tenant}"
     scope.short_description = 'Scope'
 
-from .models import PricingPlan, TenantSubscription
+from .models import PricingPlan, TenantSubscription, Tutorial
+
+@admin.register(Tutorial)
+class TutorialAdmin(ModelAdmin):
+    list_display = ('title', 'target_key', 'is_active', 'updated_at')
+    list_filter = ('is_active',)
+    search_fields = ('title', 'content', 'target_key')
+    fieldsets = (
+        (None, {
+            'fields': ('title', 'target_key', 'is_active')
+        }),
+        ('Konten Panduan', {
+            'fields': ('content', 'video_url')
+        }),
+    )
 
 @admin.register(PricingPlan)
 class PricingPlanAdmin(ModelAdmin):
@@ -475,3 +590,15 @@ class TenantSubscriptionAdmin(ModelAdmin):
         return obj.is_valid()
     is_valid_status.boolean = True
     is_valid_status.short_description = 'Valid & Active?'
+
+from .models import MonthlyTarget
+
+@admin.register(MonthlyTarget)
+class MonthlyTargetAdmin(BaseTenantAdmin, ModelAdmin):
+    list_display = ('month', 'year', 'target_donasi', 'target_santri_baru', 'scope')
+    list_filter = ('year', 'tenant')
+    search_fields = ('month', 'year')
+    
+    def scope(self, obj):
+        return "Global" if not obj.tenant else f"Tenant: {obj.tenant}"
+    scope.short_description = 'Scope'

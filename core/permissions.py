@@ -16,7 +16,10 @@ def can_view_program(request):
 
 # Keuangan & Donasi
 def can_view_tagihan(request):
-    return request.user.is_active and (request.user.is_superuser or request.user.has_perm('crm.view_tagihan'))
+    return request.user.is_active and (request.user.is_superuser or request.user.has_perm('crm.view_tagihanspp'))
+
+def can_view_tagihanprogram(request):
+    return request.user.is_active and (request.user.is_superuser or request.user.has_perm('crm.view_tagihanprogram'))
 
 def can_view_donasi(request):
     return request.user.is_active and (request.user.is_superuser or request.user.has_perm('crm.view_transaksidonasi'))
@@ -73,3 +76,9 @@ def can_view_objective(request):
 
 def can_view_keyresult(request):
     return request.user.is_active and (request.user.is_superuser or request.user.has_perm('hr.view_keyresult'))
+
+def can_view_tutorial(request):
+    return request.user.is_active and (request.user.is_superuser or request.user.has_perm('core.view_tutorial'))
+
+def can_view_monthlytarget(request):
+    return request.user.is_active and (request.user.is_superuser or request.user.has_perm('core.view_monthlytarget'))

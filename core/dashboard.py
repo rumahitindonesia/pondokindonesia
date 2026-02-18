@@ -4,6 +4,7 @@ from datetime import timedelta
 from tenants.models import Tenant
 from core.models import Lead, TenantSubscription, WhatsAppMessage
 from crm.models import Santri, Donatur, TagihanSPP, TagihanProgram, TransaksiDonasi
+from hr.models import Pengurus, Absensi, Tugas, LogAmalan, JenisAmalan
 
 def _get_db_size():
     """Returns database size in MB."""
@@ -131,18 +132,35 @@ def dashboard_callback(request, context):
         total_santri = Santri.objects.filter(tenant=tenant, status='AKTIF').count()
         total_donatur = Donatur.objects.filter(tenant=tenant).count()
         
+        # --- TARGET BULANAN ---
+        now = timezone.now()
+        from core.models import MonthlyTarget
+        monthly_target = MonthlyTarget.objects.filter(tenant=tenant, month=now.month, year=now.year).first()
+        
+        target_donasi = monthly_target.target_donasi if monthly_target else 0
+        target_santri = monthly_target.target_santri_baru if monthly_target else 0
+        
+        # Financials (This Month)
+        first_day_of_month = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+        
         # Role-based scoping for leads
-        is_cs = user.role.slug == 'cs' if user.role else False
+        is_cs = (user.role.slug == 'cs' or user.role.slug.startswith('cs-')) if user.role else False
         lead_base_qs = Lead.objects.filter(tenant=tenant)
         if is_cs:
             lead_base_qs = lead_base_qs.filter(cs=user)
+            
+        total_santri_month = Santri.objects.filter(
+            tenant=tenant,
+            created_at__gte=first_day_of_month
+        ).count()
         
-        # Financials (This Month)
-        now = timezone.now()
-        first_day_of_month = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
-        
+        # Calculate Progress
+        donasi_progress = (total_donasi_month / target_donasi * 100) if target_donasi > 0 else 0
+        santri_progress = (total_santri_month / target_santri * 100) if target_santri > 0 else 0
+
         total_donasi_month = TransaksiDonasi.objects.filter(
             tenant=tenant, 
+            status=TransaksiDonasi.Status.VERIFIED,  # Only count verified donations
             tgl_donasi__gte=first_day_of_month
         ).aggregate(total=Sum('nominal'))['total'] or 0
 
@@ -178,6 +196,48 @@ def dashboard_callback(request, context):
         # Lead Status Distribution
         leads_new = lead_base_qs.filter(status='NEW').count()
         
+        # --- SDM & AMALAN METRICS (New) ---
+        total_staff = Pengurus.objects.filter(tenant=tenant, is_active=True).count()
+        absensi_today = Absensi.objects.filter(
+            tenant=tenant, 
+            tanggal=now.date(), 
+            status__in=['HADIR', 'TERLAMBAT']
+        ).count()
+        attendance_percent = (absensi_today / total_staff * 100) if total_staff > 0 else 0
+        
+        active_tasks = Tugas.objects.filter(
+            tenant=tenant, 
+            status__in=['BARU', 'PROSES']
+        ).count()
+        
+        amalan_today_total = LogAmalan.objects.filter(tenant=tenant, tanggal=now.date()).count()
+        amalan_today_done = LogAmalan.objects.filter(tenant=tenant, tanggal=now.date(), is_done=True).count()
+        amalan_percent = (amalan_today_done / amalan_today_total * 100) if amalan_today_total > 0 else 0
+        
+        # --- SDM CHART DATA (Last 7 Days) ---
+        sdm_labels = []
+        attendance_trend = []
+        amalan_trend = []
+        
+        for i in range(6, -1, -1):
+            day = now.date() - timedelta(days=i)
+            sdm_labels.append(day.strftime('%d %b'))
+            
+            # Attendance
+            daily_absensi = Absensi.objects.filter(
+                tenant=tenant, 
+                tanggal=day, 
+                status__in=['HADIR', 'TERLAMBAT']
+            ).count()
+            att_percent = (daily_absensi / total_staff * 100) if total_staff > 0 else 0
+            attendance_trend.append(att_percent)
+            
+            # Amalan
+            daily_amalan_total = LogAmalan.objects.filter(tenant=tenant, tanggal=day).count()
+            daily_amalan_done = LogAmalan.objects.filter(tenant=tenant, tanggal=day, is_done=True).count()
+            amal_percent = (daily_amalan_done / daily_amalan_total * 100) if daily_amalan_total > 0 else 0
+            amalan_trend.append(amal_percent)
+
         # --- PRIORITY LISTS (New) ---
         from django.db.models import Case, When, Value, IntegerField
         
@@ -274,7 +334,7 @@ def dashboard_callback(request, context):
                     "metric": f"Rp {total_donasi_month:,.0f}",
                     "icon": "volunteer_activism",
                     "color": "green",
-                    "footer": "Total Donasi Masuk (Bulan Ini)",
+                    "footer": f"Target: Rp {target_donasi:,.0f} ({donasi_progress:.1f}%)",
                 },
             ],
             "kpi_cards": [
@@ -283,7 +343,7 @@ def dashboard_callback(request, context):
                     "metric": total_santri,
                     "icon": "school",
                     "color": "primary",
-                    "footer": f"Total santri di {tenant_name}",
+                    "footer": f"Target Baru: {total_santri_month}/{target_santri} ({santri_progress:.1f}%)",
                 },
                 {
                     "title": "Total Donatur",
@@ -306,10 +366,34 @@ def dashboard_callback(request, context):
                     "color": "orange",
                     "footer": "Leads status 'Baru'",
                 },
+                {
+                    "title": "Presensi Hari Ini",
+                    "metric": f"{attendance_percent:.0f}%",
+                    "icon": "fingerprint",
+                    "color": "green" if attendance_percent > 80 else "orange",
+                    "footer": f"{absensi_today} staff hadir dari {total_staff}",
+                },
+                {
+                    "title": "Tugas On-Progress",
+                    "metric": active_tasks,
+                    "icon": "assignment",
+                    "color": "blue",
+                    "footer": "Tugas staff belum selesai",
+                },
+                {
+                    "title": "Progress Amalan",
+                    "metric": f"{amalan_percent:.0f}%",
+                    "icon": "auto_stories",
+                    "color": "purple",
+                    "footer": "Rata-rata amalan yaumiah",
+                },
             ],
             "chart_labels": json.dumps(chart_labels),
             "chart_non_donasi_data": json.dumps(chart_non_donasi_data),
             "chart_donasi_data": json.dumps(chart_donasi_data),
+            "chart_sdm_labels": json.dumps(sdm_labels),
+            "chart_attendance_trend": json.dumps(attendance_trend),
+            "chart_amalan_trend": json.dumps(amalan_trend),
             "priority_leads": priority_leads,
             "overdue_tagihan": overdue_tagihan,
             "potential_donatur": potential_donatur,

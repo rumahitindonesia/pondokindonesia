@@ -88,12 +88,12 @@
     </div>
 
     <!-- Mini KPI Cards -->
-    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-12">
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
         {% for mini_kpi in kpi_cards %}
         <div
             class="border p-4 rounded-default shadow-sm transition-all hover:shadow-md bg-white border-base-200 dark:bg-base-900 dark:border-base-800 flex items-center gap-3">
             <div
-                class="p-2 rounded-full {% if mini_kpi.color == 'blue' %}bg-blue-500 text-white{% elif mini_kpi.color == 'green' %}bg-green-600 text-white{% elif mini_kpi.color == 'orange' %}bg-orange-500 text-white{% elif mini_kpi.color == 'red' %}bg-red-600 text-white{% elif mini_kpi.color == 'primary' %}bg-primary-600 text-white{% else %}bg-base-600 text-white{% endif %}">
+                class="p-2 rounded-full {% if mini_kpi.color == 'blue' %}bg-blue-500 text-white{% elif mini_kpi.color == 'green' %}bg-green-600 text-white{% elif mini_kpi.color == 'orange' %}bg-orange-500 text-white{% elif mini_kpi.color == 'red' %}bg-red-600 text-white{% elif mini_kpi.color == 'primary' %}bg-primary-600 text-white{% elif mini_kpi.color == 'purple' %}bg-purple-600 text-white{% else %}bg-base-600 text-white{% endif %}">
                 <span class="material-symbols-outlined block text-lg">{{mini_kpi.icon}}</span>
             </div>
             <div>
@@ -106,6 +106,22 @@
         {% endfor %}
     </div>
 
+    <!-- SDM & Amalan Weekly Chart -->
+    <div
+        class="bg-white border border-base-200 rounded-default overflow-hidden shadow-sm dark:bg-base-900 dark:border-base-800 mb-12">
+        <div
+            class="bg-base-50/50 border-b border-base-200 px-6 py-4 dark:bg-base-800/20 dark:border-base-800 flex items-center justify-between">
+            <h3
+                class="font-semibold text-font-important-light text-sm dark:text-font-important-dark flex items-center gap-2">
+                <span class="material-symbols-outlined text-purple-600">trending_up</span>
+                Tren Kedisiplinan & Ibadah (7 Hari Terakhir)
+            </h3>
+        </div>
+        <div class="p-6">
+            <canvas id="sdmTrendChart" style="width: 100%; height: 250px;"></canvas>
+        </div>
+    </div>
+
     <!-- Chart.js and Initialization -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script id="chart-data" type="application/json">
@@ -113,6 +129,13 @@
             "labels": {{chart_labels|safe}},
             "nonDonasi": {{chart_non_donasi_data|safe}},
             "donasi": {{chart_donasi_data|safe}}
+        }
+    </script>
+    <script id="sdm-chart-data" type="application/json">
+        {
+            "labels": {{chart_sdm_labels|safe}},
+            "attendance": {{chart_attendance_trend|safe}},
+            "amalan": {{chart_amalan_trend|safe}}
         }
     </script>
     <script>
@@ -177,6 +200,67 @@
                                     if (value >= 1000) return 'Rp ' + (value / 1000) + 'rb';
                                     return 'Rp ' + value;
                                 },
+                                font: { size: 10 }
+                            }
+                        }
+                    }
+                }
+            });
+
+            // SDM Trend Chart
+            const sdmDataElement = document.getElementById('sdm-chart-data');
+            const sdmData = JSON.parse(sdmDataElement.textContent);
+            const sdmCtx = document.getElementById('sdmTrendChart').getContext('2d');
+            new Chart(sdmCtx, {
+                type: 'line',
+                data: {
+                    labels: sdmData.labels,
+                    datasets: [
+                        {
+                            label: 'Kehadiran (%)',
+                            data: sdmData.attendance,
+                            borderColor: '#10b981',
+                            backgroundColor: '#10b98122',
+                            tension: 0.3,
+                            fill: true,
+                            pointStyle: 'circle',
+                            pointRadius: 4
+                        },
+                        {
+                            label: 'Log Amalan (%)',
+                            data: sdmData.amalan,
+                            borderColor: '#8b5cf6',
+                            backgroundColor: '#8b5cf622',
+                            tension: 0.3,
+                            fill: true,
+                            pointStyle: 'circle',
+                            pointRadius: 4
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: true,
+                            position: 'top',
+                            align: 'end',
+                            labels: {
+                                boxWidth: 12,
+                                usePointStyle: true,
+                                pointStyle: 'circle',
+                                font: { size: 11 }
+                            }
+                        }
+                    },
+                    scales: {
+                        x: { grid: { display: false } },
+                        y: {
+                            beginAtZero: true,
+                            max: 100,
+                            ticks: {
+                                callback: value => value + '%',
                                 font: { size: 10 }
                             }
                         }

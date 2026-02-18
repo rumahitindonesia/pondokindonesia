@@ -33,13 +33,35 @@ class CRMService:
     @staticmethod
     def direct_insert_santri(tenant, data, staff_user=None, source_lead=None):
         """
-        Directly create a Santri record.
+        Directly create a Santri record or update linked one.
         """
-        # Check duplicate
+        # 1. Check if Lead is already linked to a Santri
+        if source_lead and getattr(source_lead, 'santri', None):
+            santri = source_lead.santri
+            # Update fields if needed (optional, but good for consistency)
+            if data.get('alamat') and (not santri.alamat or santri.alamat == '-'):
+                santri.alamat = data.get('alamat')
+            if not santri.pic_admin and staff_user:
+                santri.pic_admin = staff_user
+            
+            # Ensure status is ACTIVE if coming from conversion
+            if santri.status == Santri.Status.CALON:
+                 santri.status = Santri.Status.AKTIF
+            
+            santri.save()
+            
+            # Close Lead
+            source_lead.status = Lead.Status.CLOSED
+            source_lead.save()
+            
+            return santri, "Santri berhasil diperbarui (Link Existing)."
+
+        # 2. Check duplicate by phone
         phone = data.get('phone')
         if Santri.objects.filter(tenant=tenant, no_hp_wali=phone).exists():
             return None, "Santri dengan nomor HP tersebut sudah terdaftar."
 
+        # 3. Create New
         # Generate NIS: REG-YYMM-ID
         today = timezone.now()
         suffix = source_lead.id if source_lead else "WA"
@@ -58,6 +80,7 @@ class CRMService:
         
         if source_lead:
             source_lead.status = Lead.Status.CLOSED
+            source_lead.santri = santri # Link it for future reference
             source_lead.save()
             
         return santri, "Santri berhasil dibuat."
@@ -141,4 +164,53 @@ class CRMService:
                 msg += f"- {s.nis}: {s.nama_lengkap}\n"
             return msg
         
-        return "Target pencarian tidak dikenal."
+    @staticmethod
+    def get_revenue_stats(tenant, period='total'):
+        """
+        Calculate total revenue from verified donations and paid tuition fees.
+        period: 'today', 'month', 'total'
+        """
+        from django.db.models import Sum
+        from django.utils import timezone
+        from datetime import datetime
+        
+        now = timezone.now()
+        
+        # 1. Base Querysets
+        donations = TransaksiDonasi.objects.filter(tenant=tenant, status=TransaksiDonasi.Status.VERIFIED)
+        spp = TagihanSPP.objects.filter(tenant=tenant, status=TagihanSPP.Status.LUNAS)
+        programs = TagihanProgram.objects.filter(tenant=tenant, status=TagihanProgram.Status.LUNAS)
+        
+        # 2. Date Filtering
+        date_label = "Keseluruhan"
+        if period == 'today':
+            start_of_day = now.replace(hour=0, minute=0, second=0, microsecond=0)
+            donations = donations.filter(tgl_donasi__gte=start_of_day)
+            spp = spp.filter(tanggal_bayar=now.date())
+            programs = programs.filter(tanggal_bayar=now.date())
+            date_label = f"Hari Ini ({now.strftime('%d %b %Y')})"
+        elif period == 'month':
+            start_of_month = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+            donations = donations.filter(tgl_donasi__gte=start_of_month)
+            # SPP uses tanggal_bayar for actual cash flow
+            spp = spp.filter(tanggal_bayar__year=now.year, tanggal_bayar__month=now.month)
+            programs = programs.filter(tanggal_bayar__year=now.year, tanggal_bayar__month=now.month)
+            date_label = f"Bulan Ini ({now.strftime('%B %Y')})"
+        
+        # 3. Aggregation
+        total_donasi = donations.aggregate(total=Sum('nominal'))['total'] or 0
+        total_spp = spp.aggregate(total=Sum('jumlah'))['total'] or 0
+        total_program = programs.aggregate(total=Sum('nominal'))['total'] or 0
+        
+        grand_total = total_donasi + total_spp + total_program
+        
+        def fmt_idr(val): return f"Rp {val:,.0f}"
+        
+        msg = f"📊 *Laporan Omzet ({date_label})*\n\n"
+        msg += f"💰 Donasi: {fmt_idr(total_donasi)}\n"
+        msg += f"🏫 SPP: {fmt_idr(total_spp)}\n"
+        msg += f"🏷️ Program: {fmt_idr(total_program)}\n"
+        msg += f"--------------------------\n"
+        msg += f"🏆 *TOTAL: {fmt_idr(grand_total)}*"
+        
+        return msg

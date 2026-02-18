@@ -56,6 +56,7 @@ class UserAdmin(BaseTenantAdmin, BaseUserAdmin, ModelAdmin):
             'fields': ('is_active', 'is_staff', 'is_superuser', 'groups', 'user_permissions'),
         }),
         (_('Important dates'), {'fields': ('last_login', 'date_joined')}),
+        ('WhatsApp API', {'fields': ('wa_api_key',)}),
         ('SaaS Info', {'fields': ('role', 'tenant')}),
     )
 

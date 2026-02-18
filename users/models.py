@@ -53,6 +53,15 @@ class User(AbstractUser):
         help_text="Format: 08xxxxxxxx or 628xxxxxxxx"
     )
     
+    # Personal WhatsApp API Key (StarSender)
+    # If set, this overrides the Tenant/Global API Setting for messages sent by this user.
+    wa_api_key = models.CharField(
+        max_length=255,
+        blank=True,
+        null=True,
+        help_text="Personal StarSender API Key. If filled, actions by this user will use this key."
+    )
+    
     # Public user management fields
     user_type = models.CharField(
         max_length=20,

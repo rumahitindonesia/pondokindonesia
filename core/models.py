@@ -158,6 +158,9 @@ class Lead(TenantAwareModel):
     # CS Assignment
     cs = models.ForeignKey('users.User', on_delete=models.SET_NULL, null=True, blank=True, related_name='assigned_leads')
     
+    # Linked Data
+    santri = models.ForeignKey('crm.Santri', on_delete=models.SET_NULL, null=True, blank=True, related_name='leads', help_text="Linked Santri record if converted or pre-existing")
+    
     # AFU & Delivery Tracking
     is_delivered = models.BooleanField(default=False)
     afu_count = models.IntegerField(default=0)
@@ -270,3 +273,42 @@ class TenantGalleryImage(models.Model):
 
     def __str__(self):
         return f"{self.tenant.name} - {self.order}"
+
+class Tutorial(models.Model):
+    title = models.CharField(max_length=200, help_text="Judul panduan")
+    content = models.TextField(help_text="Isi panduan (Markdown suported)")
+    video_url = models.URLField(blank=True, null=True, help_text="Link video tutorial (Youtube/Loom)")
+    
+    # Contextual target: e.g. 'crm.santri', 'core.lead', or 'dashboard'
+    target_key = models.CharField(
+        max_length=100, 
+        unique=True,
+        help_text="Identitas menu/modul (contoh: 'crm.santri', 'core.lead', 'dashboard')"
+    )
+    
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = "Tutorial & Bantuan"
+        verbose_name_plural = "Daftar Tutorial"
+        ordering = ['title']
+
+    def __str__(self):
+        return self.title
+
+class MonthlyTarget(TenantAwareModel):
+    month = models.IntegerField(choices=[(i, i) for i in range(1, 13)], help_text="Bulan (1-12)")
+    year = models.IntegerField(default=2025, help_text="Tahun (e.g. 2025)")
+    target_donasi = models.DecimalField(max_digits=15, decimal_places=2, default=0, help_text="Target perolehan donasi bulan ini")
+    target_santri_baru = models.IntegerField(default=0, help_text="Target santri baru bulan ini")
+
+    class Meta:
+        unique_together = ['tenant', 'month', 'year']
+        verbose_name = "Target Bulanan"
+        verbose_name_plural = "Target Bulanan"
+
+    def __str__(self):
+        scope = "Global" if not self.tenant else f"{self.tenant.name}"
+        return f"Target {self.month}/{self.year} - {scope}"
