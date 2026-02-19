@@ -64,7 +64,7 @@ def gsheet_sync_view(request):
             "lead": "Nama, Phone, Kota, Sekolah, Catatan",
             "santri": "NIS, Nama Lengkap, Nama Panggilan, Nama Wali, No HP Wali, Alamat",
             "donatur": "Nama, Phone, Alamat, Kategori",
-            "transaksi": "Phone Donatur, Nama Program, Nominal, Keterangan"
+            "transaksi": "Tanggal, Phone Donatur, Nama Program, Nominal, Keterangan"
         }
     }
     return render(request, "admin/gsheet_sync.html", context)

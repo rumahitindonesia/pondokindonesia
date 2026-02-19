@@ -164,14 +164,36 @@ class GSheetSyncService:
 
         return count, None
 
+    @staticmethod
+    def parse_datetime(date_str):
+        if not date_str: return None
+        from datetime import datetime
+        # Try parsing various formats
+        for fmt in ('%Y-%m-%d', '%d/%m/%Y', '%d-%m-%Y', '%Y/%m/%d'):
+            try:
+                return datetime.strptime(date_str, fmt)
+            except ValueError:
+                continue
+        return None
+
+    @staticmethod
+    def parse_datetime(date_str):
+        if not date_str: return None
+        from datetime import datetime
+        # Try parsing various formats
+        for fmt in ('%Y-%m-%d', '%d/%m/%Y', '%d-%m-%Y', '%Y/%m/%d'):
+            try:
+                return datetime.strptime(date_str, fmt)
+            except ValueError:
+                continue
+        return None
+
     @classmethod
     def sync_transactions(cls, spreadsheet_id, sheet_name=None, tenant=None):
         """
         Sync rows to TransaksiDonasi.
-        Expected: Phone Donatur, Nama Program, Nominal, Keterangan
+        Expected: Tanggal, Phone Donatur, Nama Program, Nominal, Keterangan
         """
-        from crm.models import Program, TransaksiDonasi
-        
         data, error = GoogleSheetsService.get_sheet_data(spreadsheet_id, sheet_name, tenant)
         if error: return 0, error
 
@@ -181,49 +203,68 @@ class GSheetSyncService:
         for i, row in enumerate(data):
             row_lower = {k.lower(): v for k, v in row.items()}
             
-            if status_col and str(row_lower.get('status', '')).lower() == 'synced':
+            # Skip if already synced
+            if status_col and str(row_lower.get('status', '')).upper() == 'SYNCED':
                 continue
 
             phone = str(row_lower.get('phone donatur', '')).strip()
-            # Normalize phone
-            if phone.startswith('0'): phone = '62' + phone[1:]
-            
-            prog_name = str(row_lower.get('nama program', '')).strip()
-            nominal = str(row_lower.get('nominal', '0')).replace(',', '').replace('.', '').strip()
-            
-            if not phone or not prog_name:
+            program_name = str(row_lower.get('nama program', '')).strip()
+            nominal_str = str(row_lower.get('nominal', '0')).strip()
+            ket = str(row_lower.get('keterangan', '')).strip()
+            tgl_str = str(row_lower.get('tanggal', '')).strip()
+
+            if not phone or not program_name:
                 continue
 
-            try:
-                # 1. Get/Create Donatur
-                donatur, _ = Donatur.objects.get_or_create(
-                    tenant=tenant,
-                    no_hp=phone,
-                    defaults={'nama_donatur': f"Donatur {phone}", 'kategori': Donatur.Kategori.INSIDENTIL}
+            # Parse Nominal
+            import re
+            nominal = int(re.sub(r'\D', '', nominal_str)) if nominal_str else 0
+
+            # Find Donatur
+            donatur = Donatur.objects.filter(tenant=tenant, no_hp=phone).first()
+            if not donatur:
+                donatur = Donatur.objects.create(
+                    tenant=tenant, 
+                    no_hp=phone, 
+                    nama_donatur="Donatur via GSheet",
+                    kategori=Donatur.Kategori.INSIDENTIL
                 )
 
-                # 2. Find Program
-                program = Program.objects.filter(nama_program__icontains=prog_name).first()
-                if not program:
-                    logger.warning(f"Program '{prog_name}' not found for row {i+2}")
-                    continue
+            # Find/Create Program
+            from crm.models import Program, TransaksiDonasi
+            program, _ = Program.objects.get_or_create(
+                tenant=tenant,
+                nama_program=program_name,
+                defaults={'jenis': Program.Jenis.DONASI}
+            )
 
-                # 3. Create Transaction
-                trx = TransaksiDonasi.objects.create(
-                    tenant=tenant,
-                    donatur=donatur,
-                    program=program,
-                    nominal=int(nominal) if nominal.isdigit() else 0,
-                    keterangan=f"GSheet Import: {row_lower.get('keterangan', '')}",
-                    status=TransaksiDonasi.Status.VERIFIED
-                )
-                
-                count += 1
-
-                if status_col:
-                    GoogleSheetsService.update_cell(spreadsheet_id, sheet_name, i + 2, status_col, "Synced", tenant)
+            # Create Transaction
+            trx = TransaksiDonasi.objects.create(
+                tenant=tenant,
+                donatur=donatur,
+                program=program,
+                nominal=nominal,
+                keterangan=ket,
+                status=TransaksiDonasi.Status.VERIFIED # Assume synced data is verified
+            )
             
-            except Exception as e:
-                logger.error(f"Error syncing transaction row {i+2}: {e}")
+            # Update Date if provided
+            parsed_date = cls.parse_datetime(tgl_str)
+            if parsed_date:
+                trx.tgl_donasi = parsed_date
+                trx.save()
+
+            count += 1
+            
+            # Write processed status back to GSheet
+            if status_col:
+                GoogleSheetsService.update_cell(
+                    spreadsheet_id, 
+                    sheet_name, 
+                    i + 2, # 1-based index + header
+                    status_col, 
+                    "SYNCED", 
+                    tenant
+                )
 
         return count, None
