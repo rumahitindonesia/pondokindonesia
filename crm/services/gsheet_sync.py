@@ -19,8 +19,11 @@ class GSheetSyncService:
 
         count = 0
         for row in data:
-            name = str(row.get('Nama', '')).strip()
-            phone = str(row.get('Phone', '')).strip()
+            # Normalize keys to lowercase for case-insensitive matching
+            row_lower = {k.lower(): v for k, v in row.items()}
+            
+            name = str(row_lower.get('nama', '')).strip()
+            phone = str(row_lower.get('phone', '')).strip()
             
             if not name or not phone:
                 continue
@@ -35,10 +38,10 @@ class GSheetSyncService:
                 phone_number=phone,
                 defaults={
                     'name': name,
-                    'notes': f"GSheet Sync ({timezone.now().date()}): {row.get('Catatan', '')}",
+                    'notes': f"GSheet Sync ({timezone.now().date()}): {row_lower.get('catatan', '')}",
                     'data': {
-                        'kota': row.get('Kota', ''),
-                        'sekolah': row.get('Sekolah', ''),
+                        'kota': row_lower.get('kota', ''),
+                        'sekolah': row_lower.get('sekolah', ''),
                         'source_gsheet': spreadsheet_id
                     }
                 }
@@ -60,8 +63,11 @@ class GSheetSyncService:
 
         count = 0
         for row in data:
-            name = str(row.get('Nama', '')).strip()
-            phone = str(row.get('Phone', '')).strip()
+            # Normalize keys to lowercase for case-insensitive matching
+            row_lower = {k.lower(): v for k, v in row.items()}
+
+            name = str(row_lower.get('nama', '')).strip()
+            phone = str(row_lower.get('phone', '')).strip()
             
             if not name or not phone:
                 continue
@@ -72,8 +78,8 @@ class GSheetSyncService:
                 no_hp=phone,
                 defaults={
                     'nama_donatur': name,
-                    'alamat': row.get('Alamat', '-'),
-                    'kategori': row.get('Kategori', Donatur.Kategori.INSIDENTIL)
+                    'alamat': row_lower.get('alamat', '-'),
+                    'kategori': row_lower.get('kategori', Donatur.Kategori.INSIDENTIL)
                 }
             )
             if created:
