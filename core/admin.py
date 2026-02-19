@@ -144,7 +144,7 @@ from .models import Lead, WhatsAppForm
 
 @admin.register(Lead)
 class LeadAdmin(BaseTenantAdmin, ModelAdmin):
-    list_display = ('name', 'type', 'phone_number', 'interest_badge', 'has_draft', 'status', 'scope', 'created_at')
+    list_display = ('name', 'type', 'phone_number', 'score', 'interest_badge', 'has_draft', 'status', 'scope', 'created_at')
     list_filter = ('type', 'status', 'tenant', 'cs')
     search_fields = ('name', 'phone_number', 'notes')
     
@@ -177,7 +177,8 @@ class LeadAdmin(BaseTenantAdmin, ModelAdmin):
     def get_queryset(self, request):
         qs = super().get_queryset(request)
         if not request.user.is_superuser and hasattr(request.user, 'role') and request.user.role:
-            if request.user.role.slug == 'cs':
+            role_slug = request.user.role.slug
+            if role_slug == 'cs' or role_slug.startswith('cs-'):
                 # CS only see their leads
                 return qs.filter(cs=request.user)
         return qs
@@ -411,7 +412,12 @@ class LeadAdmin(BaseTenantAdmin, ModelAdmin):
         count = 0
         for lead in queryset:
             if lead.last_draft:
-                StarSenderService.send_message(to=lead.phone_number, body=lead.last_draft, tenant=lead.tenant)
+                StarSenderService.send_message(
+                    to=lead.phone_number, 
+                    body=lead.last_draft, 
+                    tenant=lead.tenant,
+                    api_key_override=request.user.wa_api_key if request.user.wa_api_key else None
+                )
                 # Auto-update status
                 if lead.status == Lead.Status.NEW:
                     lead.status = Lead.Status.FOLLOW_UP

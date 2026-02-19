@@ -41,12 +41,12 @@ def create_or_update_user_for_santri(sender, instance, created, **kwargs):
     try:
         user, user_created = User.all_objects.get_or_create(
             phone_number=phone_normalized,
+            tenant=instance.tenant,
             defaults={
-                'username': f'wali_{phone_normalized}',
+                'username': f'wali_{phone_normalized}_{instance.tenant.id if instance.tenant else "global"}',
                 'user_type': User.UserType.WALI,
                 'is_wali': True,
                 'santri_id': instance.id,
-                'tenant': instance.tenant,
                 'is_staff': False,
                 'is_active': True
             }
@@ -85,12 +85,12 @@ def create_or_update_user_for_donatur(sender, instance, created, **kwargs):
     try:
         user, user_created = User.all_objects.get_or_create(
             phone_number=phone_normalized,
+            tenant=instance.tenant,
             defaults={
-                'username': f'donatur_{phone_normalized}',
+                'username': f'donatur_{phone_normalized}_{instance.tenant.id if instance.tenant else "global"}',
                 'user_type': User.UserType.DONATUR,
                 'is_donatur': True,
                 'donatur_id': instance.id,
-                'tenant': instance.tenant,
                 'is_staff': False,
                 'is_active': True
             }
@@ -129,12 +129,12 @@ def create_or_update_user_for_lead(sender, instance, created, **kwargs):
     try:
         user, user_created = User.all_objects.get_or_create(
             phone_number=phone_normalized,
+            tenant=instance.tenant,
             defaults={
-                'username': f'lead_{phone_normalized}',
+                'username': f'lead_{phone_normalized}_{instance.tenant.id if instance.tenant else "global"}',
                 'user_type': User.UserType.LEAD,
                 'is_lead': True,
                 'lead_id': instance.id,
-                'tenant': instance.tenant,
                 'is_staff': False,
                 'is_active': True
             }

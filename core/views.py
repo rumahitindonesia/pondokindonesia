@@ -489,6 +489,7 @@ def webhook_whatsapp(request, tenant_slug=None):
                         )
                         if ai_response:
                             logger.info(f"[AI RAW RESPONSE] {ai_response}")
+                            extra_messages = []
                             
                             # CHECK FOR INVOICE CREATION
                             # Format: [EXEC: CREATE_INVOICE] nominal#keterangan
@@ -591,7 +592,8 @@ def webhook_whatsapp(request, tenant_slug=None):
                                                 tagihan.save()
                                                 logger.info(f"[DEBUG REG] Saved Tagihan with URL")
                                                 
-                                                ai_response += f"\n\nSilakan selesaikan pembayaran pendaftaran via link berikut:\n{res['url']}\n\nTerima kasih."
+                                                ai_response += "\n\nTerima kasih."
+                                                extra_messages.append(f"Silakan selesaikan pembayaran pendaftaran via link berikut:\n{res['url']}")
                                                 logger.info(f"[AI REGISTRATION] Link generated for {sender}: {res['url']}")
                                             else:
                                                 logger.error(f"[AI REGISTRATION] Failed to generate link: {err}")
@@ -632,11 +634,42 @@ def webhook_whatsapp(request, tenant_slug=None):
                                                 transaksi.payment_url = res['url']
                                                 transaksi.save()
                                                 
-                                                ai_response += f"\n\nSilakan selesaikan pembayaran donasi via link berikut:\n{res['url']}\n\nTerima kasih."
+                                                ai_response += "\n\nTerima kasih."
+                                                extra_messages.append(f"Silakan selesaikan pembayaran donasi via link berikut:\n{res['url']}")
                                                 logger.info(f"[AI DONATION] Link generated for {sender}: {res['url']}")
                                             else:
                                                 logger.error(f"[AI DONATION] Failed to generate link: {err}")
                                                 ai_response += "\n\n(Maaf, sistem sedang gangguan dalam membuat link pembayaran. Mohon coba lagi nanti)."
+
+                                    # --- AUTO-LEAD CREATION FROM INVOICE ---
+                                    # Ensure every invoice results in a Lead for CS to track
+                                    l_type = Lead.Type.SANTRI if any(x in lower_ket for x in ['pendaftar', 'daftar', 'registrasi', 'adm', 'formulir']) else Lead.Type.DONATUR
+                                    
+                                    # Robust Lead Retrieval (handle duplicates)
+                                    lead_obj = Lead.objects.filter(tenant=current_tenant, phone_number=sender).order_by('-id').first()
+                                    l_created = False
+                                    if not lead_obj:
+                                        lead_obj = Lead.objects.create(
+                                            tenant=current_tenant,
+                                            phone_number=sender,
+                                            name=sender_name or "Hamba Allah",
+                                            type=l_type,
+                                            score=90,
+                                            status=Lead.Status.NEW,
+                                            data={'keterangan': keterangan}
+                                        )
+                                        l_created = True
+                                    
+                                    if not l_created:
+                                        lead_obj.type = l_type
+                                        lead_obj.score = 90
+                                        if sender_name: lead_obj.name = sender_name
+                                        lead_obj.save()
+
+                                    # Auto-Assign CS & Notify
+                                    from core.services.lead_workflow_service import LeadWorkflowService
+                                    LeadWorkflowService.assign_to_cs(lead_obj)
+                                    logger.info(f"[AI AUTO-LEAD] Created/Updated lead for {sender} from Invoice.")
 
                                 except Exception as e:
                                     logger.error(f"[AI DONATION ERROR] {e}")
@@ -676,18 +709,20 @@ def webhook_whatsapp(request, tenant_slug=None):
                                         except:
                                             l_score = 0
                                             
-                                        # Create Lead
-                                        lead, created = Lead.objects.get_or_create(
-                                            tenant=current_tenant,
-                                            phone_number=sender,
-                                            defaults={
-                                                'name': l_name,
-                                                'type': l_type,
-                                                'score': l_score,
-                                                'status': Lead.Status.NEW,
-                                                'data': {'kota': l_city, 'sekolah': l_school}
-                                            }
-                                        )
+                                        # Robust Lead Retrieval
+                                        lead = Lead.objects.filter(tenant=current_tenant, phone_number=sender).order_by('-id').first()
+                                        created = False
+                                        if not lead:
+                                            lead = Lead.objects.create(
+                                                tenant=current_tenant,
+                                                phone_number=sender,
+                                                name=l_name,
+                                                type=l_type,
+                                                score=l_score,
+                                                status=Lead.Status.NEW,
+                                                data={'kota': l_city, 'sekolah': l_school}
+                                            )
+                                            created = True
                                         
                                         if not created:
                                             lead.name = l_name
@@ -707,7 +742,14 @@ def webhook_whatsapp(request, tenant_slug=None):
                                     logger.error(f"[AI LEAD ERROR] Failed to save lead from AI: {e}")
 
                             StarSenderService.send_message(to=sender, body=ai_response, tenant=current_tenant, api_key_override=active_api_key)
-                            logger.info(f"[AI] Response sent to {sender}")
+                            
+                            # Send extra messages (like payment links) separately
+                            for extra_msg in extra_messages:
+                                import time
+                                time.sleep(1) # Small delay for better UX
+                                StarSenderService.send_message(to=sender, body=extra_msg, tenant=current_tenant, api_key_override=active_api_key)
+                                
+                            logger.info(f"[AI] Response sent to {sender} (and {len(extra_messages)} extra messages)")
                         else:
                             logger.warning(f"[AI] No response generated for {sender}")
                     except Exception as e:

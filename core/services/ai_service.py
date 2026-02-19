@@ -395,7 +395,16 @@ class AIService:
         if len(relevant_context) > 8000:
             relevant_context = relevant_context[:8000] + "\n[...Context Truncated...]"
 
-        # SANITIZE CONTEXT JUST BEFORE PROMPT BUILD (Fixes UnboundLocalError)
+        # SANITIZE CONTEXT JUST BEFORE PROMPT BUILD
+        import re
+        # Mask specific bank account numbers/sensitive info that might conflict with iPaymu
+        bank_patterns = [
+            r'\b7830030012\b', # Pondok IT BSI
+            r'\b081226729306\b', # Admin phone if needed to be hidden
+        ]
+        for pattern in bank_patterns:
+            relevant_context = re.sub(pattern, "[NOMOR REKENING DISEMBUNYIKAN - GUNAKAN LINK PEMBAYARAN]", relevant_context)
+
         if biaya_daftar > 0:
              relevant_context = relevant_context.replace("pondokindonesia.online/pendaftaran", "[LINK DISEMBUNYIKAN SEBELUM ADA BAYAR]")
 
@@ -410,12 +419,12 @@ class AIService:
         if query and re.search(money_pattern, query, re.IGNORECASE):
             override_instruction = (
                 "\n\n!!! INSTRUKSI DARURAT (PRIORITAS TERTINGGI) !!!\n"
-                "User menyebutkan nominal UANG. TUGAS ANDA HANYA SATU:\n"
-                "1. ABAIKAN basa-basi berlebihan.\n"
-                "2. JANGAN minta transfer manual.\n"
-                "3. WAJIB KELUARKAN TAG: [EXEC: CREATE_INVOICE] nominal#keterangan\n"
-                "   Contoh: [EXEC: CREATE_INVOICE] 100000#Donasi\n"
-                "LAKUKAN SEKARANG."
+                "User menyebutkan nominal UANG/Donasi. TUGAS UTAMA ANDA:\n"
+                "1. WAJIB KELUARKAN TAG: [EXEC: CREATE_INVOICE] nominal#keterangan\n"
+                "   Contoh: Jika user ingin infaq 100rb, keluarkan: [EXEC: CREATE_INVOICE] 100000#Infaq\n"
+                "2. JANGAN MENGARANG nomor rekening atau meminta transfer manual.\n"
+                "3. Sapa dengan syukur dan beri tahu bahwa link pembayaran digital segera muncul di bawah pesan ini.\n"
+                "LAKUKAN SEKARANG TANPA BASA-BASI BERLEBIHAN."
             )
             full_prompt += override_instruction
             print("[DEBUG] Money pattern detected. Injected OVERRIDE instruction.")

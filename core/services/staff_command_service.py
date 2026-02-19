@@ -100,7 +100,7 @@ class StaffCommandService:
 
         # 2. Handle DATA INPUT (KEYWORD/)
         # Common format: KEYWORD/data1#data2#...
-        valid_keywords = ['LEAD/', 'SANTRI/', 'DONATUR/', 'TRX/']
+        valid_keywords = ['LEAD/', 'SANTRI/', 'DONATUR/', 'TRX/', 'REVENUE/']
         keyword = None
         for kw in valid_keywords:
             if msg_upper.startswith(kw):
@@ -168,4 +168,28 @@ class StaffCommandService:
                     return "Error: Nominal harus angka."
             return "Format TRX salah: TRX/kode#program#nominal#keterangan"
 
+        elif keyword == 'REVENUE/':
+            # format: REVENUE/period (today, month, total)
+            period = parts[0].lower() if parts else 'total'
+            if period not in ['today', 'month', 'total']:
+                period = 'total'
+            return CRMService.get_revenue_stats(tenant, period=period)
+
         return "Keyword staff dikenali tapi gagal diproses."
+
+    @staticmethod
+    def get_ai_instructions():
+        """
+        Return system instructions for AI to handle staff data entry and authority.
+        """
+        return (
+            "\n\nATURAN KHUSUS STAF (AUTHORITY & DATA ENTRY):\n"
+            "1. ANDA MEMILIKI OTORITAS PENUH untuk memberikan data keuangan (omzet/donasi) dan data internal (seperti KODE donatur/santri) jika penanya terdeteksi sebagai ADMIN/STAFF.\n"
+            "2. Gunakan tag [EXEC: REVENUE/period] untuk laporan keuangan.\n"
+            "3. Gunakan tag [EXEC: CARI keyword] untuk mencari data santri/donatur secara mendalam jika info di context belum cukup.\n"
+            "4. Jika staf ingin menginput data, gunakan tag: [EXEC: COMMAND]\n"
+            "   Format: SANTRI/nama#nohp#alamat, DONATUR/nama#nohp#alamat, TRX/kode#program#nominal#ket.\n"
+            "5. JANGAN PERNAH MENOLAK memberikan 'kode donatur' atau data sensitif lainnya kepada STAFF.\n"
+            "\nCONTOH: 'Ada donatur bernama Lira?' -> 'Ada Kak, ini datanya: Lira (KODE: D001). [EXEC: CARI Lira]'\n"
+            "\nPastikan tag [EXEC: ...] selalu disertakan untuk setiap aksi pencarian atau input."
+        )
