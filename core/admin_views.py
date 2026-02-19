@@ -7,6 +7,10 @@ from crm.services.gsheet_sync import GSheetSyncService
 from core.models import APISetting
 from tenants.models import Tenant
 
+class MockOpts:
+    def __init__(self, app_label):
+        self.app_label = app_label
+
 @staff_member_required
 def gsheet_sync_view(request):
     if request.method == "POST":
@@ -36,7 +40,7 @@ def gsheet_sync_view(request):
     context = {
         **admin.site.each_context(request),
         "title": "Tarik Data Google Spreadsheet",
-        "opts": {"app_label": "core"}, # For breadcrumbs
+        "opts": MockOpts("core"), # For breadcrumbs and Unfold header
         "available_models": [
             {"id": "lead", "name": "Leads / Pendaftar"},
             {"id": "donatur", "name": "Donatur"},
