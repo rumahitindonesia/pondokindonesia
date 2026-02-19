@@ -36,6 +36,10 @@ def gsheet_sync_view(request):
                 count, error = GSheetSyncService.sync_leads(spreadsheet_id, sheet_name, tenant)
             elif model_type == "donatur":
                 count, error = GSheetSyncService.sync_donaturs(spreadsheet_id, sheet_name, tenant)
+            elif model_type == "santri":
+                count, error = GSheetSyncService.sync_santri(spreadsheet_id, sheet_name, tenant)
+            elif model_type == "transaksi":
+                count, error = GSheetSyncService.sync_transactions(spreadsheet_id, sheet_name, tenant)
             else:
                 count, error = 0, "Model tidak valid."
 
@@ -49,10 +53,18 @@ def gsheet_sync_view(request):
     context = {
         **admin.site.each_context(request),
         "title": "Tarik Data Google Spreadsheet",
-        "opts": MockOpts("core", "lead", "GSheet Sync"), # For breadcrumbs and Unfold header
+        "opts": MockOpts("core", "lead", "GSheet Sync"),
         "available_models": [
             {"id": "lead", "name": "Leads / Pendaftar"},
-            {"id": "donatur", "name": "Donatur"},
+            {"id": "santri", "name": "Data Santri"},
+            {"id": "donatur", "name": "Data Donatur"},
+            {"id": "transaksi", "name": "Transaksi Donasi"},
         ],
+        "mapping_info": {
+            "lead": "Nama, Phone, Kota, Sekolah, Catatan",
+            "santri": "NIS, Nama Lengkap, Nama Panggilan, Nama Wali, No HP Wali, Alamat",
+            "donatur": "Nama, Phone, Alamat, Kategori",
+            "transaksi": "Phone Donatur, Nama Program, Nominal, Keterangan"
+        }
     }
     return render(request, "admin/gsheet_sync.html", context)

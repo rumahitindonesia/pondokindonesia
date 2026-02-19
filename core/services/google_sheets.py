@@ -72,3 +72,49 @@ class GoogleSheetsService:
         if creds:
             return creds.service_account_email
         return None
+
+    @classmethod
+    def get_client(cls, tenant=None):
+        creds = cls.get_credentials(tenant)
+        if not creds:
+            return None
+        return gspread.authorize(creds)
+
+    @classmethod
+    def find_column_index(cls, spreadsheet_id, sheet_name, header_name, tenant=None):
+        """
+        Find column index (1-based) for a given header name.
+        """
+        client = cls.get_client(tenant)
+        if not client: return None
+
+        try:
+            sh = client.open_by_key(spreadsheet_id)
+            ws = sh.worksheet(sheet_name) if sheet_name else sh.get_worksheet(0)
+            
+            # Get first row
+            headers = ws.row_values(1)
+            for i, h in enumerate(headers):
+                if h.strip().lower() == header_name.lower():
+                    return i + 1
+            return None
+        except Exception as e:
+            logger.error(f"Error finding column: {e}")
+            return None
+
+    @classmethod
+    def update_cell(cls, spreadsheet_id, sheet_name, row, col, value, tenant=None):
+        """
+        Update a specific cell.
+        """
+        client = cls.get_client(tenant)
+        if not client: return False
+
+        try:
+            sh = client.open_by_key(spreadsheet_id)
+            ws = sh.worksheet(sheet_name) if sheet_name else sh.get_worksheet(0)
+            ws.update_cell(row, col, value)
+            return True
+        except Exception as e:
+            logger.error(f"Error updating cell: {e}")
+            return False

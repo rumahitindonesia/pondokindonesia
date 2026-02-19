@@ -49,6 +49,18 @@
                             <option value="{{ model.id }}">{{ model.name }}</option>
                             {% endfor %}
                         </select>
+                        <div id="mapping-guide"
+                            class="mt-3 p-3 bg-base-50 dark:bg-base-900 rounded-md border border-dashed border-base-300 dark:border-base-700 hidden">
+                            <h4
+                                class="text-xs font-bold uppercase tracking-wider text-base-500 dark:text-base-400 mb-1">
+                                Kolom Wajib (Header):</h4>
+                            <p class="text-sm text-primary-600 dark:text-primary-400 font-mono break-words"
+                                id="mapping-text"></p>
+                            <p class="mt-2 text-xs text-base-400">
+                                Tip: Tambahkan kolom <strong>Status</strong> untuk mencegah duplikasi (Write-back
+                                Support).
+                            </p>
+                        </div>
                     </div>
 
                     <div>
@@ -80,10 +92,34 @@
             <ul class="text-sm text-base-600 dark:text-base-400 list-disc list-inside space-y-2">
                 <li>Pastikan file <strong>credentials.json</strong> sudah terpasang atau terdaftar di API Setting.</li>
                 <li>Pastikan Spreadsheet sudah di-<strong>share</strong> ke email Service Account sebagai
-                    <strong>Editor</strong>.</li>
-                <li>Gunakan header kolom: <strong>Nama, Phone, Kota, Sekolah, Catatan</strong> (untuk Leads).</li>
+                    <strong>Editor</strong>.
+                </li>
             </ul>
         </div>
     </div>
 </div>
-{% endblock %}
+
+{{ mapping_info|json_script:"mapping-data" }}
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const mappingInfo = JSON.parse(document.getElementById('mapping-data').textContent);
+        const modelSelect = document.getElementById('model_type');
+        const guideDiv = document.getElementById('mapping-guide');
+        const guideText = document.getElementById('mapping-text');
+
+        function updateGuide() {
+            const val = modelSelect.value;
+            if (mappingInfo && mappingInfo[val]) {
+                guideText.textContent = mappingInfo[val];
+                guideDiv.classList.remove('hidden');
+            } else {
+                guideDiv.classList.add('hidden');
+            }
+        }
+
+        if (modelSelect) {
+            modelSelect.addEventListener('change', updateGuide);
+            updateGuide();
+        }
+    });
+</script>
