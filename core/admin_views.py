@@ -20,51 +20,59 @@ class MockOpts:
         self.object_name = model_name
         self.app_config = MockAppConfig("Core") # Or whatever app name you want to display
 
+from .forms import GSheetSyncForm
+
 @staff_member_required
 def gsheet_sync_view(request):
-    if request.method == "POST":
-        spreadsheet_id = request.POST.get("spreadsheet_id")
-        model_type = request.POST.get("model_type")
-        sheet_name = request.POST.get("sheet_name")
-        
-        if not spreadsheet_id:
-            messages.error(request, "Spreadsheet ID wajib diisi.")
-        else:
-            tenant = getattr(request, 'tenant', None)
-            
-            if model_type == "lead":
-                count, error = GSheetSyncService.sync_leads(spreadsheet_id, sheet_name, tenant)
-            elif model_type == "donatur":
-                count, error = GSheetSyncService.sync_donaturs(spreadsheet_id, sheet_name, tenant)
-            elif model_type == "santri":
-                count, error = GSheetSyncService.sync_santri(spreadsheet_id, sheet_name, tenant)
-            elif model_type == "transaksi":
-                count, error = GSheetSyncService.sync_transactions(spreadsheet_id, sheet_name, tenant)
-            else:
-                count, error = 0, "Model tidak valid."
+    mapping_info = {
+        "lead": "Nama, Phone, Kota, Sekolah, Catatan",
+        "santri": "NIS, Nama Lengkap, Nama Panggilan, Nama Wali, No HP Wali, Alamat",
+        "donatur": "Nama, Phone, Alamat, Kategori",
+        "transaksi": "Tanggal, Phone Donatur, Nama Program, Nominal, Keterangan"
+    }
 
-            if error:
-                messages.error(request, f"Gagal Sinkronisasi: {error}")
-            else:
-                messages.success(request, f"Berhasil! {count} data {model_type} telah ditarik.")
-                
-        return HttpResponseRedirect(reverse("core:gsheet_sync"))
+    if request.method == "POST":
+        form = GSheetSyncForm(request.POST)
+        if form.is_valid():
+            spreadsheet_id = form.cleaned_data['spreadsheet_id']
+            model_type = form.cleaned_data['model_type']
+            sheet_name = form.cleaned_data['sheet_name']
+            
+            tenant = getattr(request, 'tenant', None) # As per original code
+            if not tenant and hasattr(request.user, 'tenant'):
+                 tenant = request.user.tenant
+
+            count = 0
+            error = None
+
+            try:
+                if model_type == "lead":
+                    count, error = GSheetSyncService.sync_leads(spreadsheet_id, sheet_name, tenant)
+                elif model_type == "donatur":
+                    count, error = GSheetSyncService.sync_donaturs(spreadsheet_id, sheet_name, tenant)
+                elif model_type == "santri":
+                    count, error = GSheetSyncService.sync_santri(spreadsheet_id, sheet_name, tenant)
+                elif model_type == "transaksi":
+                    count, error = GSheetSyncService.sync_transactions(spreadsheet_id, sheet_name, tenant)
+                else:
+                    error = "Model tidak valid."
+
+                if error:
+                    messages.error(request, f"Gagal Sinkronisasi: {error}")
+                else:
+                    messages.success(request, f"Berhasil! {count} data {model_type} telah ditarik.")
+                    return HttpResponseRedirect(reverse("core:gsheet_sync"))
+            
+            except Exception as e:
+                messages.error(request, f"Terjadi kesalahan: {e}")
+    else:
+        form = GSheetSyncForm()
 
     context = {
         **admin.site.each_context(request),
         "title": "Tarik Data Google Spreadsheet",
         "opts": MockOpts("core", "lead", "GSheet Sync"),
-        "available_models": [
-            {"id": "lead", "name": "Leads / Pendaftar"},
-            {"id": "santri", "name": "Data Santri"},
-            {"id": "donatur", "name": "Data Donatur"},
-            {"id": "transaksi", "name": "Transaksi Donasi"},
-        ],
-        "mapping_info": {
-            "lead": "Nama, Phone, Kota, Sekolah, Catatan",
-            "santri": "NIS, Nama Lengkap, Nama Panggilan, Nama Wali, No HP Wali, Alamat",
-            "donatur": "Nama, Phone, Alamat, Kategori",
-            "transaksi": "Tanggal, Phone Donatur, Nama Program, Nominal, Keterangan"
-        }
+        "form": form,
+        "mapping_info": mapping_info
     }
     return render(request, "admin/gsheet_sync.html", context)
