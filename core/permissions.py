@@ -1,6 +1,9 @@
 def is_superuser(request):
     return request.user.is_active and request.user.is_superuser
 
+def can_sync_gsheet(request):
+    return request.user.is_active and request.user.is_superuser
+
 # CRM & Database
 def can_view_lead(request):
     return request.user.is_active and (request.user.is_superuser or request.user.has_perm('core.view_lead'))

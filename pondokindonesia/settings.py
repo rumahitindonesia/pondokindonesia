@@ -182,7 +182,7 @@ UNFOLD = {
                     {
                         "title": "Tarik Data GSheet",
                         "icon": "upload_file",
-                        "link": "/admin/gsheet-sync/",
+                        "link": "/gsheet-sync-admin/",
                         "permission": "core.permissions.can_view_lead",
                     },
                 ],
