@@ -2,14 +2,14 @@
 {% load i18n %}
 
 {% block breadcrumbs %}
-<div class="px-4 lg:px-12 py-3 border-b border-gray-200 dark:border-gray-800">
+<div class="px-4 lg:px-12 py-3 border-b border-base-200 dark:border-base-800">
     <div class="flex items-center text-sm font-medium">
         <a href="{% url 'admin:index' %}"
-            class="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">
+            class="text-base-500 hover:text-base-700 dark:text-base-400 dark:hover:text-base-200">
             {% trans 'Home' %}
         </a>
-        <span class="mx-2 text-gray-400">/</span>
-        <span class="text-gray-900 dark:text-gray-100">{{ title }}</span>
+        <span class="mx-2 text-base-300 dark:text-base-600">/</span>
+        <span class="text-font-important-light dark:text-font-important-dark">{{ title }}</span>
     </div>
 </div>
 {% endblock %}
@@ -17,33 +17,34 @@
 {% block content %}
 <div class="px-4 lg:px-12 py-8">
     <div class="max-w-4xl">
-        <h1 class="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-6">{{ title }}</h1>
+        <h1 class="text-2xl font-bold text-font-important-light dark:text-font-important-dark mb-6">{{ title }}</h1>
 
         <div
-            class="bg-white dark:bg-gray-900 shadow rounded-lg overflow-hidden border border-gray-200 dark:border-gray-800">
+            class="bg-white dark:bg-base-900 shadow-sm rounded-default overflow-hidden border border-base-200 dark:border-base-800">
             <form method="post" class="p-6">
                 {% csrf_token %}
 
                 <div class="space-y-6">
                     <div>
                         <label for="spreadsheet_id"
-                            class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                            class="block text-sm font-semibold text-font-important-light dark:text-font-important-dark mb-2">
                             Spreadsheet ID
                         </label>
                         <input type="text" name="spreadsheet_id" id="spreadsheet_id" required
-                            class="block w-full rounded-md border-gray-300 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm"
+                            class="block w-full rounded-md border-base-300 dark:border-base-700 dark:bg-base-800 dark:text-font-important-dark shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm"
                             placeholder="Contoh: 1abcXYZ-dst...">
-                        <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                        <p class="mt-2 text-xs text-base-500 dark:text-base-400">
                             ID spreadsheet dapat ditemukan di URL halaman Google Sheets Bapak (antara /d/ dan /edit).
                         </p>
                     </div>
 
                     <div>
-                        <label for="model_type" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                        <label for="model_type"
+                            class="block text-sm font-semibold text-font-important-light dark:text-font-important-dark mb-2">
                             Tujuan Data (Model)
                         </label>
                         <select name="model_type" id="model_type"
-                            class="block w-full rounded-md border-gray-300 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm">
+                            class="block w-full rounded-md border-base-300 dark:border-base-700 dark:bg-base-800 dark:text-font-important-dark shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm">
                             {% for model in available_models %}
                             <option value="{{ model.id }}">{{ model.name }}</option>
                             {% endfor %}
@@ -51,17 +52,18 @@
                     </div>
 
                     <div>
-                        <label for="sheet_name" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                        <label for="sheet_name"
+                            class="block text-sm font-semibold text-font-important-light dark:text-font-important-dark mb-2">
                             Nama Sheet (Opsional)
                         </label>
                         <input type="text" name="sheet_name" id="sheet_name"
-                            class="block w-full rounded-md border-gray-300 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm"
+                            class="block w-full rounded-md border-base-300 dark:border-base-700 dark:bg-base-800 dark:text-font-important-dark shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm"
                             placeholder="Kosongkan jika ingin mengambil sheet pertama">
                     </div>
 
-                    <div class="pt-4 border-t border-gray-200 dark:border-gray-800 flex justify-end">
+                    <div class="pt-6 border-t border-base-200 dark:border-base-800 flex justify-end">
                         <button type="submit"
-                            class="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 transition-colors">
+                            class="inline-flex justify-center py-2.5 px-6 border border-transparent shadow-sm text-sm font-bold rounded-md text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 transition-all uppercase tracking-wider">
                             Mulai Sinkronisasi
                         </button>
                     </div>
@@ -69,9 +71,13 @@
             </form>
         </div>
 
-        <div class="mt-8 bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg border border-blue-100 dark:border-blue-900/50">
-            <h3 class="text-sm font-bold text-blue-800 dark:text-blue-300 mb-2">💡 Tips & Petunjuk</h3>
-            <ul class="text-sm text-blue-700 dark:text-blue-400 list-disc list-inside space-y-1">
+        <div
+            class="mt-8 bg-primary-50/30 dark:bg-primary-900/10 p-5 rounded-default border border-primary-100 dark:border-primary-900/30">
+            <h3 class="text-sm font-bold text-primary-800 dark:text-primary-300 mb-3 flex items-center gap-2">
+                <span class="material-symbols-outlined text-lg">lightbulb</span>
+                Tips & Petunjuk
+            </h3>
+            <ul class="text-sm text-base-600 dark:text-base-400 list-disc list-inside space-y-2">
                 <li>Pastikan file <strong>credentials.json</strong> sudah terpasang atau terdaftar di API Setting.</li>
                 <li>Pastikan Spreadsheet sudah di-<strong>share</strong> ke email Service Account sebagai
                     <strong>Editor</strong>.</li>
