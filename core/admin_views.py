@@ -8,8 +8,12 @@ from core.models import APISetting
 from tenants.models import Tenant
 
 class MockOpts:
-    def __init__(self, app_label):
+    def __init__(self, app_label, model_name, verbose_name):
         self.app_label = app_label
+        self.model_name = model_name
+        self.verbose_name = verbose_name
+        self.verbose_name_plural = verbose_name + "s"
+        self.object_name = model_name
 
 @staff_member_required
 def gsheet_sync_view(request):
@@ -40,7 +44,7 @@ def gsheet_sync_view(request):
     context = {
         **admin.site.each_context(request),
         "title": "Tarik Data Google Spreadsheet",
-        "opts": MockOpts("core"), # For breadcrumbs and Unfold header
+        "opts": MockOpts("core", "gsheetsync", "GSheet Sync"), # For breadcrumbs and Unfold header
         "available_models": [
             {"id": "lead", "name": "Leads / Pendaftar"},
             {"id": "donatur", "name": "Donatur"},
