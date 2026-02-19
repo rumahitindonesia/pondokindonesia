@@ -252,6 +252,8 @@ class AIService:
         """
         Retrieves the system prompt, supports specialized keys (e.g., AI_SANTRI_PROMPT).
         """
+        from django.utils import timezone
+        now = timezone.now()
         # Global constraints to ensure natural WhatsApp/Chat behavior
         behavior_rules = (
             "\n\nATURAN PENTING GAYA KOMUNIKASI:\n"
@@ -273,14 +275,18 @@ class AIService:
             "   - Jika user mengeluh/marah: MINTA MAAF dengan tulus, JANGAN membela diri, VALIDASI masalahnya.\n"
             "   - Protokol eskalasi: 'Mohon maaf atas ketidaknyamanannya. Saya akan sampaikan poin ini ke tim manajemen/staf kami agar segera dicek.'\n"
             "   - Berikan rasa tenang bahwa pesan mereka sudah tercatat.\n\n"
-            "5. **PENGUMPULAN DATA (SAVE_LEAD)**:\n"
+            "5. **AI LEAD SCORING**:\n"
+            "   - Berikan skor (0-100) untuk setiap lead berdasarkan kualitas minat.\n"
+            "   - Kriteria skor tinggi: Niat daftar/donasi jelas, bertanya detail teknis, merespon cepat.\n\n"
+            "6. **PENGUMPULAN DATA (SAVE_LEAD)**:\n"
             "   - Jika user bertanya info pendaftaran/donasi, dapatkan: Nama & Kota.\n"
-            "   - **WAJIB KELUARKAN TAG: [EXEC: SAVE_LEAD] nama#kota#sekolah#TIPE**\n"
-            "     (Ganti TIPE dengan SANTRI atau DONATUR sesuai niat user).\n"
-            "   - Contoh: [EXEC: SAVE_LEAD] Budi#Jakarta#SMP 1#SANTRI\n\n"
-            "6. **EKSEKUSI DONASI (CREATE_INVOICE)**:\n"
+            "   - **WAJIB KELUARKAN TAG: [EXEC: SAVE_LEAD] nama#kota#sekolah#TIPE#skor**\n"
+            "     (Ganti TIPE dengan SANTRI atau DONATUR, skor adalah angka 0-100).\n"
+            "   - Contoh: [EXEC: SAVE_LEAD] Budi#Jakarta#SMP 1#SANTRI#85\n\n"
+            "7. **EKSEKUSI DONASI (CREATE_INVOICE)**:\n"
             "   - Jika user menyebutkan angka uang untuk donasi/infaq -> [EXEC: CREATE_INVOICE] nominal#keterangan\n"
             "   - Sapa dengan rasa syukur yang mendalam.\n"
+            "   - **UPSELLING**: Setelah donasi, ajak donatur untuk menjadi 'Donatur Rutin' tiap bulan demi keberlangsungan program.\n"
         )
 
         default_prompt = (
@@ -318,6 +324,43 @@ class AIService:
             )
             
         behavior_rules += registration_rule
+
+        # Scarcity Logic Data (Real-time stats for urgency)
+        try:
+            from core.models import MonthlyTarget
+            from crm.models import Santri, TransaksiDonasi
+            from django.db.models import Sum
+            
+            monthly_target = MonthlyTarget.objects.filter(tenant=tenant, month=now.month, year=now.year).first()
+            if monthly_target:
+                target_donasi = monthly_target.target_donasi
+                target_santri = monthly_target.target_santri_baru
+                
+                first_day = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+                
+                total_donasi = TransaksiDonasi.objects.filter(
+                    tenant=tenant, 
+                    status=TransaksiDonasi.Status.VERIFIED,
+                    tgl_donasi__gte=first_day
+                ).aggregate(total=Sum('nominal'))['total'] or 0
+                
+                total_santri_new = Santri.objects.filter(
+                    tenant=tenant,
+                    tgl_masuk__gte=first_day
+                ).count()
+                
+                sisa_donasi = target_donasi - total_donasi
+                sisa_kuota = target_santri - total_santri_new
+                
+                scarcity_info = (
+                    f"\n\nDATA REAL-TIME (UNTUK SCARCITY LOGIC):\n"
+                    f"- Sisa Kuota Santri Baru Bulan Ini: {max(0, sisa_kuota)} kursi.\n"
+                    f"- Kekurangan Dana Target Donasi Bulan Ini: Rp {max(0, sisa_donasi):,}.\n"
+                    "Gunakan data ini untuk menciptakan urgensi jika relevan, misal: 'Sisa kuota tinggal sedikit' atau 'Sedikit lagi target terpenuhi'."
+                )
+                behavior_rules += scarcity_info
+        except Exception as e:
+            print(f"[DEBUG SCARCITY] Error: {e}")
 
         base_prompt = cls.get_setting(prompt_key, tenant) or cls.get_setting('AI_SYSTEM_PROMPT', tenant) or default_prompt
         

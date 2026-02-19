@@ -670,6 +670,12 @@ def webhook_whatsapp(request, tenant_slug=None):
                                         l_type_raw = parts[3].upper() if len(parts) > 3 else channel_type # Default to channel detection
                                         l_type = Lead.Type.DONATUR if "DONA" in l_type_raw else Lead.Type.SANTRI
                                         
+                                        # New: Handle optional 5th part for score
+                                        try:
+                                            l_score = int(parts[4]) if len(parts) > 4 else 0
+                                        except:
+                                            l_score = 0
+                                            
                                         # Create Lead
                                         lead, created = Lead.objects.get_or_create(
                                             tenant=current_tenant,
@@ -677,6 +683,7 @@ def webhook_whatsapp(request, tenant_slug=None):
                                             defaults={
                                                 'name': l_name,
                                                 'type': l_type,
+                                                'score': l_score,
                                                 'status': Lead.Status.NEW,
                                                 'data': {'kota': l_city, 'sekolah': l_school}
                                             }
@@ -685,6 +692,7 @@ def webhook_whatsapp(request, tenant_slug=None):
                                         if not created:
                                             lead.name = l_name
                                             lead.type = l_type # Update type if it changed during conversation
+                                            lead.score = l_score
                                             lead.data.update({'kota': l_city, 'sekolah': l_school})
                                             lead.status = Lead.Status.NEW
                                             lead.save()

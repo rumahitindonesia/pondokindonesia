@@ -168,6 +168,7 @@ class Lead(TenantAwareModel):
     last_message_at = models.DateTimeField(blank=True, null=True)
 
     notes = models.TextField(blank=True, null=True)
+    score = models.IntegerField(default=0, help_text="AI-generated Lead Score (0-100)")
     ai_analysis = models.JSONField(default=dict, blank=True, help_text="AI Analysis Result (Interest, Summary, Recommendation)")
     last_draft = models.TextField(blank=True, null=True, help_text="Last AI-generated message draft.")
     created_at = models.DateTimeField(auto_now_add=True)

@@ -304,8 +304,12 @@
                                     {{lead_item.name}}</h4>
                                 <div class="flex items-center gap-2">
                                     <span
-                                        class="text-[10px] px-1.5 py-0.5 rounded-full font-bold uppercase {% if lead_item.ai_analysis.interest_level == 'Hot' %}bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400 {% elif lead_item.ai_analysis.interest_level == 'Warm' %}bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400 {% else %}bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400{% endif %}">
+                                        class="text-[10px] px-1.5 py-0.5 rounded-full font-bold uppercase {% if lead_item.score >= 80 or lead_item.ai_analysis.interest_level == 'Hot' %}bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400 {% elif lead_item.score >= 50 or lead_item.ai_analysis.interest_level == 'Warm' %}bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400 {% else %}bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400{% endif %}">
+                                        {% if lead_item.score > 0 %}
+                                        Score: {{lead_item.score}}
+                                        {% else %}
                                         {{lead_item.ai_analysis.interest_level|default:"NEW"}}
+                                        {% endif %}
                                     </span>
                                     <span class="text-xs text-base-400">{{lead_item.get_type_display}}</span>
                                 </div>

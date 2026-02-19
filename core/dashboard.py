@@ -242,15 +242,7 @@ def dashboard_callback(request, context):
         from django.db.models import Case, When, Value, IntegerField
         
         # 1. Hot Leads (Top 5)
-        priority_leads = lead_base_qs.exclude(status__in=['CLOSED', 'REJECTED']).annotate(
-            interest_score=Case(
-                When(ai_analysis__interest_level='Hot', then=Value(3)),
-                When(ai_analysis__interest_level='Warm', then=Value(2)),
-                When(ai_analysis__interest_level='Cold', then=Value(1)),
-                default=Value(0),
-                output_field=IntegerField(),
-            )
-        ).order_by('-interest_score', '-created_at')[:5]
+        priority_leads = lead_base_qs.exclude(status__in=['CLOSED', 'REJECTED']).order_by('-score', '-created_at')[:5]
 
         # 2. Overdue Fees (Top 5)
         # Combine SPP and Program fees
