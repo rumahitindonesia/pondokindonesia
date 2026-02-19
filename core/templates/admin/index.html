@@ -101,6 +101,9 @@
                     {{mini_kpi.title}}</p>
                 <p class="font-bold text-xl text-font-important-light dark:text-font-important-dark">{{mini_kpi.metric}}
                 </p>
+                {% if mini_kpi.footer %}
+                <p class="text-[9px] text-base-400 italic mt-1 leading-tight">{{mini_kpi.footer}}</p>
+                {% endif %}
             </div>
         </div>
         {% endfor %}
