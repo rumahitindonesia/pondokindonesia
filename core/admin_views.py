@@ -49,7 +49,7 @@ def gsheet_sync_view(request):
     context = {
         **admin.site.each_context(request),
         "title": "Tarik Data Google Spreadsheet",
-        "opts": MockOpts("core", "gsheetsync", "GSheet Sync"), # For breadcrumbs and Unfold header
+        "opts": MockOpts("core", "lead", "GSheet Sync"), # For breadcrumbs and Unfold header
         "available_models": [
             {"id": "lead", "name": "Leads / Pendaftar"},
             {"id": "donatur", "name": "Donatur"},
