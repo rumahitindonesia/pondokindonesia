@@ -1,4 +1,5 @@
 from django.urls import path
+from django.contrib import admin
 from . import views, views_webhook, views_registration
 
 app_name = 'core'
@@ -20,5 +21,5 @@ urlpatterns = [
     path('help/api/', views.get_tutorial_api if hasattr(views, 'get_tutorial_api') else None, name='help_api'),
     path('help/api/chat/', views.chat_assistant_api if hasattr(views, 'chat_assistant_api') else None, name='help_chat_api'),
     # Admin Custom View
-    path('gsheet-sync-admin/', views.gsheet_sync_view if hasattr(views, 'gsheet_sync_view') else None, name='gsheet_sync'),
+    path('gsheet-sync-admin/', admin.site.admin_view(views.gsheet_sync_view) if hasattr(views, 'gsheet_sync_view') else None, name='gsheet_sync'),
 ]

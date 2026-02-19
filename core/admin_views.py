@@ -1,5 +1,5 @@
 from django.shortcuts import render
-from django.contrib import messages
+from django.contrib import admin, messages
 from django.contrib.admin.views.decorators import staff_member_required
 from django.urls import reverse
 from django.http import HttpResponseRedirect
@@ -34,6 +34,7 @@ def gsheet_sync_view(request):
         return HttpResponseRedirect(reverse("core:gsheet_sync"))
 
     context = {
+        **admin.site.each_context(request),
         "title": "Tarik Data Google Spreadsheet",
         "opts": {"app_label": "core"}, # For breadcrumbs
         "available_models": [
