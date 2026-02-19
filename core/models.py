@@ -57,6 +57,25 @@ class APISetting(TenantAwareModel):
         scope = "Global" if not self.tenant else f"Tenant: {self.tenant}"
         return f"{self.key_name} ({scope})"
 
+    @classmethod
+    def get_value(cls, key_name, tenant=None, default=None):
+        """
+        Helper safe to get value. 
+        Priority: Tenant Specific > Global > Default
+        """
+        # 1. Try Tenant specific
+        if tenant:
+            try:
+                return cls.objects.get(key_name=key_name, tenant=tenant, is_active=True).value
+            except cls.DoesNotExist:
+                pass
+        
+        # 2. Try Global
+        try:
+            return cls.global_objects.get(key_name=key_name, tenant__isnull=True, is_active=True).value
+        except cls.DoesNotExist:
+            return default
+
 class WhatsAppMessage(TenantAwareModel):
     device = models.CharField(max_length=255, help_text="Device Name / Number")
     message = models.TextField()

@@ -19,7 +19,7 @@ class GoogleSheetsService:
         Retrieves credentials from APISetting (JSON string) or a local file.
         """
         # 1. Try APISetting (Database)
-        cred_json = APISetting.get_setting("GOOGLE_SHEETS_CREDENTIALS", tenant)
+        cred_json = APISetting.get_value("GOOGLE_SHEETS_CREDENTIALS", tenant)
         if cred_json:
             try:
                 info = json.loads(cred_json)
