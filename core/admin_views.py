@@ -7,6 +7,10 @@ from crm.services.gsheet_sync import GSheetSyncService
 from core.models import APISetting
 from tenants.models import Tenant
 
+class MockAppConfig:
+    def __init__(self, verbose_name):
+        self.verbose_name = verbose_name
+
 class MockOpts:
     def __init__(self, app_label, model_name, verbose_name):
         self.app_label = app_label
@@ -14,6 +18,7 @@ class MockOpts:
         self.verbose_name = verbose_name
         self.verbose_name_plural = verbose_name + "s"
         self.object_name = model_name
+        self.app_config = MockAppConfig("Core") # Or whatever app name you want to display
 
 @staff_member_required
 def gsheet_sync_view(request):
