@@ -25,7 +25,7 @@ from .forms import GSheetSyncForm
 @staff_member_required
 def gsheet_sync_view(request):
     mapping_info = {
-        "lead": "Nama, Phone, Kota, Sekolah, Catatan",
+        "lead": "Nama, Phone, Kota, Sekolah, Catatan, Type (Opsional: Calon Santri/Calon Donatur)",
         "santri": "NIS, Nama Lengkap, Nama Panggilan, Nama Wali, No HP Wali, Alamat",
         "donatur": "Nama, Phone, Alamat, Kategori",
         "transaksi": "Tanggal, Phone Donatur, Nama Program, Nominal, Keterangan"

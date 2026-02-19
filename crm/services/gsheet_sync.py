@@ -40,12 +40,19 @@ class GSheetSyncService:
                 phone = '62' + phone[1:]
             
             # Check for existing lead
+            # Parse Type
+            type_str = str(row_lower.get('type', '') or row_lower.get('tipe', '')).strip().upper()
+            lead_type = Lead.Type.SANTRI
+            if 'DONATUR' in type_str:
+                lead_type = Lead.Type.DONATUR
+                
             try:
                 lead, created = Lead.objects.update_or_create(
                     tenant=tenant,
                     phone_number=phone,
                     defaults={
                         'name': name,
+                        'type': lead_type,
                         'notes': f"GSheet Sync ({timezone.now().date()}): {row_lower.get('catatan', '')}",
                         'data': {
                             'kota': row_lower.get('kota', ''),
