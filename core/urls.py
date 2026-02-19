@@ -19,4 +19,6 @@ urlpatterns = [
     # Contextual Help API
     path('help/api/', views.get_tutorial_api if hasattr(views, 'get_tutorial_api') else None, name='help_api'),
     path('help/api/chat/', views.chat_assistant_api if hasattr(views, 'chat_assistant_api') else None, name='help_chat_api'),
+    # Admin Custom View
+    path('admin/gsheet-sync/', views.gsheet_sync_view if hasattr(views, 'gsheet_sync_view') else None, name='gsheet_sync'),
 ]

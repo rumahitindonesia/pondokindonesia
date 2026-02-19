@@ -179,6 +179,12 @@ UNFOLD = {
                         "link": "/admin/crm/program/",
                         "permission": "core.permissions.can_view_program",
                     },
+                    {
+                        "title": "Tarik Data GSheet",
+                        "icon": "upload_file",
+                        "link": "/admin/gsheet-sync/",
+                        "permission": "core.permissions.can_view_lead",
+                    },
                 ],
             },
             {
